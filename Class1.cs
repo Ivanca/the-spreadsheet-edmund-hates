@@ -19,10 +19,181 @@ using System.Diagnostics;
 
 using System.Collections.Concurrent;
 using System.Text;
+using System.Runtime.CompilerServices;
 namespace CatstableMod;
+
+// [StructLayout(LayoutKind.Explicit)]
+// unsafe struct GameString
+// {
+//     [FieldOffset(0)]
+//     public fixed char Inline[8];
+
+//     [FieldOffset(0)]
+//     public char* Ptr;
+
+//     [FieldOffset(16)]
+//     public ulong Length;
+
+//     [FieldOffset(24)]
+//     public ulong Capacity;
+// }
 
 public partial class CatstableMod
 {
+    /**
+    Chatgpt stuff
+    */
+    
+
+
+    // internal void MjInit()
+    // {
+    //     // _createMovieClipTrampoline =
+    //     //     MewjectorApi.InstallHook(
+    //     //         0xA4E460,
+    //     //         (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&CreateMovieClipHook);
+
+    //     // lets wait 5 seconds before installing the hook:
+    //     unsafe
+    //     {   
+    //         _houseCreationTrampoline =
+    //             MewjectorApi.InstallHook(
+    //                 0x3c89e0, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&HouseCreationHook);
+    //     }
+
+    //     // Task.Run(async () =>
+    //     // {
+    //     //     await Task.Delay(25000);
+    //     //     LogStr("DefineSprite::CreateMovieClip SAFE probe installed");
+    //     //     await Task.Delay(1000);
+    //     //     LogStr("3");
+    //     //     await Task.Delay(1000);
+    //     //     LogStr("2");
+    //     //     await Task.Delay(1000);
+    //     //     LogStr("1");
+    //     //     await Task.Delay(1000);
+    //     //     LogStr("Recording from DefineSprite::CreateMovieClip hook...");
+    //     //     unsafe
+    //     //     {   
+    //     //         _createMovieClipTrampoline =
+    //     //             MewjectorApi.InstallHook(
+    //     //                 0xA4E460,
+    //     //                 (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&CreateMovieClipHook);
+    //     //     }
+    //     // });
+    // }
+
+    static int houseCreationCount = 0;
+
+    [UnmanagedCallersOnly]
+    private static unsafe nint HouseCreationHook(
+        nint a1,
+        nint a2,
+        nint a3,
+        nint a4)
+    {
+        houseCreationCount++;
+        LogStr($"[HOOK] HouseCreationHook called with a2={a2:X} string=\"{TryReadStdString(a2)}\"");
+        var result = ((delegate* unmanaged<nint, nint, nint, nint, nint>)_houseCreationTrampoline)(a1, a2, a3, a4);
+        if (houseCreationCount == 3)
+        {
+            LogStr($"[HOOK] HouseCreationHook called 3 times, installing CreateMovieClipHook...");
+            _createMovieClipTrampoline =
+                MewjectorApi.InstallHook(
+                    0xA4E460,
+                    (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&CreateMovieClipHook);
+            _movieClipConstructroTrampoline =
+                MewjectorApi.InstallHook(
+                    0x99dfa0,
+                    (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&MovieClipConstructorHook);
+        }
+        return result;
+    }
+
+    [UnmanagedCallersOnly]
+    private static unsafe nint MovieClipConstructorHook(
+        nint a1,
+        nint a2,
+        nint a3,
+        nint a4)
+    {
+        // must print the equivalent of `ansi([[rcx]+50])`
+        if (_count < 5000 && a1 != 0 && IsLikelyPointer(a1))
+        {
+            var fiftyAhead = Marshal.ReadIntPtr(a1) + 0x50;
+            if (IsLikelyPointer(fiftyAhead))
+            {
+                var fiftyAheadValue = Marshal.ReadIntPtr(fiftyAhead);
+                string? s = Marshal.PtrToStringAnsi(fiftyAheadValue);
+                if (s != null)
+                {
+                    LogStr($"[HOOK] MovieClipConstructorHook called with a1={a1:X} string=\"{s}\"");
+                } else
+                {
+                    LogStr($"[HOOK] MovieClipConstructorHook failed 2 called with a1={a1:X} string=\"(null)\"");
+                }
+            }
+        }
+        var result = _movieClipConstructroTrampoline(a1, a2, a3, a4);
+        return result;
+    }
+
+    [UnmanagedCallersOnly]
+    private static unsafe nint CreateMovieClipHook(
+        nint a1,
+        nint a2,
+        nint a3,
+        nint a4)
+    {
+        nint clip =_createMovieClipTrampoline(a1, a2, a3, a4);
+
+        try
+        {
+            if (_count >= 5000)
+                return clip;
+
+            nint def = a1;
+
+            ulong q3 = *(ulong*)(def + 0x18);
+
+            LogStr(
+                $"DEFSPRITE #{_count}\n" +
+                $"  def=0x{def:X}\n" +
+                $"  clip=0x{clip:X}\n" +
+                $"  q3=0x{q3:X}");
+
+            if (LooksLikePointer(q3))
+            {
+                ulong p0 = *(ulong*)q3;
+                ulong p1 = *(ulong*)(q3 + 8);
+                ulong p2 = *(ulong*)(q3 + 16);
+                ulong p3 = *(ulong*)(q3 + 24);
+
+                LogStr(
+                    $"  q3[0]=0x{p0:X}\n" +
+                    $"  q3[1]=0x{p1:X}\n" +
+                    $"  q3[2]=0x{p2:X}\n" +
+                    $"  q3[3]=0x{p3:X}");
+            }
+
+            _count++;
+        }
+        catch
+        {
+        }
+
+        return clip;
+    }
+
+    private static bool LooksLikePointer(ulong p)
+    {
+        return p >= 0x10000 &&
+               p <= 0x00007FFFFFFFFFFF;
+    }    
+    // =========================================================================
+    // END chatgpt stuff
+    // =========================================================================
+
     public string Id => "catstable";
     public string Name => "catstable";
     public bool IsEnabled { get; private set; } = true;
@@ -36,28 +207,204 @@ public partial class CatstableMod
     internal static volatile bool _genLoggingEnabled = false;
     private static nint _abilityTriggerHookTrampoline; // sub_7FF70C3F1ED0  glaiel::Ability::trigger
 
-    private static nint _MyHook;
-    private static nint _findMovieClipTrampoline;
-    private static nint _removeMovieClipTrampoline;
+    private static unsafe delegate* unmanaged<long, long, nint, nint, nint> _createMovieClipTrampoline;
+    private static int _count;
+    private static unsafe delegate* unmanaged<long, long, nint, nint, nint> _houseCreationTrampoline;
+    private static unsafe delegate* unmanaged<long, long, nint, nint, nint> _movieClipConstructroTrampoline;
+    private static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _houseDrawerPanel;
 
-    /// <summary>
-    /// Entry point called from DllMain (DLL_PROCESS_ATTACH) after MewjectorApi.Resolve() succeeds.
-    /// Installs our hooks through Mewjector so they participate in hook chaining.
-    /// </summary>
+
+    private static unsafe delegate* unmanaged<long, long, nint, nint, nint> _MyHook;
+    private static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _findMovieClipTrampoline;
+    private static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _removeMovieClipTrampoline;
+    private unsafe static delegate* unmanaged<nint, char*, nuint, nint> _assignString;
+
+    
+    unsafe private static delegate* unmanaged<nint, nint, void> _setText;
+    unsafe private static delegate* unmanaged<nint, nint, void> _goToLabel;
+    unsafe private static delegate* unmanaged<nint, nint> _createInstance;
+    unsafe private static delegate* unmanaged<nint, nint, void> _copyState;
+    unsafe private static delegate* unmanaged<nint, nint, uint, void> _attachChild;
+
+        
+    
+    const long RVA_CreateInstance = 0xA4E460; // DefineSprite::CreateInstance()
+    const long RVA_CopyState      = 0x9b2d20; // sub_404062D20
+    const long RVA_AttachChild    = 0x9901e0; // sub_40401E0
+
+
+
+    unsafe static T Read<T>(nint p) where T : unmanaged
+        => *(T*)p;
+
+    unsafe static void Write<T>(nint address, T value) where T : unmanaged
+    {
+        *(T*)address = value;
+    }
+
+    unsafe static void DestroyGameString(nint str)
+    {
+        if (str != 0)
+            Marshal.FreeHGlobal(str);
+    }
+    static List<nint> rows = new List<nint>();
+    unsafe public static nint Duplicate(nint original)
+    {
+        if (original == 0)
+        {
+            LogStr($"[HOOK] Duplicate: original is null, returning 0");
+            return 0;
+        }
+
+        // MovieClip +0x38 = parent
+        nint parent = Read<nint>(original + 0x38);
+        if (parent == 0)
+        {
+            LogStr($"[HOOK] Duplicate: parent is null, returning 0");
+            return 0;
+        }
+
+        // MovieClip +0xD0 = DefineSprite*
+        nint defineSprite = Read<nint>(original + 0xD0) - 0x60;
+        if (defineSprite == 0)
+        {
+            LogStr($"[HOOK] Duplicate: defineSprite is null, returning 0");
+            return 0;
+        }
+
+        // Call DefineSprite::CreateInstance()
+        nint clone = _createInstance(defineSprite);
+        
+        if (clone == 0)
+        {
+            LogStr($"[HOOK] Duplicate: CreateInstance returned null, returning 0");
+            return 0;
+        } else
+        {
+            LogStr($"[HOOK] Duplicate: Duplicated at 0x{clone:X}");
+        }
+
+        nint vtable = *(nint*)clone;
+
+        var advance =
+            (delegate* unmanaged<nint, void>)
+                (*(nint*)(vtable + 0x18));
+    
+        LogStr($"[HOOK] Running advance");
+        advance(clone);
+
+        // Copy transform/color/etc.
+        LogStr("[HOOK] Copying state from original to clone");
+        _copyState(clone, original);
+
+        float x = Read<float>(clone + 0x70);
+        float y = Read<float>(clone + 0x74);
+
+        LogStr($"clone_coords x={x} y={y}");
+
+        Write(clone + 0x74, y + 100.0f);
+        // parent->size (+0xAC)
+        uint depth = Read<uint>(parent + 0xAC);
+
+        var textbox = CallWithCustomString(_findMovieClipTrampoline, clone, "test_text", 0, 0);
+        nint gameString = CreateGameString("CatstableMod!");
+        _setText(textbox, gameString);
+        // DestroyGameString(gameString);
+        // pendingTextClone = textbox;
+
+
+
+        _attachChild(parent, clone, depth);
+
+        return clone;
+    }
+
+    public static void SetDynamicText(nint dynamicTextBox, string text)
+    {
+        // Allocate UTF-16 buffer.
+        nint utf16 = Marshal.StringToHGlobalUni(text);
+
+        // Replace pointer.
+        Write(dynamicTextBox + 184, utf16);
+
+        // Character count.
+        Write(dynamicTextBox + 200, (ulong)text.Length);
+
+        // Capacity.
+        //
+        // The constructor initializes this to 7 for short strings,
+        // but once it points to a heap buffer it appears to simply be
+        // the allocated capacity. Setting it equal to the length is
+        // sufficient for read-only rendering.
+        Write(dynamicTextBox + 208, (ulong)text.Length);
+    }
+
+    private static nint _rightStr = 0;
+    private static nint _leftStr = 0;
     internal unsafe void MjInit()
     {
-        _findMovieClipTrampoline = MewjectorApi.InstallHook(
+
+
+        _findMovieClipTrampoline = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0x990480, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&FindChildMovieClipHook);
 
-        _removeMovieClipTrampoline = MewjectorApi.InstallHook(
+        _removeMovieClipTrampoline = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0x99e030, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&RemoveMovieClip);
 
-        _instance = this;
-        MewjectorApi.Log("MjInit: installing hooks...");
+        _houseDrawerPanel = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+            0x2038b0, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&PanelSlideCallbackHook);
 
         var location = MewjectorApi.GameBase;
-        LogStr($"Gamebase at {location:X}...");
+        MewjectorApi.Log($"Gamebase at {location:X}...");
+        // MewjectorApi.Log("MjInit: installing hooks...");
+        _createInstance = (delegate* unmanaged<nint, nint>)(MewjectorApi.GameBase + (nuint)RVA_CreateInstance);
+        _setText = (delegate* unmanaged<nint, nint, void>)(MewjectorApi.GameBase + (nuint)0x986470);
+        _goToLabel = (delegate* unmanaged<nint, nint, void>)(MewjectorApi.GameBase + (nuint)0x99f070);
+        _copyState = (delegate* unmanaged<nint, nint, void>)(MewjectorApi.GameBase + (nuint)RVA_CopyState);
+        _assignString = (delegate* unmanaged<nint,char*,nuint,nint>)(MewjectorApi.GameBase + 0x5b100);
 
+        _attachChild = (delegate* unmanaged<nint, nint, uint, void>)(MewjectorApi.GameBase + (nuint)RVA_AttachChild);
+
+        // _rightStr = GameString.Create("right");
+        // _leftStr = GameString.Create("left");
+    }
+
+    private static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _changeCloneText;
+
+
+    [UnmanagedCallersOnly]
+    private static unsafe nint PanelSlideCallbackHook(nint a1, nint a2, nint a3, nint a4)
+    {
+        // var a2Str = TryReadStdString(a2, false);
+        var result = _houseDrawerPanel(a1, a2, a3, a4);
+        var renderer = Marshal.ReadIntPtr(a1 + 0x58);
+        // read as dword:
+        var rendererName = TryReadStdString(renderer + 0xA8, false);
+        if (rendererName != "CatMenu")
+        {
+            MewjectorApi.Log($"[HOOK] PanelSlideCallbackHook: rendererName={rendererName}, no action taken");
+            return result;
+        }
+        var rendererState = Marshal.ReadInt32(renderer + 0x54);
+        if (rendererState == 37 && slide != 0)
+        {
+            // IntPtr rightStr = Marshal.StringToHGlobalAnsi("right");
+            MewjectorApi.Log($"[HOOK] PanelSlideCallbackHook: rendererState=25, going to label 'right' on slide 0x{slide:X}");
+            // CallWithCustomString(_goToLabel, slide, "right", a3, a4)
+            _goToLabel(slide, GameString.Create("right"));
+        }
+        else if (rendererState == 36 && slide != 0)
+        {
+            // IntPtr leftStr = Marshal.StringToHGlobalAnsi("left");
+            MewjectorApi.Log($"[HOOK] PanelSlideCallbackHook: rendererState=24, going to label 'left' on slide 0x{slide:X}");
+            _goToLabel(slide, GameString.Create("left"));
+        } else
+        {
+            MewjectorApi.Log($"[HOOK] PanelSlideCallbackHook: rendererState={rendererState}, no action taken");
+        }
+
+        return result;
+    }
 
         // _abilityTriggerHookTrampoline = MewjectorApi.InstallHook(
         //     0x31ED0, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&AbilityTriggerHook);
@@ -78,8 +425,6 @@ public partial class CatstableMod
 
         // _instance.Log(BitConverter.ToString(bytes));
         // _MyHook = MewjectorApi.InstallHook(0xB631C0, (void*)(delegate* unmanaged<long, long, nint, nint, nint>)&MyHook);
-
-    }
 
     // internal unsafe void MjInit()
     // {
@@ -102,7 +447,7 @@ public partial class CatstableMod
 
 
     private static unsafe nint CallWithCustomString(
-        nint trampoline,
+        delegate* unmanaged<nint, nint, nint, nint, nint> trampoline,
         nint a1,
         string text,
         nint a3,
@@ -124,7 +469,7 @@ public partial class CatstableMod
         pStr->Size = (ulong)utf8.Length;
         pStr->Capacity = 15;
 
-        return ((delegate* unmanaged<nint, nint, nint, nint, nint>)trampoline)(
+        return trampoline(
             a1,
             (nint)pStr,
             a3,
@@ -134,14 +479,69 @@ public partial class CatstableMod
     static nint movieClipModContainer = 0;
     static nint rowMovieClip = 0;
 
+     [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
+    private delegate nint CreateInstanceDelegate(nint defineSprite);
+
+    // RVA 0x040401E0
+    [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
+    private delegate nint AttachChildDelegate(
+        nint parentMovieClip,
+        nint childMovieClip,
+        uint depth);
+
+    unsafe public static nint DuplicateMovieClip(nint rowMovieClip, nint moduleBase)
+    {
+        // MovieClip fields
+        nint parent  = Marshal.ReadIntPtr(rowMovieClip + 0x38);
+        nint runtime = Marshal.ReadIntPtr(rowMovieClip + 0xD0);
+        LogStr($"[HOOK] DuplicateMovieClip: rowMovieClip=0x{rowMovieClip:X}, parent=0x{parent:X}, runtime=0x{runtime:X}");
+
+        // runtime == DefineSprite+0x60
+        nint defineSprite = runtime - 0x60;
+
+        // current depth
+        uint depth = *(uint*)(rowMovieClip + 0x0C);
+
+        // call DefineSprite::CreateInstance()
+        LogStr($"[HOOK] DuplicateMovieClip: calling CreateInstance for DefineSprite 0x{defineSprite:X}...");
+        var create =
+            Marshal.GetDelegateForFunctionPointer<CreateInstanceDelegate>(
+                moduleBase + 0x10FE460);
+
+        nint clone = create(defineSprite);
+
+        if (clone == 0)
+            return 0;
+
+        // attach beside the original
+        var attach =
+            Marshal.GetDelegateForFunctionPointer<AttachChildDelegate>(
+                moduleBase + 0x040401E0);
+        LogStr($"[HOOK] DuplicateMovieClip: attaching clone 0x{clone:X} to parent 0x{parent:X} at depth {depth + 1}...");
+        attach(parent, clone, depth + 1);
+
+        return clone;
+    }
+    private static bool readyToDuplicate = false;
+    private static nint slide = 0;
     [UnmanagedCallersOnly]
     private static unsafe nint FindChildMovieClipHook(nint a1, nint a2, nint a3, nint a4)
     {
 
         var a2Str = TryReadStdString(a2, false);
+        var result = _findMovieClipTrampoline(a1, a2, a3, a4);
+        if (a2Str != "openclose_H" && readyToDuplicate)
+        {
+            readyToDuplicate = false;
+            LogStr($"[HOOK] Starting duplication of 'row' movieclip at 0x{rowMovieClip:X}...");
+            var cloned = Duplicate(rowMovieClip);
+            rows.Add(cloned);
+        }
+
         if (a2Str == "openclose_H" && movieClipModContainer == 0)
         {
             string juanito = "juanito";
+            MewjectorApi.Log($"[HOOK] Searching for mod container '{juanito}' parent is 0x{a1:X}...");
             nint subresult = CallWithCustomString(_findMovieClipTrampoline, a1, juanito, a3, a4);
             // check if its null pointer result or not
             if (subresult != 0)
@@ -154,25 +554,47 @@ public partial class CatstableMod
                 {
                     // mod container "juanito2" found
                     MewjectorApi.Log($"[HOOK] Found 'juanito2' container at 0x{juanito2:X}");
-                    nint juanito3 = CallWithCustomString(_findMovieClipTrampoline, juanito2, "juanito3", a3, a4);
-                    if (juanito3 != 0)
+                    slide = CallWithCustomString(_findMovieClipTrampoline, juanito2, "slide", a3, a4);
+                    if (slide != 0)
                     {
-                        MewjectorApi.Log($"[HOOK] Found 'juanito3' container at 0x{juanito3:X}");
-                        nint juanito4 = CallWithCustomString(_findMovieClipTrampoline, juanito3, "juanito4", a3, a4);
-                        if (juanito4 != 0)
+                        MewjectorApi.Log($"[HOOK] Found 'slide' container at 0x{slide:X}");
+                        nint aniContainer = CallWithCustomString(_findMovieClipTrampoline, slide, "right", a3, a4);
+                        if (aniContainer == 0)
                         {
-                            MewjectorApi.Log($"[HOOK] Found 'juanito4' container at 0x{juanito4:X}");
-                            movieClipModContainer = juanito4;
-                            rowMovieClip = CallWithCustomString(_findMovieClipTrampoline, juanito4, "row", a3, a4);
+                            MewjectorApi.Log($"[HOOK] 'right' container NOT found, trying 'left'...");
+                            aniContainer = CallWithCustomString(_findMovieClipTrampoline, slide, "left", a3, a4);
                         }
-                        else
+                        if (aniContainer != 0)
                         {
-                            MewjectorApi.Log($"[HOOK] 'juanito4' container NOT found");
+                            MewjectorApi.Log($"[HOOK] Found 'right' container at 0x{aniContainer:X}");
+
+                            nint juanito4 = CallWithCustomString(_findMovieClipTrampoline, aniContainer, "juanito4", a3, a4);
+                            if (juanito4 != 0)
+                            {
+                                MewjectorApi.Log($"[HOOK] Found 'juanito4'! container at 0x{juanito4:X}");
+                                rowMovieClip = CallWithCustomString(_findMovieClipTrampoline, juanito4, "row_to_clone", a3, a4);
+                                if (rowMovieClip == 0 || Read<uint>(rowMovieClip + 0x38) == 0)
+                                {
+                                    MewjectorApi.Log($"[HOOK] WARNING: parent of 'row' is null! Waiting! a1=0x{a1:X}");   
+                                } else
+                                {
+                                    movieClipModContainer = juanito4;
+                                    readyToDuplicate = true;
+                                }
+                            }
+                            else
+                            {
+                                MewjectorApi.Log($"[HOOK] 'juanito4' container NOT found");
+                            }
+                        } else
+                        {
+                            MewjectorApi.Log($"[HOOK] 'right' container NOT found");
                         }
+
                     }
                     else
                     {
-                        MewjectorApi.Log($"[HOOK] 'juanito3' container NOT found");
+                        MewjectorApi.Log($"[HOOK] 'slide' container NOT found");
                     }
                 }
                 else
@@ -183,18 +605,44 @@ public partial class CatstableMod
             
         }
 
-        return ((delegate* unmanaged<nint, nint, nint, nint, nint>)_findMovieClipTrampoline)(a1, a2, a3, a4);
+        return result;
     }
 
+
+    unsafe static nint CreateGameString(string text)
+    {
+        // Allocate enough space for the engine's std::wstring object.
+        // 32 bytes is sufficient for the fields used by 370B100.
+        
+        nint str = Marshal.AllocHGlobal(0x30);
+        LogStr($"[HOOK] Allocated std::wstring at 0x{str:X} for text '{text}'");
+        // Initialize as an empty small-string.
+        Buffer.MemoryCopy(null, (void*)str, 0, 0);
+
+        *(ulong*)(str + 0x10) = 0; // length
+        *(ulong*)(str + 0x18) = 7; // SSO capacity
+
+        LogStr($"[HOOK] Writing text '{text}' to std::wstring at 0x{str:X}");
+
+        fixed (char* p = text)
+        {
+            _assignString(str, p, (nuint)text.Length);
+        }
+
+        LogStr($"[HOOK] Finished writing text '{text}' to std::wstring at 0x{str:X}");
+
+        return str;
+    }
+    
     [UnmanagedCallersOnly]
- private static unsafe nint RemoveMovieClip(nint a1, nint a2, nint a3, nint a4)
+    private static unsafe nint RemoveMovieClip(nint a1, nint a2, nint a3, nint a4)
     {
         if (movieClipModContainer != 0 && a1 == movieClipModContainer)
         {
             MewjectorApi.Log($"[HOOK] RemoveMovieClip called on mod container 0x{a1:X}");
             movieClipModContainer = 0;
         }
-        return ((delegate* unmanaged<nint, nint, nint, nint, nint>)_removeMovieClipTrampoline)(a1, a2, a3, a4);
+        return _removeMovieClipTrampoline(a1, a2, a3, a4);
     }
 
     private static byte[] SafeReadProcessMemory(nint hProcess, nint address, long size)
@@ -269,7 +717,7 @@ public partial class CatstableMod
         }
 
         // Call the original function so the game doesn't break
-        return ((delegate* unmanaged<nint, nint, nint, nint>)_findMovieClipTrampoline)(mapPtr, iteratorOut, stringPtr);
+        return ((delegate* unmanaged<nint, nint, nint, nint>)(void*)_findMovieClipTrampoline)(mapPtr, iteratorOut, stringPtr);
     }
 
     private static void DumpSymbolClassStrings()
@@ -416,7 +864,7 @@ public partial class CatstableMod
     nint a4)
     {
         long obj = a1;
-        var result = ((delegate* unmanaged<long, long, nint, nint, nint>)_MyHook)(a1, a2, a3, a4);
+        var result = _MyHook(a1, a2, a3, a4);
 
         // byte version = *(byte*)(obj + 0x38);
         // ushort depth = *(ushort*)(obj + 0x3A);
@@ -570,8 +1018,8 @@ public partial class CatstableMod
         //         return; // already logged this function before
         // }
         // File.AppendAllText(LogFilePath, message + Environment.NewLine);
-        lock (_logLock)
-            _logWriter.WriteLine(message);
+        // lock (_logLock)
+        MewjectorApi.Log(message);
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -1085,5 +1533,34 @@ public partial class CatstableMod
         // Fallback: root GON node name (e.g. "BasicMelee_Fighter" — not a localization key)
         return TryReadStdString(gonPtr + 0x88);
     }
-}
+};
 
+[StructLayout(LayoutKind.Sequential, Pack = 8)]
+unsafe struct GameString
+{
+    public ulong A;
+    public ulong B;
+    public ulong Length;
+    public ulong Capacity;
+
+    public static nint Create(string text)
+    {
+        GameString* s = (GameString*)Marshal.AllocHGlobal(sizeof(GameString));
+
+        *s = default;
+
+        byte* bytes = (byte*)s;
+
+        for (int i = 0; i < text.Length; i++)
+            bytes[i] = (byte)text[i];
+
+        bytes[text.Length] = 0;
+
+        s->Length = (ulong)text.Length;
+        s->Capacity = 15;
+        
+        MewjectorApi.Log(sizeof(GameString).ToString());
+        MewjectorApi.Log(((nuint)s).ToString("X"));
+        return (nint)s;
+    }
+}
