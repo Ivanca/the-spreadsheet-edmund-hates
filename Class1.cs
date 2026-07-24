@@ -40,75 +40,6 @@ namespace CatstableMod;
 
 public partial class CatstableMod
 {
-    /**
-    Chatgpt stuff
-    */
-    
-
-
-    // internal void MjInit()
-    // {
-    //     // _createMovieClipTrampoline =
-    //     //     MewjectorApi.InstallHook(
-    //     //         0xA4E460,
-    //     //         (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&CreateMovieClipHook);
-
-    //     // lets wait 5 seconds before installing the hook:
-    //     unsafe
-    //     {   
-    //         _houseCreationTrampoline =
-    //             MewjectorApi.InstallHook(
-    //                 0x3c89e0, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&HouseCreationHook);
-    //     }
-
-    //     // Task.Run(async () =>
-    //     // {
-    //     //     await Task.Delay(25000);
-    //     //     LogStr("DefineSprite::CreateMovieClip SAFE probe installed");
-    //     //     await Task.Delay(1000);
-    //     //     LogStr("3");
-    //     //     await Task.Delay(1000);
-    //     //     LogStr("2");
-    //     //     await Task.Delay(1000);
-    //     //     LogStr("1");
-    //     //     await Task.Delay(1000);
-    //     //     LogStr("Recording from DefineSprite::CreateMovieClip hook...");
-    //     //     unsafe
-    //     //     {   
-    //     //         _createMovieClipTrampoline =
-    //     //             MewjectorApi.InstallHook(
-    //     //                 0xA4E460,
-    //     //                 (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&CreateMovieClipHook);
-    //     //     }
-    //     // });
-    // }
-
-    static int houseCreationCount = 0;
-
-    [UnmanagedCallersOnly]
-    private static unsafe nint HouseCreationHook(
-        nint a1,
-        nint a2,
-        nint a3,
-        nint a4)
-    {
-        houseCreationCount++;
-        LogStr($"[HOOK] HouseCreationHook called with a2={a2:X} string=\"{TryReadStdString(a2)}\"");
-        var result = ((delegate* unmanaged<nint, nint, nint, nint, nint>)_houseCreationTrampoline)(a1, a2, a3, a4);
-        if (houseCreationCount == 3)
-        {
-            LogStr($"[HOOK] HouseCreationHook called 3 times, installing CreateMovieClipHook...");
-            _createMovieClipTrampoline =
-                MewjectorApi.InstallHook(
-                    0xA4E460,
-                    (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&CreateMovieClipHook);
-            _movieClipConstructroTrampoline =
-                MewjectorApi.InstallHook(
-                    0x99dfa0,
-                    (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&MovieClipConstructorHook);
-        }
-        return result;
-    }
 
     [UnmanagedCallersOnly]
     private static unsafe nint MovieClipConstructorHook(
@@ -212,6 +143,7 @@ public partial class CatstableMod
     private static unsafe delegate* unmanaged<long, long, nint, nint, nint> _houseCreationTrampoline;
     private static unsafe delegate* unmanaged<long, long, nint, nint, nint> _movieClipConstructroTrampoline;
     private static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _houseDrawerPanel;
+    private static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _createUiRenderer;
 
 
     private static unsafe delegate* unmanaged<long, long, nint, nint, nint> _MyHook;
@@ -219,13 +151,14 @@ public partial class CatstableMod
     private static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _removeMovieClipTrampoline;
     private unsafe static delegate* unmanaged<nint, char*, nuint, nint> _assignString;
 
+    private static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _globalResourceManagerLookup;
+
     
     unsafe private static delegate* unmanaged<nint, nint, void> _setText;
     unsafe private static delegate* unmanaged<nint, nint, void> _goToLabel;
     unsafe private static delegate* unmanaged<nint, nint> _createInstance;
     unsafe private static delegate* unmanaged<nint, nint, void> _copyState;
     unsafe private static delegate* unmanaged<nint, nint, uint, void> _attachChild;
-
         
     
     const long RVA_CreateInstance = 0xA4E460; // DefineSprite::CreateInstance()
@@ -354,9 +287,15 @@ public partial class CatstableMod
         _houseDrawerPanel = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0x2038b0, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&PanelSlideCallbackHook);
 
+        _globalResourceManagerLookup = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+            0x9adc50, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&GlobalResourceManagerLookupHook);
+
+        _createUiRenderer = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+            0x5a380, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&CreateUiRendererHook);
+        
         var location = MewjectorApi.GameBase;
-        MewjectorApi.Log($"Gamebase at {location:X}...");
-        // MewjectorApi.Log("MjInit: installing hooks...");
+        LogStr($"Gamebase at {location:X}...");
+        // LogStr("MjInit: installing hooks...");
         _createInstance = (delegate* unmanaged<nint, nint>)(MewjectorApi.GameBase + (nuint)RVA_CreateInstance);
         _setText = (delegate* unmanaged<nint, nint, void>)(MewjectorApi.GameBase + (nuint)0x986470);
         _goToLabel = (delegate* unmanaged<nint, nint, void>)(MewjectorApi.GameBase + (nuint)0x99f070);
@@ -371,6 +310,52 @@ public partial class CatstableMod
 
     private static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _changeCloneText;
 
+    private static nint MewApplicationPointer = 0;
+    private static nint houseStatusEntityPtr = 0;
+    private static nint catStatsDrawerPtr = 0;
+
+    [UnmanagedCallersOnly]
+    private static unsafe nint CreateUiRendererHook(nint a1, nint entity, nint namePtr, nint a4)
+    {
+        var name = TryReadCString(namePtr);
+        if (name == "HouseCatStatus")
+        {
+            LogStr($"[HOOK] CreateUiRendererHook: a1=0x{a1:X}, entity=0x{entity:X}, name=\"{name}\", a4=0x{a4:X}");
+            catStatsDrawerPtr = a1;
+            houseStatusEntityPtr = entity;
+        }
+        var result = _createUiRenderer(a1, entity, namePtr, a4);
+        if (name == "HouseCatStatus")
+        {
+            LogStr($"[HOOK] CreateUiRendererHook: HouseCatStatus created at 0x{result:X}");
+        }
+        return result;
+    }
+
+    [UnmanagedCallersOnly]
+    private static unsafe nint GlobalResourceManagerLookupHook(nint a1, nint namePtr, nint a3, nint a4)
+    {
+        var rdxStr = TryReadStdString(namePtr, false);
+        var result = _globalResourceManagerLookup(a1, namePtr, a3, a4);
+        if (rdxStr == "HouseCatStatus")
+        {
+            MewApplicationPointer = a1;
+            // LogStr($"[HOOK] GlobalResourceManagerLookupHook: HouseCatStatus found, a1=0x{a1:X}, a2=0x{namePtr:X}, a3=0x{a3:X}, a4=0x{a4:X}");
+        } else
+        {
+            if (rdxStr == null)
+            {
+                // LogStr($"[HOOK] null string read from a2=0x{namePtr:X}, a1=0x{a1:X}, a3=0x{a3:X}, a4=0x{a4:X}");
+            } else
+            {
+                // LogStr($"[HOOK] GlobalResourceManagerLookupHook: a1=0x{a1:X}, a2=0x{namePtr:X} string=\"{rdxStr}\", a3=0x{a3:X}, a4=0x{a4:X}");
+            }
+            
+        }
+        // var a2Str = TryRead
+        return result;
+    }
+
 
     [UnmanagedCallersOnly]
     private static unsafe nint PanelSlideCallbackHook(nint a1, nint a2, nint a3, nint a4)
@@ -382,25 +367,25 @@ public partial class CatstableMod
         var rendererName = TryReadStdString(renderer + 0xA8, false);
         if (rendererName != "CatMenu")
         {
-            MewjectorApi.Log($"[HOOK] PanelSlideCallbackHook: rendererName={rendererName}, no action taken");
+            // LogStr($"[HOOK] PanelSlideCallbackHook: rendererName={rendererName}, no action taken");
             return result;
         }
         var rendererState = Marshal.ReadInt32(renderer + 0x54);
         if (rendererState == 37 && slide != 0)
         {
             // IntPtr rightStr = Marshal.StringToHGlobalAnsi("right");
-            MewjectorApi.Log($"[HOOK] PanelSlideCallbackHook: rendererState=25, going to label 'right' on slide 0x{slide:X}");
+            // LogStr($"[HOOK] PanelSlideCallbackHook: rendererState=25, going to label 'right' on slide 0x{slide:X}");
             // CallWithCustomString(_goToLabel, slide, "right", a3, a4)
             _goToLabel(slide, GameString.Create("right"));
         }
         else if (rendererState == 36 && slide != 0)
         {
             // IntPtr leftStr = Marshal.StringToHGlobalAnsi("left");
-            MewjectorApi.Log($"[HOOK] PanelSlideCallbackHook: rendererState=24, going to label 'left' on slide 0x{slide:X}");
+            // LogStr($"[HOOK] PanelSlideCallbackHook: rendererState=24, going to label 'left' on slide 0x{slide:X}");
             _goToLabel(slide, GameString.Create("left"));
         } else
         {
-            MewjectorApi.Log($"[HOOK] PanelSlideCallbackHook: rendererState={rendererState}, no action taken");
+            // LogStr($"[HOOK] PanelSlideCallbackHook: rendererState={rendererState}, no action taken");
         }
 
         return result;
@@ -408,12 +393,12 @@ public partial class CatstableMod
 
         // _abilityTriggerHookTrampoline = MewjectorApi.InstallHook(
         //     0x31ED0, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&AbilityTriggerHook);
-        // MewjectorApi.Log("AbilityTriggerHook at RVA 0x31ED0 installed");
+        // LogStr("AbilityTriggerHook at RVA 0x31ED0 installed");
 
 
-        // MewjectorApi.Log("AbilityTriggerHook at RVA 0x31ED0 installed");
+        // LogStr("AbilityTriggerHook at RVA 0x31ED0 installed");
         
-        // MewjectorApi.Log("MjInit complete");
+        // LogStr("MjInit complete");
 
         // var targetAddress = Process.GetCurrentProcess().MainModule.BaseAddress + 0xA1AA50;
         // byte[] bytes = new byte[16];
@@ -430,7 +415,7 @@ public partial class CatstableMod
     // {
 
     //     0xA1AA50, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&FindChildMovieClipHook);
-    //     MewjectorApi.Log("AbilityTriggerHook at RVA 0x31ED0 installed");
+    //     LogStr("AbilityTriggerHook at RVA 0x31ED0 installed");
     // }
 
     // 1. Thread-safe bag to hold the pointers to our SymbolClasses
@@ -524,58 +509,70 @@ public partial class CatstableMod
     }
     private static bool readyToDuplicate = false;
     private static nint slide = 0;
+    private static nint catMenuMc = 0;
     [UnmanagedCallersOnly]
     private static unsafe nint FindChildMovieClipHook(nint a1, nint a2, nint a3, nint a4)
     {
 
         var a2Str = TryReadStdString(a2, false);
         var result = _findMovieClipTrampoline(a1, a2, a3, a4);
-        if (a2Str != "openclose_H" && readyToDuplicate)
+        if (a2Str != "openclose_H" && readyToDuplicate && houseStatusEntityPtr != 0)
         {
             readyToDuplicate = false;
             LogStr($"[HOOK] Starting duplication of 'row' movieclip at 0x{rowMovieClip:X}...");
             var cloned = Duplicate(rowMovieClip);
+            IntPtr rowCatStatusCStr = Marshal.StringToHGlobalAnsi("RowCatStatus");
+
             rows.Add(cloned);
+            var renderer = _createUiRenderer(catStatsDrawerPtr, houseStatusEntityPtr, rowCatStatusCStr, a4);
+            if (renderer != 0)
+            {
+                LogStr($"[HOOK] Found RowCatStatus renderer at 0x{renderer:X}");
+            } else
+            {
+                LogStr($"[HOOK] WARNING: RowCatStatus renderer not created, got null pointer!");
+            }
         }
 
         if (a2Str == "openclose_H" && movieClipModContainer == 0)
         {
             string juanito = "juanito";
-            MewjectorApi.Log($"[HOOK] Searching for mod container '{juanito}' parent is 0x{a1:X}...");
+            LogStr($"[HOOK] Searching for mod container '{juanito}' parent is 0x{a1:X}...");
             nint subresult = CallWithCustomString(_findMovieClipTrampoline, a1, juanito, a3, a4);
             // check if its null pointer result or not
             if (subresult != 0)
             {
                 // mod container "juanito" found
                 // print a1 too
-                MewjectorApi.Log($"[HOOK] Found 'juanito' container at 0x{subresult:X}");
+                LogStr($"[HOOK] Found 'juanito' container at 0x{subresult:X}");
+                catMenuMc = subresult;
                 nint juanito2 = CallWithCustomString(_findMovieClipTrampoline, subresult, "juanito2", a3, a4);
                 if (juanito2 != 0)
                 {
                     // mod container "juanito2" found
-                    MewjectorApi.Log($"[HOOK] Found 'juanito2' container at 0x{juanito2:X}");
+                    LogStr($"[HOOK] Found 'juanito2' container at 0x{juanito2:X}");
                     slide = CallWithCustomString(_findMovieClipTrampoline, juanito2, "slide", a3, a4);
                     if (slide != 0)
                     {
-                        MewjectorApi.Log($"[HOOK] Found 'slide' container at 0x{slide:X}");
+                        LogStr($"[HOOK] Found 'slide' container at 0x{slide:X}");
                         nint aniContainer = CallWithCustomString(_findMovieClipTrampoline, slide, "right", a3, a4);
                         if (aniContainer == 0)
                         {
-                            MewjectorApi.Log($"[HOOK] 'right' container NOT found, trying 'left'...");
+                            LogStr($"[HOOK] 'right' container NOT found, trying 'left'...");
                             aniContainer = CallWithCustomString(_findMovieClipTrampoline, slide, "left", a3, a4);
                         }
                         if (aniContainer != 0)
                         {
-                            MewjectorApi.Log($"[HOOK] Found 'right' container at 0x{aniContainer:X}");
+                            LogStr($"[HOOK] Found 'right' container at 0x{aniContainer:X}");
 
                             nint juanito4 = CallWithCustomString(_findMovieClipTrampoline, aniContainer, "juanito4", a3, a4);
                             if (juanito4 != 0)
                             {
-                                MewjectorApi.Log($"[HOOK] Found 'juanito4'! container at 0x{juanito4:X}");
+                                LogStr($"[HOOK] Found 'juanito4'! container at 0x{juanito4:X}");
                                 rowMovieClip = CallWithCustomString(_findMovieClipTrampoline, juanito4, "row_to_clone", a3, a4);
                                 if (rowMovieClip == 0 || Read<uint>(rowMovieClip + 0x38) == 0)
                                 {
-                                    MewjectorApi.Log($"[HOOK] WARNING: parent of 'row' is null! Waiting! a1=0x{a1:X}");   
+                                    LogStr($"[HOOK] WARNING: parent of 'row' is null! Waiting! a1=0x{a1:X}");   
                                 } else
                                 {
                                     movieClipModContainer = juanito4;
@@ -584,22 +581,22 @@ public partial class CatstableMod
                             }
                             else
                             {
-                                MewjectorApi.Log($"[HOOK] 'juanito4' container NOT found");
+                                LogStr($"[HOOK] 'juanito4' container NOT found");
                             }
                         } else
                         {
-                            MewjectorApi.Log($"[HOOK] 'right' container NOT found");
+                            LogStr($"[HOOK] 'right' container NOT found");
                         }
 
                     }
                     else
                     {
-                        MewjectorApi.Log($"[HOOK] 'slide' container NOT found");
+                        LogStr($"[HOOK] 'slide' container NOT found");
                     }
                 }
                 else
                 {
-                    MewjectorApi.Log($"[HOOK] 'juanito2' container NOT found");
+                    LogStr($"[HOOK] 'juanito2' container NOT found");
                 }
             }
             
@@ -637,10 +634,11 @@ public partial class CatstableMod
     [UnmanagedCallersOnly]
     private static unsafe nint RemoveMovieClip(nint a1, nint a2, nint a3, nint a4)
     {
-        if (movieClipModContainer != 0 && a1 == movieClipModContainer)
+        if (catMenuMc != 0 && a1 == catMenuMc)
         {
-            MewjectorApi.Log($"[HOOK] RemoveMovieClip called on mod container 0x{a1:X}");
+            LogStr($"[HOOK] RemoveMovieClip called on mod container 0x{a1:X}");
             movieClipModContainer = 0;
+            catMenuMc = 0;
         }
         return _removeMovieClipTrampoline(a1, a2, a3, a4);
     }
@@ -711,9 +709,9 @@ public partial class CatstableMod
 
         if (symbolName == "CombatMessage_Victory")
         {
-            MewjectorApi.Log($"\n[BINGO] INTERCEPTED 'CombatMessage_Victory'!");
-            MewjectorApi.Log($"  Dictionary Map Pointer: 0x{mapPtr:X}");
-            MewjectorApi.Log($"  std::string Pointer: 0x{stringPtr:X}");
+            LogStr($"\n[BINGO] INTERCEPTED 'CombatMessage_Victory'!");
+            LogStr($"  Dictionary Map Pointer: 0x{mapPtr:X}");
+            LogStr($"  std::string Pointer: 0x{stringPtr:X}");
         }
 
         // Call the original function so the game doesn't break
@@ -722,7 +720,7 @@ public partial class CatstableMod
 
     private static void DumpSymbolClassStrings()
     {
-        MewjectorApi.Log($"[DUMP] Analyzing {_symbolClasses.Count} captured objects...");
+        LogStr($"[DUMP] Analyzing {_symbolClasses.Count} captured objects...");
         nint hProcess = GetCurrentProcess();
 
         foreach (nint symbolClass in _symbolClasses)
@@ -738,7 +736,7 @@ public partial class CatstableMod
 
             if (arrayMem == null)
             {
-                MewjectorApi.Log($"  -> [!] Totally failed to read array memory at 0x{dataPtr:X} for {count} elements.");
+                LogStr($"  -> [!] Totally failed to read array memory at 0x{dataPtr:X} for {count} elements.");
                 continue;
             }
 
@@ -786,25 +784,25 @@ public partial class CatstableMod
 
                 if (s == "CombatMessage_Victory")
                 {
-                    MewjectorApi.Log($"\n=== [EUREKA] TARGET FOUND! ===");
-                    MewjectorApi.Log($"  SymbolClass Obj: 0x{symbolClass:X}");
-                    MewjectorApi.Log($"  Array Pointer: 0x{dataPtr:X}");
-                    MewjectorApi.Log($"  Symbol ID: {id} (This is the SWF Character ID!)");
-                    MewjectorApi.Log($"  Index in Array: {i}");
+                    LogStr($"\n=== [EUREKA] TARGET FOUND! ===");
+                    LogStr($"  SymbolClass Obj: 0x{symbolClass:X}");
+                    LogStr($"  Array Pointer: 0x{dataPtr:X}");
+                    LogStr($"  Symbol ID: {id} (This is the SWF Character ID!)");
+                    LogStr($"  Index in Array: {i}");
                     return; 
                 }
                 else if (!string.IsNullOrEmpty(s) && s.Length > 1 && foundCount < 10)
                 {
                     // Print the first 10 valid strings so we can confirm it's parsing beautifully now
-                    if (foundCount == 0) MewjectorApi.Log($"\n=== SymbolClass 0x{symbolClass:X} ({count} elements) ===");
-                    MewjectorApi.Log($"    Index [{i}] ID [{id}] -> \"{s}\"");
+                    if (foundCount == 0) LogStr($"\n=== SymbolClass 0x{symbolClass:X} ({count} elements) ===");
+                    LogStr($"    Index [{i}] ID [{id}] -> \"{s}\"");
                     foundCount++;
                 }
             }
 
             if (!targetFound && foundCount > 0)
             {
-                MewjectorApi.Log($"    ... (Parsed {count} symbols successfully)");
+                LogStr($"    ... (Parsed {count} symbols successfully)");
             }
         }
     }
@@ -1559,8 +1557,8 @@ unsafe struct GameString
         s->Length = (ulong)text.Length;
         s->Capacity = 15;
         
-        MewjectorApi.Log(sizeof(GameString).ToString());
-        MewjectorApi.Log(((nuint)s).ToString("X"));
+        // CatstableMod.LogStr(sizeof(GameString).ToString());
+        // CatstableMod.LogStr(((nuint)s).ToString("X"));
         return (nint)s;
     }
 }
