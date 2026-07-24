@@ -1,0 +1,26 @@
+site_name: "x64dbg Automate"
+site_description: "Full documentation for the x64dbg Automate plugin - Easy Scriptable and Repeatable Debug Sessions"
+site_author: "Darbonzo (darius@x64.ooo)"
+nav:
+  - "Home": index.md
+  - "Installation": installation.md
+  - "Quickstart": quickstart.md
+  - "MCP Server": mcp-server.md
+  - "Client Reference":
+    - "Session Control": api/session-control.md
+    - "Debug Control": api/debug-control.md
+    - "Memory Control": api/memory-control.md
+    - "Breakpoints": api/breakpoints.md
+    - "Registers and Expressions": api/registers-expressions.md
+    - "Assembling and Disassembling": api/assembler-disassembler.md
+    - "Commands and Extensibility": api/commands.md
+    - "Labels, Comments, Bookmarks": api/annotations.md
+    - "Settings": api/settings.md
+    - "Gui": api/gui.md
+plugins:
+  - search
+  - mkdocstrings
+  - autorefs
+theme:
+  name: mkdocs
+  custom_dir: docs_custom/

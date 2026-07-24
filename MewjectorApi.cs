@@ -155,14 +155,14 @@ internal static unsafe class MewjectorApi
     ///   Trampoline pointer to cast and call as the original function,
     ///   or zero if the installation failed.
     /// </returns>
-    public static nint InstallHook(long rva, void* hookFn, int priority = 10, int stolenBytes = 0)
+    public static unsafe delegate* unmanaged<long, long, nint, nint, nint> InstallHook(long rva, void* hookFn, int priority = 10, int stolenBytes = 0)
     {
         if (!IsAvailable)
             throw new InvalidOperationException("MewjectorApi.Resolve() has not been called or failed");
         void* trampoline = null;
         fixed (byte* pOwner = Utf8Z(MOD_NAME))
             _installHook((nuint)rva, stolenBytes, hookFn, &trampoline, priority, pOwner);
-        return (nint)trampoline;
+        return (delegate* unmanaged<long, long, nint, nint, nint>)trampoline;
     }
 
     /// <returns>1 if any mod has hooked <paramref name="rva"/>, 0 otherwise.</returns>

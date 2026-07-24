@@ -32,7 +32,6 @@ internal static unsafe class Exports
     [UnmanagedCallersOnly(EntryPoint = "DllMain")]
     public static bool DllMain(nint hModule, uint reason, nint reserved)
     {
-        MewjectorApi.Log($"DllMain called: hModule={hModule:X}, reason={reason}, reserved={reserved:X}");
         const uint DLL_PROCESS_ATTACH = 1;
         if (reason == DLL_PROCESS_ATTACH)
         {

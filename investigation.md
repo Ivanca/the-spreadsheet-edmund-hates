@@ -15,3 +15,34 @@ potenciales:
 14 times each
 00007FF68C9B79F0
 00007FF68C9A6F90
+
+
+sub_7FF6B4012CC0 handles PreUpdate, update, postupdate
+0x962d4b 1st loop
+0x962de9 2nd loop
+0x962e93 3rd loop
+
+
+sub_7FF6B40264B0 is onclick (0x9764b0)
+
+
+the 324th movieclip created is CatMenu, e.g. breakif($breakpointcounter == .324), log(MC {a:rax})
+
+
+################
+The MenuPanel is always the third one created (at 0xE289D)
+
+Menupanel
+1st at 0000028DF40C0088
+2nd at 0000028DF40C0088
+3rd at 0000028DF40C0108
+4 0000028DF40C0108
+5 0000028DF40C0188
+6 0000028DF40C0208
+7 0000028DF40C0288
+8 0000028DF40C0308
+9 0000028DF40C0388
+10th 0000028DF40C0408
+
+renderer #33 is the catMenu renderer
+movieclip # 353 is catMenu root

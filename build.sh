@@ -26,4 +26,4 @@ sleep 1
 echo "" > log.txt
 
 # run the game in new separate cmd window
-# mintty bash -mc "cd /d/Games/mewgenics && start /d/Downloads/Mewtator-1-0-5-1-1775012446/Mewtator/Mewtator.exe"
+mintty bash -mc "cd /d/Games/Mewgenics.v1.1/game && start ./Mewgenics.exe -enable_debugconsole true -modpaths "D:/Games/Mewgenics.v1.1/game/mods/catstable""
