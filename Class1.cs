@@ -22,108 +22,10 @@ using System.Text;
 using System.Runtime.CompilerServices;
 namespace CatstableMod;
 
-// [StructLayout(LayoutKind.Explicit)]
-// unsafe struct GameString
-// {
-//     [FieldOffset(0)]
-//     public fixed char Inline[8];
-
-//     [FieldOffset(0)]
-//     public char* Ptr;
-
-//     [FieldOffset(16)]
-//     public ulong Length;
-
-//     [FieldOffset(24)]
-//     public ulong Capacity;
-// }
-
 public partial class CatstableMod
 {
 
-    [UnmanagedCallersOnly]
-    private static unsafe nint MovieClipConstructorHook(
-        nint a1,
-        nint a2,
-        nint a3,
-        nint a4)
-    {
-        // must print the equivalent of `ansi([[rcx]+50])`
-        if (_count < 5000 && a1 != 0 && IsLikelyPointer(a1))
-        {
-            var fiftyAhead = Marshal.ReadIntPtr(a1) + 0x50;
-            if (IsLikelyPointer(fiftyAhead))
-            {
-                var fiftyAheadValue = Marshal.ReadIntPtr(fiftyAhead);
-                string? s = Marshal.PtrToStringAnsi(fiftyAheadValue);
-                if (s != null)
-                {
-                    LogStr($"[HOOK] MovieClipConstructorHook called with a1={a1:X} string=\"{s}\"");
-                } else
-                {
-                    LogStr($"[HOOK] MovieClipConstructorHook failed 2 called with a1={a1:X} string=\"(null)\"");
-                }
-            }
-        }
-        var result = _movieClipConstructroTrampoline(a1, a2, a3, a4);
-        return result;
-    }
 
-    [UnmanagedCallersOnly]
-    private static unsafe nint CreateMovieClipHook(
-        nint a1,
-        nint a2,
-        nint a3,
-        nint a4)
-    {
-        nint clip =_createMovieClipTrampoline(a1, a2, a3, a4);
-
-        try
-        {
-            if (_count >= 5000)
-                return clip;
-
-            nint def = a1;
-
-            ulong q3 = *(ulong*)(def + 0x18);
-
-            LogStr(
-                $"DEFSPRITE #{_count}\n" +
-                $"  def=0x{def:X}\n" +
-                $"  clip=0x{clip:X}\n" +
-                $"  q3=0x{q3:X}");
-
-            if (LooksLikePointer(q3))
-            {
-                ulong p0 = *(ulong*)q3;
-                ulong p1 = *(ulong*)(q3 + 8);
-                ulong p2 = *(ulong*)(q3 + 16);
-                ulong p3 = *(ulong*)(q3 + 24);
-
-                LogStr(
-                    $"  q3[0]=0x{p0:X}\n" +
-                    $"  q3[1]=0x{p1:X}\n" +
-                    $"  q3[2]=0x{p2:X}\n" +
-                    $"  q3[3]=0x{p3:X}");
-            }
-
-            _count++;
-        }
-        catch
-        {
-        }
-
-        return clip;
-    }
-
-    private static bool LooksLikePointer(ulong p)
-    {
-        return p >= 0x10000 &&
-               p <= 0x00007FFFFFFFFFFF;
-    }    
-    // =========================================================================
-    // END chatgpt stuff
-    // =========================================================================
 
     public string Id => "catstable";
     public string Name => "catstable";
@@ -142,16 +44,34 @@ public partial class CatstableMod
     private static int _count;
     private static unsafe delegate* unmanaged<long, long, nint, nint, nint> _houseCreationTrampoline;
     private static unsafe delegate* unmanaged<long, long, nint, nint, nint> _movieClipConstructroTrampoline;
-    private static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _houseDrawerPanel;
+    private static unsafe delegate* unmanaged<nint, nint> _updatePanelLayout;
     private static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _createUiRenderer;
+    private static unsafe delegate* unmanaged<nint, nint, nint, nint> _createPanel;
+    private static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _houseClickHandler;
+    private static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _registerCallback;
+    private static unsafe delegate* unmanaged<nint, nint> _statsCreator;
+    private static unsafe delegate* unmanaged<nint, nint, nint> _getHouseCatByOffset;
+    private static unsafe delegate* unmanaged<nint, nint, nint> _unknownFunction;
+    private static unsafe delegate* unmanaged<nint, nint> _gameTick;
+    private static unsafe delegate* unmanaged<nint, nint> _houseClick;
+    private static unsafe delegate* unmanaged<nint, nint, nint, nint> _findButton;
+    private static unsafe delegate* unmanaged<nint, nint> _initCatStatsClickCallback;
+    private static unsafe delegate* unmanaged<nint, nint, nint> _mutationToolTip;
+
+    private static unsafe delegate* unmanaged<nint, byte> _isPanelActive;
+    private static unsafe delegate* unmanaged<nint, nint> _renderPanel;
+    private static unsafe delegate* unmanaged<nint, nint, nint, nint> _bindCat;
+    private unsafe static delegate* unmanaged<nint, nint, nint> _mouseEventHandler;
 
 
     private static unsafe delegate* unmanaged<long, long, nint, nint, nint> _MyHook;
     private static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _findMovieClipTrampoline;
     private static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _removeMovieClipTrampoline;
     private unsafe static delegate* unmanaged<nint, char*, nuint, nint> _assignString;
+    
 
     private static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _globalResourceManagerLookup;
+    private static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _npcMapDrawer;
 
     
     unsafe private static delegate* unmanaged<nint, nint, void> _setText;
@@ -159,6 +79,7 @@ public partial class CatstableMod
     unsafe private static delegate* unmanaged<nint, nint> _createInstance;
     unsafe private static delegate* unmanaged<nint, nint, void> _copyState;
     unsafe private static delegate* unmanaged<nint, nint, uint, void> _attachChild;
+    unsafe private static delegate* unmanaged<nint, nint, nint> _createCatStatsDrawer;
         
     
     const long RVA_CreateInstance = 0xA4E460; // DefineSprite::CreateInstance()
@@ -204,7 +125,7 @@ public partial class CatstableMod
             LogStr($"[HOOK] Duplicate: defineSprite is null, returning 0");
             return 0;
         }
-
+    
         // Call DefineSprite::CreateInstance()
         nint clone = _createInstance(defineSprite);
         
@@ -239,9 +160,9 @@ public partial class CatstableMod
         // parent->size (+0xAC)
         uint depth = Read<uint>(parent + 0xAC);
 
-        var textbox = CallWithCustomString(_findMovieClipTrampoline, clone, "test_text", 0, 0);
-        nint gameString = CreateGameString("CatstableMod!");
-        _setText(textbox, gameString);
+        // var textbox = CallWithCustomString(_findMovieClipTrampoline, clone, "test_text", 0, 0);
+        // nint gameString = CreateGameString("CatstableMod!");
+        // _setText(textbox, gameString);
         // DestroyGameString(gameString);
         // pendingTextClone = textbox;
 
@@ -277,22 +198,64 @@ public partial class CatstableMod
     internal unsafe void MjInit()
     {
 
-
         _findMovieClipTrampoline = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0x990480, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&FindChildMovieClipHook);
 
         _removeMovieClipTrampoline = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0x99e030, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&RemoveMovieClip);
 
-        _houseDrawerPanel = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
-            0x2038b0, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&PanelSlideCallbackHook);
+        _updatePanelLayout = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
+            0x2038b0, (void*)(delegate* unmanaged<nint, nint>)&UpdatePanelLayoutHook);
 
-        _globalResourceManagerLookup = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
-            0x9adc50, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&GlobalResourceManagerLookupHook);
+        // _globalResourceManagerLookup = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+        //     0x9adc50, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&GlobalResourceManagerLookupHook);
+
+        // _npcMapDrawer = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+        // 0x1ac950,(void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&NpcMapDrawerHook);
 
         _createUiRenderer = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0x5a380, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&CreateUiRendererHook);
+
+        _createPanel = (delegate* unmanaged<nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+            0xeecb0, (void*)(delegate* unmanaged<nint, nint, nint, nint>)&CreatePanelHook);
         
+
+        // _houseClickHandler = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+        //     0x2035c0, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&HouseClickHandlerHook);
+        
+        _registerCallback = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+            0x973c40, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&RegisterCallbackHook);
+
+        _initCatStatsClickCallback = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
+            0xEEB10, (void*)(delegate* unmanaged<nint, nint>)&InitCatStatsCallbackHook);
+
+        _statsCreator = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
+            0xE9200, (void*)(delegate* unmanaged<nint, nint>)&CreateCatStatsDrawerHook);
+
+        _getHouseCatByOffset = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+            0xEA3B0, (void*)(delegate* unmanaged<nint, nint, nint>)&GetHouseCatByOffsetHook);
+
+        _unknownFunction = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+            0x963040, (void*)(delegate* unmanaged<nint, nint, nint>)&UnknownFunction);
+        
+        _gameTick = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
+            0x962820, (void*)(delegate* unmanaged<nint, nint>)&GameTickHook);
+
+        _houseClick = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
+            0x204800, (void*)(delegate* unmanaged<nint, nint>)&HouseClickHook);
+
+        _findButton = (delegate* unmanaged<nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+            0x978a30, (void*)(delegate* unmanaged<nint, nint, nint, nint>)&FindButtonHook);
+        
+        _mutationToolTip = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+            0xe4c40, (void*)(delegate* unmanaged<nint, nint, nint>)&MutationTooltipHook);
+
+
+
+// [[rcx+10]+A8]==0000007374617453
+        // byte([[rbx+20]+4480]+0xC)
+        
+
         var location = MewjectorApi.GameBase;
         LogStr($"Gamebase at {location:X}...");
         // LogStr("MjInit: installing hooks...");
@@ -302,90 +265,609 @@ public partial class CatstableMod
         _copyState = (delegate* unmanaged<nint, nint, void>)(MewjectorApi.GameBase + (nuint)RVA_CopyState);
         _assignString = (delegate* unmanaged<nint,char*,nuint,nint>)(MewjectorApi.GameBase + 0x5b100);
 
-        _attachChild = (delegate* unmanaged<nint, nint, uint, void>)(MewjectorApi.GameBase + (nuint)RVA_AttachChild);
+        
 
+        _attachChild = (delegate* unmanaged<nint, nint, uint, void>)(MewjectorApi.GameBase + (nuint)RVA_AttachChild);
+        _createCatStatsDrawer =  (delegate* unmanaged<nint, nint, nint>)(MewjectorApi.GameBase + (nuint)0x1ac430);
+                
+
+
+        // _isPanelActive = (delegate* unmanaged<nint, byte>)(void*)MewjectorApi.InstallHook(
+        //     0x203d90, (void*)(delegate* unmanaged<nint, byte>)&IsPanelActiveHook);
+
+        // _renderPanel = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
+        //     0x203eb0, (void*)(delegate* unmanaged<nint, nint>)&RenderPanelHook);
+        // _bindCat = (delegate* unmanaged<nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+        //     0xebef0, (void*)(delegate* unmanaged<nint, nint, nint, nint>)&BindCatHook);
+
+        _mouseEventHandler = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+            0xc2c390, (void*)(delegate* unmanaged<nint, nint, nint>)&MouseWheelHook);
+            
+        
         // _rightStr = GameString.Create("right");
         // _leftStr = GameString.Create("left");
     }
 
+    static nint _lastButtonCSD = 0;
+    [UnmanagedCallersOnly]
+    private static unsafe nint FindButtonHook(nint a1, nint a2, nint a3)
+    {
+        var result = _findButton(a1, a2, a3);
+        if (result != 0)
+        {
+            // MewjectorApi.Log($"[HOOK] result!=0 {result:X} x={x:X}");
+            _lastButtonCSD = Read<nint>(Read<nint>(Read<nint>(Read<nint>(result + 0x38) + 0x18) + 0x28) + 0x10);
+        } else
+        {
+            // MewjectorApi.Log($"[HOOK] EMPTY! _lastButtonCSD = 0");
+            _lastButtonCSD = 0;
+        }
+        return result;
+    }
+
+    [UnmanagedCallersOnly]
+    private static unsafe nint MutationTooltipHook(nint a1, nint a2)
+    {
+        if (_lastButtonCSD != 0)
+        {
+            var opt1 = Read<nint>(Read<nint>(Read<nint>(a1 + 0x18) + 0x28) + 0x10);
+            var opt2 = Read<nint>(Read<nint>(Read<nint>(a1 + 0x18) + 0x28));
+            // MewjectorApi.Log($"[HOOK] opt1={opt1:X} opt1={opt2:X} _lastButtonCSD={_lastButtonCSD:X}");
+            if (opt1 == _lastButtonCSD || opt2 == _lastButtonCSD)
+            {
+                // MewjectorApi.Log($"[HOOK] MATCH!");
+                return _mutationToolTip(a1, a2);
+            }
+            else
+            {
+                // MewjectorApi.Log($"[HOOK] MutationTooltipHook: Return zero !");
+                return 0;
+            }
+        }
+        // MewjectorApi.Log($"[HOOK] _lastButtonCSD == 0");
+        return _mutationToolTip(a1, a2);
+    }
+    
+    
+    [UnmanagedCallersOnly]
+    private static unsafe nint HouseClickHook(nint a1)
+    {
+        var menuname = Read<nint>(Read<nint>(a1 + 0x10) + 0xA8);
+        if (menuname == 0x000007374617453)
+        {
+            MewjectorApi.Log($"[HOOK] PanelSlideCallbackHook: xOffset {xOffset}");
+            _panelIsOpen = !_panelIsOpen;
+            xOffsetTarget = _panelIsOpen ? 10 : -35;
+            xMoveAni = new FloatAnimator(xOffset, xOffsetTarget, 0.5f);
+        }
+        return _houseClick(a1);
+    }
+
+    private unsafe static float xOffset = -300f;
+    private unsafe static float xOffsetTarget = -300f;
+    private static FloatAnimator? xMoveAni;
+
+    private unsafe static float yOffset = 0;
+    private unsafe static float yOffsetTarget = 0;
+    private static FloatAnimator? yScrollAni;
+    [UnmanagedCallersOnly]
+    private static unsafe nint MouseWheelHook(nint a1, nint a2)
+    {
+        if(_panelIsOpen && IsLikelyPointer(a2))
+        {   
+            var a2Val = Marshal.ReadInt32(a2);
+            if (a2Val == 1027)
+            {
+                // var y = 
+                var intValue = Marshal.ReadInt32(a2 + 0x1C);
+                // Write(a2 + 0x8, (uint)0);
+                // LogStr($"Emptying at {a2 - 0x100 + 0xB8:X}");
+                // Write(a2 - 0x100 + 0xB8, (uint)0);
+                // LogStr($"0x7F at {a2 - 0x100 + 0xC8:X}");
+                // Write(a2 - 0x100 + 0xC8, (uint)0x7F);
+                //00007FF7D14E6046 <=================
+                // [rdx-300+B8]=0
+                // byte[] bytes = BitConverter.GetBytes(intValue);
+                float floatValue = BitConverter.Int32BitsToSingle(intValue);
+                LogStr($"Scroll! {floatValue}");
+                var _yOffsetTarget = yOffset - 5 * (int)floatValue;
+                if (_yOffsetTarget < 0)
+                {
+                    _yOffsetTarget = 0;
+                }
+                if (_yOffsetTarget > _catsCount * 1.5)
+                {
+                    _yOffsetTarget = (int)((double)_catsCount * 1.5);
+                }
+                if (_yOffsetTarget != yOffsetTarget)
+                {
+                    yOffsetTarget = _yOffsetTarget;
+                    yScrollAni = new FloatAnimator(yOffset, _yOffsetTarget, 0.1f);
+                }
+                return 0;
+            }
+        }
+        // return 0;
+        return _mouseEventHandler(a1, a2);
+    }
+
+    unsafe private static bool _insideHouseCatByOffset = false;
+    unsafe private static int _catsCount = 0;
+    unsafe private static bool _refreshPending = false;
+
+    [UnmanagedCallersOnly]
+    private static unsafe nint GetHouseCatByOffsetHook(nint a1, nint a2)
+    {
+        _insideHouseCatByOffset = true;
+        nint result;
+        if (_catIndex != 0)
+        {
+            LogStr($"Getting cat at {a1:X} {_catIndex:X}");
+            result = _getHouseCatByOffset(a1, _catIndex);        
+        } else
+        {
+            LogStr($"Getting cat at {a1:X} {a2:X}");
+            result = _getHouseCatByOffset(a1, a2);
+        }
+        
+        _insideHouseCatByOffset = false;
+        return result;
+    }
+
+
+    [UnmanagedCallersOnly]
+    private static unsafe nint UnknownFunction(nint a1, nint a2)
+    {
+        
+
+        // the path from CatstatsDrawer to count is dword([[[[[[[rcx+20]+78]]+18]+8]+20]+4480]+0xC)
+        // if (_insideHouseCatByOffset)
+        // {
+        //     var count = Marshal.ReadInt32(Marshal.ReadIntPtr(Marshal.ReadIntPtr(a1 + 0x20) + 0x4480) + 0xC);
+        //     LogStr($"cat count: {count}");
+        //     if (count != _catsCount)
+        //     {
+        //         _refreshPending = true;
+        //         _catsCount = count;
+        //     }
+        // }
+        return _unknownFunction(a1, a2);
+    }
+
+    unsafe private static int _catIndex = 0;
+    [UnmanagedCallersOnly]
+    private static unsafe nint InitCatStatsCallbackHook(nint a1)
+    {   
+        // var maybeCatStats = Marshal.ReadIntPtr(a1 + 0x8);
+        // var result = _initCatStatsClickCallback(a1);
+        Write(a1 + 0x8, _originalDrawer);
+        var result = _initCatStatsClickCallback(a1);
+        foreach (var drawer in rowDrawers)
+        {
+            Write(a1 + 0x8, drawer);
+            result = _initCatStatsClickCallback(a1);
+            
+        }
+        foreach (var drawer in rowDrawers)
+        {
+            LogStr($"init cat stats drawer callback xxxxxxxxxxxxxxxxxxxxxxxxxxxxx {drawer:X}");
+            LogStr($"before init cat stats drawer callback");
+            Write(a1 + 0x8, drawer);
+            result = _initCatStatsClickCallback(a1);
+            _catIndex += 1;
+        }
+        _catIndex = 0;
+        return result;
+    }
+
+
+    [UnmanagedCallersOnly]
+    private static unsafe nint BindCatHook(nint drawer, nint cat, nint a3)
+    {
+        // LogStr($"BindCatHook called drawer={drawer:X} cat={cat:X} a3={a3:X}");
+        var result = _bindCat(drawer, cat, a3);
+        // LogStr($"BindCatHook called originalDrawer={_originalDrawer:X} cat={cat:X} a3={a3:X}");
+        // _bindCat(_originalDrawer, cat, a3);
+        return result;
+    }
+
+    [UnmanagedCallersOnly]
+    private static unsafe nint CreatePanelHook(nint a1, nint a2, nint a3)
+    {
+        if (_originalPanel != 0)
+        {
+            LogStr($"CreatePanelHook returning originalPanel a1={a1:X} a2={a2:X} a3={a3:X}");
+            return _originalPanel;
+        }
+        var result = _createPanel(a1, a2, a3);
+        LogStr($"CreatePanelHook called a1={a1:X} a2={a2:X} a3={a3:X} result={result:X}");
+        _originalPanel = result;
+        return result;
+    }
+
+
+    [UnmanagedCallersOnly]
+    private static unsafe nint RenderPanelHook(nint panel)
+    {
+        var result = _renderPanel(panel);
+        return result;
+    }
+
+
+    [UnmanagedCallersOnly]
+    private static unsafe byte IsPanelActiveHook(nint panel)
+    {
+        if (panel == _originalPanel)
+        {
+            return _isPanelActive(_ourPanel);
+        }
+        return  _isPanelActive(panel);
+    }
+
+     [UnmanagedCallersOnly]
+    private static unsafe void openCloseButtonCallbackHook(nint a1)
+    {
+        if (a1 != _ourBtnMetadataCallbackPtr && a1 != _btnCallbackMetadataPtr)
+        {
+            LogStr($"[HOOK] openCloseButtonCallbackHook: a1=0x{a1:X} is not our callback, calling original");
+            _buttonCallbackResolverPtr(a1);
+            return;
+        }
+        
+        _buttonCallbackResolverPtr(_ourBtnMetadataCallbackPtr);
+        LogStr($"[HOOK] openCloseButtonCallbackHook: a1=0x{_ourBtnMetadataCallbackPtr:X} our finished");
+        // _renderPanel(_originalPanel);
+        // LogStr($"[HOOK] _renderPanel for original a1=0x{_originalPanel:X} finished");
+
+    }
+
+    unsafe private static nint _originalPanel = 0;
+    unsafe private static nint _ourPanel = 0;
+    unsafe private static nint _btnCallbackMetadataPtr = 0;
+    unsafe private static nint _ourBtnMetadataCallbackPtr = 0;
+
+    unsafe private static delegate* unmanaged<nint, void>  _buttonCallbackResolverPtr = null;
+    private static bool isInsideCreateCatStatsDrawerHook = false;
+    private static nint _originalDrawer = 0;
+    private static nint _ourDrawer = 0;
+    [UnmanagedCallersOnly]
+    private static unsafe nint CreateCatStatsDrawerHook(nint a1)
+    {
+        LogStr($"[HOOK] CreateCatStatsDrawerHook called: a1=0x{a1:X}");
+        isInsideCreateCatStatsDrawerHook = true;
+        var result = _statsCreator(a1);
+        isInsideCreateCatStatsDrawerHook = false;
+        if (_originalDrawer == 0)
+        {
+            _originalDrawer = a1;
+        } else if (_ourDrawer == 0)
+        {
+            _ourDrawer = a1;
+        }
+        LogStr($"[HOOK] CreateCatStatsDrawerHook: a1=0x{a1:X}, result=0x{result:X}");
+        return result;
+    }
+
+    
+
+    [UnmanagedCallersOnly]
+    private static unsafe nint RegisterCallbackHook(nint menuPanel, nint a2, nint a3, nint a4)
+    {
+        var result = _registerCallback(menuPanel, a2, a3, a4);
+        var entityAddr = menuPanel + 0x18;
+        var rendererAddr = menuPanel + 0x38;
+        if (!isInsideCreateCatStatsDrawerHook || !IsMemReadable(rendererAddr, 8) || !IsMemReadable(entityAddr, 8))
+        {
+            // LogStr($"[HOOK] RegisterCallbackHook: menuPanel=0x{menuPanel:X}, a2=0x{a2:X}, a3=0x{a3:X}, a4=0x{a4:X}, result=0x{result:X}");
+            return result;
+        }
+        var btnName = TryReadCString(a2);
+        var renderer = Marshal.ReadIntPtr(rendererAddr);
+        var rendererName = TryReadStdString(renderer + 0xA8);
+        LogStr($"[HOOK] RegisterCallbackHook inside CatStats: a1=0x{menuPanel:X}, a2=0x{a2:X}, a3=0x{a3:X}, a4=0x{a4:X}, result=0x{result:X}, btnName=\"{btnName}\", renderer=0x{renderer:X}, rendererName={rendererName}");
+        if (rendererName != "CatMenu")
+        {
+            return result;
+        }
+        var entity = Marshal.ReadIntPtr(entityAddr);
+        var componentsList = Marshal.ReadIntPtr(entity + 0x28);
+        var houseDrawerPanel = Marshal.ReadIntPtr(componentsList + 0x0);
+        LogStr($"[HOOK] RegisterCallbackHook inside CatMenu: entity=0x{entity:X}, componentsList=0x{componentsList:X}, houseDrawerPanel=0x{houseDrawerPanel:X}");
+        var movieclip = result + 0x48;
+        if (!IsMemReadable(movieclip, 8)) {
+            LogStr($"[HOOK] RegisterCallbackHook: movieclip is not readable at 0x{movieclip:X}, returning result=0x{result:X}");
+            return result;
+        }
+
+        var mcPtr = Marshal.ReadIntPtr(movieclip);
+        var namePtr = Marshal.ReadIntPtr(mcPtr + 0x48);
+        var name = TryReadCString(namePtr);
+        if (name != "openclose")
+        {
+            LogStr($"[HOOK] RegisterCallbackHook: openclose button not found, name={name} at 0x{namePtr:X}, mcPtr=0x{mcPtr:X}, movieclip=0x{movieclip:X}");
+            return result;
+        }
+        var callbackMetaPtr = result + 0xB8;
+        LogStr($"[HOOK] RegisterCallbackHook: CatMenu found at 0x{renderer:X}, openclose button found at 0x{mcPtr:X}, callbackMetaPtr=0x{callbackMetaPtr:X}");
+        if (_btnCallbackMetadataPtr == 0)
+        {
+            _btnCallbackMetadataPtr = callbackMetaPtr;
+            _originalPanel = houseDrawerPanel;
+
+        } else if (_ourBtnMetadataCallbackPtr == 0)
+        {
+            LogStr($"[HOOK] RegisterCallbackHook: _ourBtnMetadataCallbackPtr is null, setting to 0x{callbackMetaPtr:X}");
+            _ourBtnMetadataCallbackPtr = callbackMetaPtr;
+            _ourPanel = houseDrawerPanel;
+            var callbackResolver = Marshal.ReadIntPtr(Marshal.ReadIntPtr(callbackMetaPtr) + 0x10);
+            // _buttonCallbackResolverPtr = (delegate* unmanaged<nint, void>)(void*)MewjectorApi.InstallHook(
+            //     callbackResolver - (nint)MewjectorApi.GameBase, (void*)(delegate* unmanaged<nint, void>)&openCloseButtonCallbackHook);
+            LogStr($"[HOOK] RegisterCallbackHook: callbackResolver=0x{callbackResolver:X}, installed hook at 0x{callbackResolver - (nint)MewjectorApi.GameBase:X}, real one at 0x{(nint)_buttonCallbackResolverPtr:X}");
+        } else
+        {
+            LogStr($"[HOOK] RegisterCallbackHook: Should never reach here");
+        }
+        // LogStr($"[HOOK] RegisterCallbackHook: menuPanel=0x{a1:X}, a2=0x{a2:X}, a3=0x{a3:X}, a4=0x{a4:X}");
+        return result;
+    }
+
+   
+
+    [UnmanagedCallersOnly]
+    private static unsafe nint HouseClickHandlerHook(nint a1, nint a2, nint a3, nint a4)
+    {
+        var result = _houseClickHandler(a1, a2, a3, a4);
+        // LogStr($"[HOOK] HouseClickHandlerHook: a1=0x{a1:X}, a2=0x{a2:X}, a3=0x{a3:X}, a4=0x{a4:X}");
+        return result;
+    }
+
+    [UnmanagedCallersOnly]
+    private static unsafe nint GameTickHook(nint a1)
+    {
+        // call mewgenics.7FF647368A30
+        // [[[rax+0x38]+18]+58] 
+        _gameTick(a1);
+
+        // 00007FF646AD4C40
+        // [[[rcx+0x18]+0x28]] or [[[rcx+0x18]+0x28]+10]
+
+        if (_originalDrawer != 0) {
+            handleScrollAtUpdatePanelLayout();
+            var pointer = Marshal.ReadIntPtr(_originalDrawer + 0x20);
+            // LogStr($"pointer 0: {pointer:X}");
+            pointer = Marshal.ReadIntPtr(pointer + 0x78);
+            if (pointer == 0)
+            {
+                return 0;
+            }
+            // LogStr($"pointer 1: {pointer:X}");
+            pointer = Marshal.ReadIntPtr(pointer);
+            if (pointer == 0)
+            {
+                return 0;
+            }
+            // LogStr($"pointer 2: {pointer:X}");
+            pointer = Marshal.ReadIntPtr(pointer + 0x18);
+            if (pointer == 0)
+            {
+                return 0;
+            }
+            // LogStr($"pointer 3: {pointer:X}");
+            pointer = Marshal.ReadIntPtr(pointer + 0x8);
+            if (pointer == 0)
+            {
+                return 0;
+            }
+            // LogStr($"pointer 4: {pointer:X}");
+            pointer = Marshal.ReadIntPtr(pointer + 0x20);
+            if (pointer == 0)
+            {
+                return 0;
+            }
+            // LogStr($"pointer 5: {pointer:X}");
+            pointer = Marshal.ReadIntPtr(pointer + 0x4480);
+            if (pointer == 0)
+            {
+                return 0;
+            }
+            // LogStr($"pointer 6: {pointer:X}");
+            var count = Marshal.ReadInt32(pointer + 0xC);
+            if (_catsCount == count)
+            {
+                // already updated, do nothing
+                return 0;
+            }
+            if (count == 0)
+            {
+                return 0;
+            }
+            _catsCount = count;
+            LogStr($"cat count (tick): {count}");
+            CreateRows();
+            LogStr($"before read! {_originalDrawer:X}");
+        }
+        return 0;
+    }
+    
+    private static unsafe void handleScrollAtUpdatePanelLayout()
+    {
+        var _updateBtn = (delegate* unmanaged<nint, void>)(MewjectorApi.GameBase + 0x9768e0);
+        yOffset = yScrollAni == null ? yOffset : yScrollAni.Tick();
+        xOffset = xMoveAni == null ? xOffset : xMoveAni.Tick();
+        LogStr($"xOffset {xOffset}");
+        double pos = -1.0 + yOffset;
+        double xPos = xOffset;
+        double headerXpos = xPos - 10.0;
+        
+        if (headersRenderer != 0)
+        {
+            var headerTransform = Marshal.ReadIntPtr(headersRenderer + 0x40);
+            Write(headerTransform + 0x80, headerXpos);
+        }
+
+        foreach (var transform in transforms)
+        {
+            Write(transform + 0x80, xPos);
+            Write(transform + 0x88, pos);
+            pos -= 2.7;
+        }
+        foreach (var drawer in rowDrawers)
+        {
+            // LogStr($"[HOOK] handleScrollAtUpdatePanelLayout: drawer 0x{drawer:X}");
+            var renderer = Marshal.ReadIntPtr(drawer + 0x40);
+            var movieclip = Marshal.ReadIntPtr(renderer + 0x80);
+            // Write(renderer + 0x50, 0x0000002600000101);
+            // LogStr($"[HOOK] handleScrollAtUpdatePanelLayout: drawer 0x{drawer:X} renderer 0x{renderer:X} movieclip 0x{movieclip:X}");
+            // var btn = _findMovieClipTrampoline(movieclip, GameString.Create("familytree"), 0, 0);
+            // LogStr($"[HOOK] handleScrollAtUpdatePanelLayout: found familytree button at 0x{btn:X}");
+            // _updateBtn(btn);
+        }
+        
+    }
+
+    static nint rowEntity = 0;
+    static nint rowRenderer = 0;
+
+    static nint rowDrawer = 0;
+    static List<nint> rowDrawers = new List<nint>();
+    static List<nint> transforms = new List<nint>();
+    static nint headersRenderer = 0;
+    
+    static unsafe void CreateRows()
+    {
+        var _getRenderer = (delegate* unmanaged<nint, nint>)(MewjectorApi.GameBase + 0x6bea0);
+        var _createEntity = (delegate* unmanaged<nint, nint>)(MewjectorApi.GameBase + 0x962fb0);
+
+        IntPtr headers = Marshal.StringToHGlobalAnsi("RowHeaders");
+        // var _strBtn = _findMovieClipTrampoline(CreateGameString("x"));
+
+        var headersEntity = _createEntity(scenePtr);
+
+        headersRenderer = _createUiRenderer(
+            scenePtr,
+            headersEntity,
+            headers,
+        0);
+        Write(headersRenderer + 0x50, 0x0000002600000101);
+
+        LogStr($"headersRenderer 0x{headersRenderer:X}");
+
+        for (int i = 0; i < _catsCount; i++)
+        {
+            
+
+            rowEntity = _createEntity(scenePtr);
+
+            int componentCount = *(int*)(rowEntity + 36);
+            nint componentArray = *(nint*)(rowEntity + 40);
+
+            
+            var rendererFound = _getRenderer(rowEntity);
+            LogStr($"[EXP2] Renderer found by _getRenderer before _createUiRenderer 0x{rendererFound:X}");
+            IntPtr name = Marshal.StringToHGlobalAnsi("RowCatStatus");
+
+            rowRenderer = _createUiRenderer(
+                scenePtr,
+                rowEntity,
+                name,
+                0);
+
+            Marshal.FreeHGlobal(name);
+
+            rendererFound = _getRenderer(rowEntity);
+            var rowDrawer = _createCatStatsDrawer(
+                scenePtr,
+                rowEntity);
+            
+            var transform = Marshal.ReadIntPtr(rowRenderer + 0x40);
+            LogStr($"Created new CallStatsDrawer: Renderer {rowRenderer:X} {rowDrawer:X} {rowEntity:X} {scenePtr:X} transform: {transform:X}");
+            transforms.Add(transform);
+            rowDrawers.Add(rowDrawer);
+        }
+        
+    }
+
+
+    private static void ClearExperimentState()
+    {
+        rowEntity = 0;
+        rowRenderer = 0;
+        rowDrawer = 0;
+    }
+
     private static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _changeCloneText;
 
-    private static nint MewApplicationPointer = 0;
     private static nint houseStatusEntityPtr = 0;
-    private static nint catStatsDrawerPtr = 0;
-
+    private static nint scenePtr = 0;
+    private static nint rowStatsRenderer = 0;
     [UnmanagedCallersOnly]
     private static unsafe nint CreateUiRendererHook(nint a1, nint entity, nint namePtr, nint a4)
     {
         var name = TryReadCString(namePtr);
         if (name == "HouseCatStatus")
         {
+            if (rowStatsRenderer > 0)
+            {
+                return rowStatsRenderer;
+            }
             LogStr($"[HOOK] CreateUiRendererHook: a1=0x{a1:X}, entity=0x{entity:X}, name=\"{name}\", a4=0x{a4:X}");
-            catStatsDrawerPtr = a1;
+            scenePtr = a1;
             houseStatusEntityPtr = entity;
         }
-        var result = _createUiRenderer(a1, entity, namePtr, a4);
-        if (name == "HouseCatStatus")
-        {
-            LogStr($"[HOOK] CreateUiRendererHook: HouseCatStatus created at 0x{result:X}");
-        }
-        return result;
+        // if (rowStatsRenderer == 0 && scenePtr != 0)
+        // {
+        //     IntPtr rowCatStatusCStr = Marshal.StringToHGlobalAnsi("RowCatStatus");
+        //     rowStatsRenderer = _createUiRenderer(scenePtr, houseStatusEntityPtr, rowCatStatusCStr, a4);
+        //     if (rowStatsRenderer != 0)
+        //     {
+        //         LogStr($"[HOOK] RowCatStatus renderer creater at 0x{rowStatsRenderer:X}");
+        //         return rowStatsRenderer;
+        //     } else
+        //     {
+        //         LogStr($"[HOOK] WARNING: RowCatStatus renderer not created, got null pointer!");
+        //         rowStatsRenderer = -1;
+        //     }
+        // }
+        return _createUiRenderer(a1, entity, namePtr, a4);
     }
 
+    static bool _panelIsOpen = false;
     [UnmanagedCallersOnly]
-    private static unsafe nint GlobalResourceManagerLookupHook(nint a1, nint namePtr, nint a3, nint a4)
+    private static unsafe nint UpdatePanelLayoutHook(nint a1)
     {
-        var rdxStr = TryReadStdString(namePtr, false);
-        var result = _globalResourceManagerLookup(a1, namePtr, a3, a4);
-        if (rdxStr == "HouseCatStatus")
-        {
-            MewApplicationPointer = a1;
-            // LogStr($"[HOOK] GlobalResourceManagerLookupHook: HouseCatStatus found, a1=0x{a1:X}, a2=0x{namePtr:X}, a3=0x{a3:X}, a4=0x{a4:X}");
-        } else
-        {
-            if (rdxStr == null)
-            {
-                // LogStr($"[HOOK] null string read from a2=0x{namePtr:X}, a1=0x{a1:X}, a3=0x{a3:X}, a4=0x{a4:X}");
-            } else
-            {
-                // LogStr($"[HOOK] GlobalResourceManagerLookupHook: a1=0x{a1:X}, a2=0x{namePtr:X} string=\"{rdxStr}\", a3=0x{a3:X}, a4=0x{a4:X}");
-            }
-            
-        }
-        // var a2Str = TryRead
-        return result;
-    }
 
+        var result = _updatePanelLayout(a1);
 
-    [UnmanagedCallersOnly]
-    private static unsafe nint PanelSlideCallbackHook(nint a1, nint a2, nint a3, nint a4)
-    {
-        // var a2Str = TryReadStdString(a2, false);
-        var result = _houseDrawerPanel(a1, a2, a3, a4);
         var renderer = Marshal.ReadIntPtr(a1 + 0x58);
         // read as dword:
         var rendererName = TryReadStdString(renderer + 0xA8, false);
         if (rendererName != "CatMenu")
         {
-            // LogStr($"[HOOK] PanelSlideCallbackHook: rendererName={rendererName}, no action taken");
             return result;
         }
+
+        catMenuMc = Marshal.ReadIntPtr(renderer + 0x80);
+
         var rendererState = Marshal.ReadInt32(renderer + 0x54);
-        if (rendererState == 37 && slide != 0)
+        if (!_panelIsOpen && rendererState == 37)
         {
             // IntPtr rightStr = Marshal.StringToHGlobalAnsi("right");
-            // LogStr($"[HOOK] PanelSlideCallbackHook: rendererState=25, going to label 'right' on slide 0x{slide:X}");
             // CallWithCustomString(_goToLabel, slide, "right", a3, a4)
-            _goToLabel(slide, GameString.Create("right"));
+            // _goToLabel(slide, GameString.Create("right"));
+            // _panelIsOpen = true;
+            // xOffsetTarget = 10;
+            // xMoveAni = new FloatAnimator(xOffset, xOffsetTarget, 0.5f);
+            MewjectorApi.Log($"[HOOK] 1- PanelSlideCallbackHook: xOffset {xOffset} xOffsetTarget {xOffsetTarget}");
         }
-        else if (rendererState == 36 && slide != 0)
+        else if (_panelIsOpen && rendererState == 36)
         {
+            // _panelIsOpen = false;
+            // xOffsetTarget = -35f;
+            // xMoveAni = new FloatAnimator(xOffset, xOffsetTarget, 0.5f);
+            MewjectorApi.Log($"[HOOK] 2- PanelSlideCallbackHook: xOffset {xOffset} xOffsetTarget {xOffsetTarget}");
             // IntPtr leftStr = Marshal.StringToHGlobalAnsi("left");
-            // LogStr($"[HOOK] PanelSlideCallbackHook: rendererState=24, going to label 'left' on slide 0x{slide:X}");
-            _goToLabel(slide, GameString.Create("left"));
-        } else
-        {
-            // LogStr($"[HOOK] PanelSlideCallbackHook: rendererState={rendererState}, no action taken");
+            // MewjectorApi.Log($"[HOOK] PanelSlideCallbackHook: rendererState=24, going to label 'left' on slide 0x{slide:X}");
+            // _goToLabel(slide, GameString.Create("left"));
         }
 
         return result;
@@ -514,94 +996,7 @@ public partial class CatstableMod
     private static unsafe nint FindChildMovieClipHook(nint a1, nint a2, nint a3, nint a4)
     {
 
-        var a2Str = TryReadStdString(a2, false);
         var result = _findMovieClipTrampoline(a1, a2, a3, a4);
-        if (a2Str != "openclose_H" && readyToDuplicate && houseStatusEntityPtr != 0)
-        {
-            readyToDuplicate = false;
-            LogStr($"[HOOK] Starting duplication of 'row' movieclip at 0x{rowMovieClip:X}...");
-            var cloned = Duplicate(rowMovieClip);
-            IntPtr rowCatStatusCStr = Marshal.StringToHGlobalAnsi("RowCatStatus");
-
-            rows.Add(cloned);
-            var renderer = _createUiRenderer(catStatsDrawerPtr, houseStatusEntityPtr, rowCatStatusCStr, a4);
-            if (renderer != 0)
-            {
-                LogStr($"[HOOK] Found RowCatStatus renderer at 0x{renderer:X}");
-            } else
-            {
-                LogStr($"[HOOK] WARNING: RowCatStatus renderer not created, got null pointer!");
-            }
-        }
-
-        if (a2Str == "openclose_H" && movieClipModContainer == 0)
-        {
-            string juanito = "juanito";
-            LogStr($"[HOOK] Searching for mod container '{juanito}' parent is 0x{a1:X}...");
-            nint subresult = CallWithCustomString(_findMovieClipTrampoline, a1, juanito, a3, a4);
-            // check if its null pointer result or not
-            if (subresult != 0)
-            {
-                // mod container "juanito" found
-                // print a1 too
-                LogStr($"[HOOK] Found 'juanito' container at 0x{subresult:X}");
-                catMenuMc = subresult;
-                nint juanito2 = CallWithCustomString(_findMovieClipTrampoline, subresult, "juanito2", a3, a4);
-                if (juanito2 != 0)
-                {
-                    // mod container "juanito2" found
-                    LogStr($"[HOOK] Found 'juanito2' container at 0x{juanito2:X}");
-                    slide = CallWithCustomString(_findMovieClipTrampoline, juanito2, "slide", a3, a4);
-                    if (slide != 0)
-                    {
-                        LogStr($"[HOOK] Found 'slide' container at 0x{slide:X}");
-                        nint aniContainer = CallWithCustomString(_findMovieClipTrampoline, slide, "right", a3, a4);
-                        if (aniContainer == 0)
-                        {
-                            LogStr($"[HOOK] 'right' container NOT found, trying 'left'...");
-                            aniContainer = CallWithCustomString(_findMovieClipTrampoline, slide, "left", a3, a4);
-                        }
-                        if (aniContainer != 0)
-                        {
-                            LogStr($"[HOOK] Found 'right' container at 0x{aniContainer:X}");
-
-                            nint juanito4 = CallWithCustomString(_findMovieClipTrampoline, aniContainer, "juanito4", a3, a4);
-                            if (juanito4 != 0)
-                            {
-                                LogStr($"[HOOK] Found 'juanito4'! container at 0x{juanito4:X}");
-                                rowMovieClip = CallWithCustomString(_findMovieClipTrampoline, juanito4, "row_to_clone", a3, a4);
-                                if (rowMovieClip == 0 || Read<uint>(rowMovieClip + 0x38) == 0)
-                                {
-                                    LogStr($"[HOOK] WARNING: parent of 'row' is null! Waiting! a1=0x{a1:X}");   
-                                } else
-                                {
-                                    movieClipModContainer = juanito4;
-                                    readyToDuplicate = true;
-                                }
-                            }
-                            else
-                            {
-                                LogStr($"[HOOK] 'juanito4' container NOT found");
-                            }
-                        } else
-                        {
-                            LogStr($"[HOOK] 'right' container NOT found");
-                        }
-
-                    }
-                    else
-                    {
-                        LogStr($"[HOOK] 'slide' container NOT found");
-                    }
-                }
-                else
-                {
-                    LogStr($"[HOOK] 'juanito2' container NOT found");
-                }
-            }
-            
-        }
-
         return result;
     }
 
@@ -639,6 +1034,19 @@ public partial class CatstableMod
             LogStr($"[HOOK] RemoveMovieClip called on mod container 0x{a1:X}");
             movieClipModContainer = 0;
             catMenuMc = 0;
+            rowStatsRenderer = 0;
+            scenePtr = 0;
+            _btnCallbackMetadataPtr = 0;
+            _ourBtnMetadataCallbackPtr = 0;
+            _originalPanel = 0;
+            _ourPanel = 0;
+            _originalDrawer = 0;
+            transforms.Clear();
+            rowDrawers.Clear();
+            _catsCount = 0;
+            headersRenderer = 0;
+            yOffset = 0;
+            ClearExperimentState();
         }
         return _removeMovieClipTrampoline(a1, a2, a3, a4);
     }
@@ -678,304 +1086,8 @@ public partial class CatstableMod
         return buffer;
     }
 
-    [UnmanagedCallersOnly]
-    private static unsafe nint HookDictionaryInsert(nint mapPtr, nint iteratorOut, nint stringPtr)
-    {
-        // MSVC std::string layout: 
-        // +0x10 = Length, +0x18 = Capacity.
-        long length = Marshal.ReadInt64(stringPtr + 0x10);
-        long capacity = Marshal.ReadInt64(stringPtr + 0x18);
-        string symbolName = "";
-
-        if (length > 0 && length < 1000) // Sanity check
-        {
-            if (capacity < 16)
-            {
-                // Small String Optimization (Inline)
-                byte* chars = (byte*)stringPtr;
-                symbolName = Encoding.UTF8.GetString(chars, (int)length);
-            }
-            else
-            {
-                // Heap String (Pointer)
-                nint heapPtr = Marshal.ReadIntPtr(stringPtr);
-                if (heapPtr != IntPtr.Zero)
-                {
-                    byte* chars = (byte*)heapPtr;
-                    symbolName = Encoding.UTF8.GetString(chars, (int)length);
-                }
-            }
-        }
-
-        if (symbolName == "CombatMessage_Victory")
-        {
-            LogStr($"\n[BINGO] INTERCEPTED 'CombatMessage_Victory'!");
-            LogStr($"  Dictionary Map Pointer: 0x{mapPtr:X}");
-            LogStr($"  std::string Pointer: 0x{stringPtr:X}");
-        }
-
-        // Call the original function so the game doesn't break
-        return ((delegate* unmanaged<nint, nint, nint, nint>)(void*)_findMovieClipTrampoline)(mapPtr, iteratorOut, stringPtr);
-    }
-
-    private static void DumpSymbolClassStrings()
-    {
-        LogStr($"[DUMP] Analyzing {_symbolClasses.Count} captured objects...");
-        nint hProcess = GetCurrentProcess();
-
-        foreach (nint symbolClass in _symbolClasses)
-        {
-            int count = Marshal.ReadInt32(symbolClass + 0x28); 
-            nint dataPtr = Marshal.ReadIntPtr(symbolClass + 0x30);
-
-            if (dataPtr == IntPtr.Zero || count <= 0 || count > 100000) continue;
-
-            // Use our new safe read method. Assume each element is 40 bytes.
-            long expectedSize = count * 40L; 
-            byte[] arrayMem = SafeReadProcessMemory(hProcess, dataPtr, expectedSize);
-
-            if (arrayMem == null)
-            {
-                LogStr($"  -> [!] Totally failed to read array memory at 0x{dataPtr:X} for {count} elements.");
-                continue;
-            }
-
-            int foundCount = 0;
-            bool targetFound = false;
-
-            // Parse the C++ array: struct { uint16_t id; char padding[6]; std::string name; }
-            for (int i = 0; i < count; i++)
-            {
-                int offset = i * 40;
-                if (offset + 40 > arrayMem.Length) break;
-
-                // The std::string is at offset 0
-                long strLength = BitConverter.ToInt64(arrayMem, offset + 16);
-                long strCapacity = BitConverter.ToInt64(arrayMem, offset + 24);
-                
-                // The ID is at offset 32 (right after the 32-byte std::string)
-                ushort id = BitConverter.ToUInt16(arrayMem, offset + 32);
-
-                string s = null;
-
-                if (strCapacity >= 0 && strCapacity < 16)
-                {
-                    // Small String Optimization (Inline)
-                    int nullIdx = Array.IndexOf(arrayMem, (byte)0, offset, 16);
-                    int len = nullIdx == -1 ? (int)strLength : (nullIdx - offset);
-                    if (len > 0 && len <= 15)
-                    {
-                        s = Encoding.UTF8.GetString(arrayMem, offset, len);
-                    }
-                }
-                else if (strCapacity >= 16 && strCapacity < 1000000 && strLength > 0 && strLength <= strCapacity)
-                {
-                    // Heap String (Pointer)
-                    nint strPtr = (nint)BitConverter.ToInt64(arrayMem, offset);
-                    if (strPtr != IntPtr.Zero)
-                    {
-                        byte[] heapBuf = new byte[strLength];
-                        if (ReadProcessMemory(hProcess, strPtr, heapBuf, (nint)strLength, out _))
-                        {
-                            s = Encoding.UTF8.GetString(heapBuf);
-                        }
-                    }
-                }
-
-                if (s == "CombatMessage_Victory")
-                {
-                    LogStr($"\n=== [EUREKA] TARGET FOUND! ===");
-                    LogStr($"  SymbolClass Obj: 0x{symbolClass:X}");
-                    LogStr($"  Array Pointer: 0x{dataPtr:X}");
-                    LogStr($"  Symbol ID: {id} (This is the SWF Character ID!)");
-                    LogStr($"  Index in Array: {i}");
-                    return; 
-                }
-                else if (!string.IsNullOrEmpty(s) && s.Length > 1 && foundCount < 10)
-                {
-                    // Print the first 10 valid strings so we can confirm it's parsing beautifully now
-                    if (foundCount == 0) LogStr($"\n=== SymbolClass 0x{symbolClass:X} ({count} elements) ===");
-                    LogStr($"    Index [{i}] ID [{id}] -> \"{s}\"");
-                    foundCount++;
-                }
-            }
-
-            if (!targetFound && foundCount > 0)
-            {
-                LogStr($"    ... (Parsed {count} symbols successfully)");
-            }
-        }
-    }
-    // Helper 1: Extracts any sequence of 4+ printable ASCII characters from a raw byte block
-    private static string ExtractPrintableStrings(byte[] data)
-    {
-        StringBuilder result = new StringBuilder();
-        StringBuilder current = new StringBuilder();
-
-        foreach (byte b in data)
-        {
-            // Check if byte is a standard printable ASCII character (space to tilde)
-            if (b >= 32 && b <= 126) 
-            {
-                current.Append((char)b);
-            }
-            else
-            {
-                if (current.Length >= 4) 
-                    result.AppendLine($"    \"{current.ToString()}\"");
-                current.Clear();
-            }
-        }
-        if (current.Length >= 4) result.AppendLine($"    \"{current.ToString()}\"");
-        return result.ToString();
-    }
-
-    // Helper 2: Extracts a clean C-style null-terminated string from a pointer buffer
-    private static string ExtractFirstPrintableString(byte[] data)
-    {
-        StringBuilder current = new StringBuilder();
-        foreach (byte b in data)
-        {
-            if (b == 0) break; // Stop at null terminator
-            if (b >= 32 && b <= 126)
-            {
-                current.Append((char)b);
-            }
-            else
-            {
-                // If we hit garbage before a null terminator, this wasn't a valid string pointer
-                return ""; 
-            }
-        }
-        return current.ToString();
-    }
-
-
-    private static bool firedAlready = false;
-    private static List<ushort> charactersAlreadySeen = new List<ushort>();
-    ushort firstOne = 0;
-    [UnmanagedCallersOnly]
-    static unsafe nint  MyHook(
-    long a1,
-    long a2,
-    nint a3,
-    nint a4)
-    {
-        long obj = a1;
-        var result = _MyHook(a1, a2, a3, a4);
-
-        // byte version = *(byte*)(obj + 0x38);
-        // ushort depth = *(ushort*)(obj + 0x3A);
-        ushort characterId = *(ushort*)(obj + 0x3C);
-        if (charactersAlreadySeen.Contains(characterId))
-            return result;
-        charactersAlreadySeen.Add(characterId);
-
-        byte* p = (byte*)a1;
-        for (int off = 0; off < 0x90; off += 8)
-        {
-            ulong ptr = *(ulong*)(p + off);
-
-            if (ptr > 0x10000 && ptr < 0x0000_7FFF_FFFF_FFFF)
-            {
-                // byte[] bytes = new byte[64];
-                // Marshal.Copy((IntPtr)ptr, bytes, 0, bytes.Length);
-                // _instance.Log(
-                    // $"ptr @ +0x{off:X2} = 0x{ptr:X}");
-                // _instance.Log(
-                //     System.Text.Encoding.ASCII.GetString(bytes));
-            }
-        }
-        return result;
-    }
-    [UnmanagedCallersOnly]
-    private static unsafe nint AbilityTriggerHook(nint a1, nint a2, nint a3, nint a4)
-    {
-        if (_instance.IsEnabled) {
-            try
-            {
-                string? name = ReadAbilityName(a1);
-                string? localizedName = "???";
-                Dictionary<string, object?> gonFields = new Dictionary<string, object>();
-                // Log the GonObject fields (ability+0x28 = GonObject*)
-                if (IsLikelyPointer(a1) && IsMemReadable(a1 + 0x28, 8))
-                {
-                    nint gonPtr = *(nint*)(a1 + 0x28);
-                    if (IsLikelyPointer(gonPtr))
-                    {
-                        _instance?.Log($"[GON-PTR] 0x{gonPtr:X}");
-                        LogGonObject(gonPtr, 0, "  ");
-                        gonFields = GonObjectToDictionary(gonPtr);
-                        // get field with name "meta", inside it field with name "name", then get its value
-                        if (gonFields.TryGetValue("meta", out var metaObj) && metaObj is Dictionary<string, object> metaDict &&
-                            metaDict.TryGetValue("name", out var nameObj) && nameObj is string gonName)
-                        {
-                            _instance?.Log($"[GON-NAME] {gonName}");
-                            name = gonName; // override with name from GonObject if available
-                            localizedName = name != null ? LookupLocalized(name) : null;
-                        }
-                    }
-                }
-                _instance?.Log($"[ABILITY-NAME] \"{name ?? "???"}\" localized=\"{localizedName ?? name ?? "???"}\" this=0x{a1:X}");
-            }
-            catch (Exception ex)
-            {
-                _instance?.Log($"[ABILITY-NAME-ERROR] {ex.GetType().Name}: {ex.Message}");
-            }
-        }
-
-        return ((delegate* unmanaged<nint, nint, nint, nint, nint>)_abilityTriggerHookTrampoline)(a1, a2, a3, a4);
-    }
-
-
-    public async Task RunEverySecond(CancellationToken ct)
-    {
-        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(0.5));
-        while (await timer.WaitForNextTickAsync(ct))
-        {
-            EverySecond();
-        }
-    }
-
     private static bool _active;   // static — accessible from [UnmanagedCallersOnly]
 
-
-
-    protected void EverySecond()
-    {
-        if (!IsEnabled) return;
-
-        // if (fightChars.Count == 0) return;
-        // LogDifferences();
-    }
-
-    // protected void OnFightEnd(FightEndEvent e)
-    // {
-    //     fightChars.Clear();
-    //     trackedCats.Clear();
-    // }
-
-    // private void OnKeyDown(KeyEventArgs e)
-    // {
-    //     if (e.IsRepeat) return;
-    //     if (e.Scancode != SDL_Scancode.F5) return;
-
-    //     if (!_genHooksInstalled)
-    //     {
-    //         _genHooksInstalled = true;
-    //         _genLoggingEnabled = true;
-    //         Log("[F5] Key detected — installing generated hooks...");
-    //         // InstallGeneratedHooks();
-            
-
-    //         Log($"[F5] {_genHooks.Length} hooks installed. Logging ON.");
-    //     }
-    //     else
-    //     {
-    //         _genLoggingEnabled = !_genLoggingEnabled;
-    //         Log($"[F5] Logging {(_genLoggingEnabled ? "ON" : "OFF")}.");
-    //     }
-    // }
 
     protected void OnEnable()
     {
@@ -1113,94 +1225,6 @@ public partial class CatstableMod
     private static readonly nint IMAGE_RANGE_START = unchecked((nint)0x7FF70C3C0000L);
     private static readonly nint IMAGE_RANGE_END   = unchecked((nint)0x7FF70D900000L);
 
-    // Returns true if ptr falls inside the game's loaded image.
-    // Such pointers are vtable / function pointers; they are not heap structs worth scanning.
-    private static bool IsImagePointer(nint ptr)
-    {
-        ulong v = (ulong)(nuint)ptr;
-        return v >= (ulong)(nuint)IMAGE_RANGE_START && v < (ulong)(nuint)IMAGE_RANGE_END;
-    }
-
-    // Recursively scans [basePtr, basePtr+maxBytes) for the TARGET string.
-    //   depth=1 → no further recursion after this level.
-    //   visited  → prevents re-entering the same base address (cycle guard).
-    // At each 8-byte slot the method tries (in order):
-    //   1. Inline std::string object starting at the slot.
-    //   2. The slot value as a raw pointer → try C-string, then std::string object.
-    //   3. If depth > 1 and the pointer isn't an image pointer: recurse into that struct.
-    private static unsafe void ScanRegionForTarget(
-        string funcName, string path, nint basePtr, int maxBytes, int depth, System.Collections.Generic.HashSet<nint> visited)
-    {
-        const string TARGET = "CrowFlutter";
-        if (!IsLikelyPointer(basePtr) || IsImagePointer(basePtr)) return;
-        if (!visited.Add(basePtr)) return; // cycle guard
-
-        int slots = maxBytes / 8;
-        bool fullRegion = IsMemReadable(basePtr, maxBytes);
-
-        for (int s = 0; s < slots; s++)
-        {
-            nint slotAddr = basePtr + s * 8;
-            if (!fullRegion && !IsMemReadable(slotAddr, 0x20)) continue;
-
-            // Case 1: inline std::string starting at this slot
-            if (TryGetStdStringLayout(slotAddr, out _, out _, out _))
-            {
-                string? str = TryReadStdString(slotAddr);
-                if (str != null)
-                {
-                    string key = $"str|{funcName}|{path}+0x{s * 8:X}|{str}";
-                    if (_seenStrings.TryAdd(key, true))
-                        _instance?.Log($"[STR] {funcName} {path}+0x{s * 8:X} \"{str}\"");
-                    if (str == TARGET)
-                        _instance?.Log($"[MATCH] {funcName} {path}+0x{s * 8:X} (inline std::string)");
-                }
-            }
-
-            // Case 2: pointer-valued slot
-            nint fieldPtr = *(nint*)slotAddr;
-            if (!IsLikelyPointer(fieldPtr)) continue;
-            // Skip vtable / function pointers — they produce garbage C-string false positives
-            // and are never the heap objects we are looking for.
-            if (IsImagePointer(fieldPtr)) continue;
-
-            // 2a: pointed-to bytes look like a C-string
-            string? cstr = TryReadCString(fieldPtr, 128);
-            if (cstr != null)
-            {
-                if (cstr.Length >= 4) // 1-3 char results are almost always garbage (padding, small ints)
-                {
-                    string key = $"cstr|{funcName}|{path}+0x{s * 8:X}|{cstr}";
-                    if (_seenStrings.TryAdd(key, true))
-                        _instance?.Log($"[CSTR] {funcName} {path}+0x{s * 8:X} -> \"{cstr}\"");
-                    if (cstr == TARGET)
-                        _instance?.Log($"[MATCH] {funcName} {path}+0x{s * 8:X} -> cstr");
-                    continue; // real string → treat as leaf, don't recurse
-                }
-                // Too short — fall through to try as std::string object, then recurse
-            }
-
-            // 2b: fieldPtr is itself a std::string object
-            string? pstd = TryReadStdString(fieldPtr);
-            if (pstd != null)
-            {
-                string key = $"pstd|{funcName}|{path}+0x{s * 8:X}|{pstd}";
-                if (_seenStrings.TryAdd(key, true))
-                    _instance?.Log($"[PTR-STR] {funcName} {path}+0x{s * 8:X} -> \"{pstd}\"");
-                if (pstd == TARGET)
-                    _instance?.Log($"[MATCH] {funcName} {path}+0x{s * 8:X} -> ptr-stdstr");
-                continue; // treat as leaf
-            }
-
-            // Case 3: fieldPtr points into an unknown struct — recurse if depth permits
-            if (depth > 1 && !IsImagePointer(fieldPtr))
-            {
-                int subBytes = Math.Max(64, maxBytes / 4);
-                ScanRegionForTarget(funcName, $"{path}+0x{s * 8:X}->", fieldPtr, subBytes, depth - 1, visited);
-            }
-        }
-    }
-
 
     [StructLayout(LayoutKind.Sequential)]
     private struct MEMORY_BASIC_INFORMATION
@@ -1236,149 +1260,7 @@ public partial class CatstableMod
     {
         ulong v = (ulong)(nuint)val;
         return v >= 0x10000 && v <= 0x0000_7FFF_FFFF_FFFF;
-    }
-
-    // Reads and logs all fields of a GonObject instance.
-    // GonObject layout (MSVC x64, sizeof=0xB0) — from Tyler Glaiel's open-source GON library:
-    //   +0x00: unordered_map<string,int> children_map  (56 bytes; element count at +0x08)
-    //   +0x38: vector<GonObject> children_array         (first ptr +0x38, last ptr +0x40)
-    //   +0x50: int    int_data
-    //   +0x58: double float_data
-    //   +0x60: bool   bool_data
-    //   +0x68: string string_data
-    //   +0x88: string name                              ← IDA-confirmed
-    //   +0xA8: int    type  (0=NULL,1=STRING,2=NUMBER,3=OBJECT,4=ARRAY,5=BOOL)
-    private static unsafe void LogGonObject(nint gonPtr, int depth, string indent)
-    {
-        if (depth > 4) return;
-        if (!IsLikelyPointer(gonPtr) || !IsMemReadable(gonPtr, 0xB0)) return;
-        if (!_seenGonObjects.TryAdd(gonPtr, true)) return; // log each address only once
-
-        int typeVal = *(int*)(gonPtr + 0xA8);
-        string typeName = typeVal switch {
-            0 => "NULLGON",
-            1 => "STRING",
-            2 => "NUMBER",
-            3 => "OBJECT",
-            4 => "ARRAY",
-            5 => "BOOL",
-            _ => $"TYPE({typeVal})"
-        };
-
-        string gonName    = TryReadStdString(gonPtr + 0x88) ?? "<noname>";
-        string stringData = TryReadStdString(gonPtr + 0x68) ?? "";
-        int    intData    = *(int*)(gonPtr + 0x50);
-        double floatData  = *(double*)(gonPtr + 0x58);
-        bool   boolData   = *(byte*)(gonPtr + 0x60) != 0;
-
-        // unordered_map element count lives at offset +0x08 from map start (+0x00 of GonObject)
-        long mapCount = *(long*)(gonPtr + 0x08);
-        if (mapCount < 0 || mapCount > 100000) mapCount = -1;
-
-        // vector<GonObject>: first ptr at +0x38, past-last ptr at +0x40
-        nint arrFirst = *(nint*)(gonPtr + 0x38);
-        nint arrLast  = *(nint*)(gonPtr + 0x40);
-        long arrCount = -1;
-        if (IsLikelyPointer(arrFirst) && IsLikelyPointer(arrLast) && (long)(arrLast - arrFirst) >= 0)
-        {
-            arrCount = (long)(arrLast - arrFirst) / 0xB0;
-            if (arrCount > 10000) arrCount = -1;
-        }
-
-        string valueStr = typeName switch {
-            "STRING" => $" value=\"{stringData}\"",
-            "NUMBER" => $" int={intData} float={floatData:G}",
-            "BOOL"   => $" bool={boolData}",
-            _        => ""
-        };
-
-        _instance?.Log($"{indent}[GON] name=\"{gonName}\" type={typeName}{valueStr} arr_children={arrCount} map_children={mapCount}");
-
-        if ((typeName == "OBJECT" || typeName == "ARRAY") && arrCount > 0 && arrCount <= 200 && IsLikelyPointer(arrFirst))
-        {
-            for (long i = 0; i < arrCount; i++)
-            {
-                nint childPtr = arrFirst + (nint)(i * 0xB0);
-                LogGonObject(childPtr, depth + 1, indent + "  ");
-            }
-        }
-    }
-
-    private static unsafe Dictionary<string, object?> GonObjectToDictionary(nint gonPtr)
-    {
-        var result = new Dictionary<string, object?>();
-        if (!IsLikelyPointer(gonPtr) || !IsMemReadable(gonPtr, 0xB0)) return result;
-
-        int typeVal = *(int*)(gonPtr + 0xA8);
-        if (typeVal != 3 /* OBJECT */) return result;
-
-        nint arrFirst = *(nint*)(gonPtr + 0x38);
-        nint arrLast  = *(nint*)(gonPtr + 0x40);
-        if (!IsLikelyPointer(arrFirst) || !IsLikelyPointer(arrLast)) return result;
-
-        long arrCount = (long)(arrLast - arrFirst) / 0xB0;
-        if (arrCount <= 0 || arrCount > 10000) return result;
-
-        for (long i = 0; i < arrCount; i++)
-        {
-            nint childPtr = arrFirst + (nint)(i * 0xB0);
-            if (!IsMemReadable(childPtr, 0xB0)) continue;
-
-            string childName = TryReadStdString(childPtr + 0x88) ?? "";
-            int childType    = *(int*)(childPtr + 0xA8);
-
-            object? value = childType switch {
-                0 => null,
-                1 => TryReadStdString(childPtr + 0x68),
-                2 => *(double*)(childPtr + 0x58),
-                3 => GonObjectToDictionary(childPtr),
-                4 => GonArrayToList(childPtr),
-                5 => *(byte*)(childPtr + 0x60) != 0,
-                _ => null
-            };
-
-            result[childName] = value;
-        }
-
-        return result;
-    }
-
-    private static unsafe List<object?> GonArrayToList(nint gonPtr)
-    {
-        var result = new List<object?>();
-        if (!IsLikelyPointer(gonPtr) || !IsMemReadable(gonPtr, 0xB0)) return result;
-
-        int typeVal = *(int*)(gonPtr + 0xA8);
-        if (typeVal != 4 /* ARRAY */) return result;
-
-        nint arrFirst = *(nint*)(gonPtr + 0x38);
-        nint arrLast  = *(nint*)(gonPtr + 0x40);
-        if (!IsLikelyPointer(arrFirst) || !IsLikelyPointer(arrLast)) return result;
-
-        long arrCount = (long)(arrLast - arrFirst) / 0xB0;
-        if (arrCount <= 0 || arrCount > 10000) return result;
-
-        for (long i = 0; i < arrCount; i++)
-        {
-            nint childPtr = arrFirst + (nint)(i * 0xB0);
-            if (!IsMemReadable(childPtr, 0xB0)) continue;
-
-            int childType = *(int*)(childPtr + 0xA8);
-            object? value = childType switch {
-                0 => null,
-                1 => TryReadStdString(childPtr + 0x68),
-                2 => *(double*)(childPtr + 0x58),
-                3 => GonObjectToDictionary(childPtr),
-                4 => GonArrayToList(childPtr),
-                5 => *(byte*)(childPtr + 0x60) != 0,
-                _ => null
-            };
-
-            result.Add(value);
-        }
-
-        return result;
-    }
+    }    
 
     // ── Localization lookup via game's localization manager ──────────────────
     //
@@ -1499,38 +1381,6 @@ public partial class CatstableMod
         }
     }
 
-    // Reads the ability localization key from an Ability* pointer.
-    // Layout: ability+0x28 = GonObject*, children vector at +0x38/+0x40 (GonObject, stride=0xB0).
-    // We look for a child node whose name (+0x88) == "name" and read its string_data (+0x68).
-    // Falls back to the root GON node's own name if the "name" child isn't found.
-    private static unsafe string? ReadAbilityName(nint abilityPtr)
-    {
-        if (!IsLikelyPointer(abilityPtr) || !IsMemReadable(abilityPtr + 0x28, 8)) return null;
-        nint gonPtr = *(nint*)(abilityPtr + 0x28);
-        if (!IsLikelyPointer(gonPtr) || !IsMemReadable(gonPtr, 0xB0)) return null;
-
-        // Walk the inline children vector (GON objects stored by value, stride = 0xB0)
-        nint arrFirst = *(nint*)(gonPtr + 0x38);
-        nint arrLast  = *(nint*)(gonPtr + 0x40);
-        if (IsLikelyPointer(arrFirst) && IsLikelyPointer(arrLast))
-        {
-            long count = (long)(arrLast - arrFirst) / 0xB0;
-            if (count >= 0 && count <= 1000)
-            {
-                for (long i = 0; i < count; i++)
-                {
-                    nint childPtr = arrFirst + (nint)(i * 0xB0);
-                    if (!IsMemReadable(childPtr, 0xB0)) continue;
-                    string? childName = TryReadStdString(childPtr + 0x88);
-                    if (childName == "name" && *(int*)(childPtr + 0xA8) == 1 /* FieldType.STRING */)
-                        return TryReadStdString(childPtr + 0x68); // string_data of the "name" field
-                }
-            }
-        }
-
-        // Fallback: root GON node name (e.g. "BasicMelee_Fighter" — not a localization key)
-        return TryReadStdString(gonPtr + 0x88);
-    }
 };
 
 [StructLayout(LayoutKind.Sequential, Pack = 8)]
@@ -1560,5 +1410,49 @@ unsafe struct GameString
         // CatstableMod.LogStr(sizeof(GameString).ToString());
         // CatstableMod.LogStr(((nuint)s).ToString("X"));
         return (nint)s;
+    }
+}
+
+
+public class FloatAnimator
+{
+    private readonly Stopwatch _stopwatch = Stopwatch.StartNew();
+
+    private readonly float _startValue;
+    private readonly float _targetValue;
+    private readonly float _durationSeconds;
+    private readonly long _startTicks;
+
+    public FloatAnimator(float startValue, float targetValue, float durationSeconds)
+    {
+        _startValue = startValue;
+        _targetValue = targetValue;
+        _durationSeconds = durationSeconds;
+        _startTicks = _stopwatch.ElapsedTicks;
+    }
+
+    /// <summary>
+    /// Current interpolated value.
+    /// </summary>
+    public float Tick()
+    {
+        float elapsedSeconds =
+            (float)(_stopwatch.ElapsedTicks - _startTicks) / Stopwatch.Frequency;
+
+        float t = Math.Min(elapsedSeconds / _durationSeconds, 1.0f);
+
+        return Lerp(_startValue, _targetValue, t);
+    }
+
+    /// <summary>
+    /// Returns true once the animation has finished.
+    /// </summary>
+    public bool IsFinished =>
+        (_stopwatch.ElapsedTicks - _startTicks) >=
+        _durationSeconds * Stopwatch.Frequency;
+
+    private static float Lerp(float a, float b, float t)
+    {
+        return a + (b - a) * t;
     }
 }
