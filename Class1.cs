@@ -45,17 +45,22 @@ public partial class CatstableMod
     private static unsafe delegate* unmanaged<long, long, nint, nint, nint> _houseCreationTrampoline;
     private static unsafe delegate* unmanaged<long, long, nint, nint, nint> _movieClipConstructroTrampoline;
     private static unsafe delegate* unmanaged<nint, nint> _updatePanelLayout;
+    private static unsafe delegate* unmanaged<nint, nint> _createRenderer;
     private static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _createUiRenderer;
     private static unsafe delegate* unmanaged<nint, nint, nint, nint> _createPanel;
     private static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _houseClickHandler;
     private static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _registerCallback;
     private static unsafe delegate* unmanaged<nint, nint> _statsCreator;
     private static unsafe delegate* unmanaged<nint, nint, nint> _getHouseCatByOffset;
-    private static unsafe delegate* unmanaged<nint, nint, nint> _unknownFunction;
     private static unsafe delegate* unmanaged<nint, nint> _gameTick;
+    private static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _catIterator;
+
+    private static unsafe delegate* unmanaged<nint, nint> _buildRenderEntries;
+
     private static unsafe delegate* unmanaged<nint, nint> _houseClick;
     private static unsafe delegate* unmanaged<nint, nint, nint, nint> _findButton;
     private static unsafe delegate* unmanaged<nint, nint> _initCatStatsClickCallback;
+    private static unsafe delegate* unmanaged<nint, nint> _toggleHouseDrawer;
     private static unsafe delegate* unmanaged<nint, nint, nint> _mutationToolTip;
 
     private static unsafe delegate* unmanaged<nint, byte> _isPanelActive;
@@ -80,6 +85,7 @@ public partial class CatstableMod
     unsafe private static delegate* unmanaged<nint, nint, void> _copyState;
     unsafe private static delegate* unmanaged<nint, nint, uint, void> _attachChild;
     unsafe private static delegate* unmanaged<nint, nint, nint> _createCatStatsDrawer;
+    
         
     
     const long RVA_CreateInstance = 0xA4E460; // DefineSprite::CreateInstance()
@@ -161,7 +167,7 @@ public partial class CatstableMod
         uint depth = Read<uint>(parent + 0xAC);
 
         // var textbox = CallWithCustomString(_findMovieClipTrampoline, clone, "test_text", 0, 0);
-        // nint gameString = CreateGameString("CatstableMod!");
+        // nint gameString = CreateUTF16GameString("CatstableMod!");
         // _setText(textbox, gameString);
         // DestroyGameString(gameString);
         // pendingTextClone = textbox;
@@ -207,6 +213,9 @@ public partial class CatstableMod
         _updatePanelLayout = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
             0x2038b0, (void*)(delegate* unmanaged<nint, nint>)&UpdatePanelLayoutHook);
 
+        _createRenderer = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
+            0x5A580, (void*)(delegate* unmanaged<nint, nint>)&CreateRendererHook);
+
         // _globalResourceManagerLookup = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
         //     0x9adc50, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&GlobalResourceManagerLookupHook);
 
@@ -226,8 +235,6 @@ public partial class CatstableMod
         _registerCallback = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0x973c40, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&RegisterCallbackHook);
 
-        _initCatStatsClickCallback = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
-            0xEEB10, (void*)(delegate* unmanaged<nint, nint>)&InitCatStatsCallbackHook);
 
         _statsCreator = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
             0xE9200, (void*)(delegate* unmanaged<nint, nint>)&CreateCatStatsDrawerHook);
@@ -235,20 +242,26 @@ public partial class CatstableMod
         _getHouseCatByOffset = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0xEA3B0, (void*)(delegate* unmanaged<nint, nint, nint>)&GetHouseCatByOffsetHook);
 
-        _unknownFunction = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
-            0x963040, (void*)(delegate* unmanaged<nint, nint, nint>)&UnknownFunction);
+        _findButton = (delegate* unmanaged<nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+            0x978a30, (void*)(delegate* unmanaged<nint, nint, nint, nint>)&FindButtonHook);
+
+        _initCatStatsClickCallback = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
+            0xEEB10, (void*)(delegate* unmanaged<nint, nint>)&InitCatStatsCallbackHook);
+
+        _toggleHouseDrawer = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
+            0x203210, (void*)(delegate* unmanaged<nint, nint>)&ToggleHouseDrawerHook);
         
         _gameTick = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
             0x962820, (void*)(delegate* unmanaged<nint, nint>)&GameTickHook);
 
-        _houseClick = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
-            0x204800, (void*)(delegate* unmanaged<nint, nint>)&HouseClickHook);
+        _catIterator = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+            0xec960, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&CatIteratorHook);
 
-        _findButton = (delegate* unmanaged<nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
-            0x978a30, (void*)(delegate* unmanaged<nint, nint, nint, nint>)&FindButtonHook);
-        
-        _mutationToolTip = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
-            0xe4c40, (void*)(delegate* unmanaged<nint, nint, nint>)&MutationTooltipHook);
+        // _buildRenderEntries = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
+        //     0x9845f0, (void*)(delegate* unmanaged<nint, nint>)&SwapRenderEntriesHook);
+
+        // _mutationToolTip = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+        //     0xe4c40, (void*)(delegate* unmanaged<nint, nint, nint>)&MutationTooltipHook); MUST UNCOMMENT SOON! ONLY FOR TESTING OTHER STUFF!
 
 
 
@@ -286,6 +299,138 @@ public partial class CatstableMod
         
         // _rightStr = GameString.Create("right");
         // _leftStr = GameString.Create("left");
+    }
+
+    static nint[] cachedVisibleCats = new nint[0];
+
+    [UnmanagedCallersOnly]
+    private static unsafe nint SwapRenderEntriesHook(nint a1) {
+        if (emptyRenderer != 0 && catMenuRenderer != 0 && a1 != 0)
+        {
+            if (a1 == emptyRenderer) {
+                LogStr($"[HOOK] SwapRenderEntriesHook: a1={a1:X} returning catMenuRenderer={catMenuRenderer:X}");
+                return _buildRenderEntries(catMenuRenderer);
+            } else if (a1 == catMenuRenderer) {
+                LogStr($"[HOOK] SwapRenderEntriesHook: a1={a1:X} returning emptyRenderer={emptyRenderer:X}");
+                return _buildRenderEntries(emptyRenderer);
+            }
+        }
+
+        var result = _buildRenderEntries(a1);
+        // LogStr($"[HOOK] BuildRenderEntriesHook: a1={a1:X} result={result:X}");
+        return result;
+    }
+
+    
+
+    [UnmanagedCallersOnly]
+    private static unsafe nint CatIteratorHook (nint a1, nint a2, nint a3, nint a4)
+    {
+        cachedVisibleCats = new nint[a3];
+        LogStr($"[HOOK] CatIteratorHook: a1={a1:X} a2={a2:X} a3={a3} a4={a4:X}");
+
+        for (int i = 0; i < a3; i++) {
+            cachedVisibleCats[i] = Marshal.ReadIntPtr(a1 + i * 8);
+            LogStr($"[HOOK] CatIteratorHook: cachedVisibleCats[{i}] = {cachedVisibleCats[i]:X}");
+        }
+            
+        var result = _catIterator(a1, a2, a3, a4);
+        return result;
+    }
+
+
+    static List<nint> _renderersSoFar = new List<nint>();
+    [UnmanagedCallersOnly]
+    private static unsafe nint CreateRendererHook(nint a1)
+    {
+        var result = _createRenderer(a1);
+        // _renderersSoFar.Add(result);
+        return result;
+    }
+
+    static Dictionary<nint, byte> _visibilityBefore = new Dictionary<nint, byte>();
+    [UnmanagedCallersOnly]
+    private static unsafe nint ToggleHouseDrawerHook(nint a1)
+    {
+        nint panel = Marshal.ReadIntPtr(a1 + 0x58);
+        nint state = Marshal.ReadIntPtr(a1 + 0x50);
+        var changed = false;
+
+        if (panel != _originalPanel && _panelIsOpen)
+        {
+            MewjectorApi.Log($"[HOOK] Panel Close");
+            _panelIsOpen = false;
+            changed = true;
+            panelAnimationInProgress = true;
+            waitingForPanelStatus = 36;
+            // for (int i = 0; i < _renderersSoFar.Count; i++)
+            // {
+            //     if (i >= 800)
+            //     {
+            //         break;
+            //     }
+            //     var renderer = _renderersSoFar[i];
+            //     var rendererName = TryReadCString(renderer + 0xA8);
+            //     if ((rendererName == null || rendererName == "") && IsLikelyPointer(Read<nint>(renderer + 0xA8)))
+            //     {
+            //         rendererName = TryReadCString(Read<nint>(renderer + 0xA8));
+            //     }
+            //     // if (rendererName == "HouseEnvironmentSkybox")
+            //     // {
+            //     //     LogStr($"[HOOK] ToggleHouseDrawerHook: HouseEnvironmentSkybox renderer at {renderer:X}");
+            //     // } else
+            //     // {
+            //     //     LogStr($"[HOOK] ToggleHouseDrawerHook: String found for renderer at {renderer:X}: {rendererName}");
+            //     // }
+            //     if (_visibilityBefore.TryGetValue(renderer, out var visibility))
+            //     {
+            //         Write(renderer + 0x51, visibility);
+            //     }
+            //     else
+            //     {
+            //         Write(renderer + 0x51, (byte)1);
+            //     }
+            // }
+            // _visibilityBefore.Clear();
+        }
+        else if (panel == _originalPanel && !_panelIsOpen)
+        {
+            // OPEN
+            MewjectorApi.Log($"[HOOK] Panel Open");
+            _panelIsOpen = true;
+            changed = true;
+            panelAnimationInProgress = true;
+            waitingForPanelStatus = 37;
+
+                        // hide 800 first renderers
+            // for (int i = 0; i < _renderersSoFar.Count; i++)
+            // {
+            //     if (i >= 800)
+            //     {
+            //         break;
+            //     }
+            //     var renderer = _renderersSoFar[i];
+            //     var visibility = Read<byte>(renderer +0x51);
+            //     _visibilityBefore[renderer] = visibility;
+            //     // Write(renderer + 0x51, (byte)0);
+            // }
+
+            // foreach (var rowRenderer in rowRenderers)
+            // {
+            //     Write(rowRenderer + 0x51, (byte)1);
+            // }
+            for (int i = 0; i < cachedVisibleCats.Length; i++)
+            {
+                var rowRenderer = rowRenderers[i];
+                // Write(rowRenderer + 0x51, (byte)1);
+            }
+        }
+        if (changed)
+        {
+            xOffsetTarget = _panelIsOpen ? 10 : -35;
+            xMoveAni = new FloatAnimator(xOffset, xOffsetTarget, 0.5f);
+        }
+        return _toggleHouseDrawer(a1);
     }
 
     static nint _lastButtonCSD = 0;
@@ -328,21 +473,6 @@ public partial class CatstableMod
         return _mutationToolTip(a1, a2);
     }
     
-    
-    [UnmanagedCallersOnly]
-    private static unsafe nint HouseClickHook(nint a1)
-    {
-        var menuname = Read<nint>(Read<nint>(a1 + 0x10) + 0xA8);
-        if (menuname == 0x000007374617453)
-        {
-            MewjectorApi.Log($"[HOOK] PanelSlideCallbackHook: xOffset {xOffset}");
-            _panelIsOpen = !_panelIsOpen;
-            xOffsetTarget = _panelIsOpen ? 10 : -35;
-            xMoveAni = new FloatAnimator(xOffset, xOffsetTarget, 0.5f);
-        }
-        return _houseClick(a1);
-    }
-
     private unsafe static float xOffset = -300f;
     private unsafe static float xOffsetTarget = -300f;
     private static FloatAnimator? xMoveAni;
@@ -369,15 +499,15 @@ public partial class CatstableMod
                 // [rdx-300+B8]=0
                 // byte[] bytes = BitConverter.GetBytes(intValue);
                 float floatValue = BitConverter.Int32BitsToSingle(intValue);
-                LogStr($"Scroll! {floatValue}");
+                // LogStr($"Scroll! {floatValue}");
                 var _yOffsetTarget = yOffset - 5 * (int)floatValue;
                 if (_yOffsetTarget < 0)
                 {
                     _yOffsetTarget = 0;
                 }
-                if (_yOffsetTarget > _catsCount * 1.5)
+                if (_yOffsetTarget > cachedVisibleCats.Length * 1.5)
                 {
-                    _yOffsetTarget = (int)((double)_catsCount * 1.5);
+                    _yOffsetTarget = (int)((double)cachedVisibleCats.Length * 1.5);
                 }
                 if (_yOffsetTarget != yOffsetTarget)
                 {
@@ -392,7 +522,7 @@ public partial class CatstableMod
     }
 
     unsafe private static bool _insideHouseCatByOffset = false;
-    unsafe private static int _catsCount = 0;
+    unsafe private static int _totalCatsCount = 0;
     unsafe private static bool _refreshPending = false;
 
     [UnmanagedCallersOnly]
@@ -400,41 +530,25 @@ public partial class CatstableMod
     {
         _insideHouseCatByOffset = true;
         nint result;
-        if (_catIndex != 0)
+        if (isIteratingOurDrawers)
         {
-            LogStr($"Getting cat at {a1:X} {_catIndex:X}");
-            result = _getHouseCatByOffset(a1, _catIndex);        
+            // LogStr($"[HOOK] GetHouseCatByOffsetHook: returning cached cat at index {_catIndex}");
+            result = cachedVisibleCats[_catIndex];
+            // LogStr($"[HOOK] GetHouseCatByOffsetHook: cachedVisibleCats result={result:X}");
         } else
         {
-            LogStr($"Getting cat at {a1:X} {a2:X}");
+            // LogStr($"Getting cat at {a1:X} {a2:X}");
             result = _getHouseCatByOffset(a1, a2);
         }
-        
         _insideHouseCatByOffset = false;
+        // LogStr($"[HOOK] GetHouseCatByOffsetHook: result={result:X}");
         return result;
     }
 
 
-    [UnmanagedCallersOnly]
-    private static unsafe nint UnknownFunction(nint a1, nint a2)
-    {
-        
-
-        // the path from CatstatsDrawer to count is dword([[[[[[[rcx+20]+78]]+18]+8]+20]+4480]+0xC)
-        // if (_insideHouseCatByOffset)
-        // {
-        //     var count = Marshal.ReadInt32(Marshal.ReadIntPtr(Marshal.ReadIntPtr(a1 + 0x20) + 0x4480) + 0xC);
-        //     LogStr($"cat count: {count}");
-        //     if (count != _catsCount)
-        //     {
-        //         _refreshPending = true;
-        //         _catsCount = count;
-        //     }
-        // }
-        return _unknownFunction(a1, a2);
-    }
-
     unsafe private static int _catIndex = 0;
+    unsafe private static List<nint> alreadyInitializedDrawers = new List<nint>();
+    unsafe private static bool isIteratingOurDrawers = false;
     [UnmanagedCallersOnly]
     private static unsafe nint InitCatStatsCallbackHook(nint a1)
     {   
@@ -442,34 +556,39 @@ public partial class CatstableMod
         // var result = _initCatStatsClickCallback(a1);
         Write(a1 + 0x8, _originalDrawer);
         var result = _initCatStatsClickCallback(a1);
-        foreach (var drawer in rowDrawers)
-        {
-            Write(a1 + 0x8, drawer);
-            result = _initCatStatsClickCallback(a1);
-            
-        }
-        foreach (var drawer in rowDrawers)
-        {
-            LogStr($"init cat stats drawer callback xxxxxxxxxxxxxxxxxxxxxxxxxxxxx {drawer:X}");
-            LogStr($"before init cat stats drawer callback");
-            Write(a1 + 0x8, drawer);
-            result = _initCatStatsClickCallback(a1);
-            _catIndex += 1;
-        }
+        // nint result = 0;
+        isIteratingOurDrawers = true;
         _catIndex = 0;
+        foreach (var drawer in rowDrawers)
+        {
+            // if (alreadyInitializedDrawers.Contains(drawer))
+            // {
+            //     continue;
+            // }
+            Write(a1 + 0x8, drawer);
+            result = _initCatStatsClickCallback(a1);
+            _catIndex++;
+            if (_catIndex == cachedVisibleCats.Length)
+            {
+                break;
+            }
+            // alreadyInitializedDrawers.Add(drawer);
+        }
+
+        isIteratingOurDrawers = false;
+        // foreach (var drawer in rowDrawers)
+        // {
+        //     Write(a1 + 0x8, drawer);
+        //     result = _initCatStatsClickCallback(a1);
+        //     _catIndex += 1;
+        //     if (_catIndex >= _totalCatsCount)
+        //     {
+        //         break;
+        //     }
+        // }
         return result;
     }
 
-
-    [UnmanagedCallersOnly]
-    private static unsafe nint BindCatHook(nint drawer, nint cat, nint a3)
-    {
-        // LogStr($"BindCatHook called drawer={drawer:X} cat={cat:X} a3={a3:X}");
-        var result = _bindCat(drawer, cat, a3);
-        // LogStr($"BindCatHook called originalDrawer={_originalDrawer:X} cat={cat:X} a3={a3:X}");
-        // _bindCat(_originalDrawer, cat, a3);
-        return result;
-    }
 
     [UnmanagedCallersOnly]
     private static unsafe nint CreatePanelHook(nint a1, nint a2, nint a3)
@@ -482,14 +601,6 @@ public partial class CatstableMod
         var result = _createPanel(a1, a2, a3);
         LogStr($"CreatePanelHook called a1={a1:X} a2={a2:X} a3={a3:X} result={result:X}");
         _originalPanel = result;
-        return result;
-    }
-
-
-    [UnmanagedCallersOnly]
-    private static unsafe nint RenderPanelHook(nint panel)
-    {
-        var result = _renderPanel(panel);
         return result;
     }
 
@@ -544,12 +655,13 @@ public partial class CatstableMod
         {
             _ourDrawer = a1;
         }
+
         LogStr($"[HOOK] CreateCatStatsDrawerHook: a1=0x{a1:X}, result=0x{result:X}");
         return result;
     }
 
     
-
+    static nint openCloseBtn = 0;
     [UnmanagedCallersOnly]
     private static unsafe nint RegisterCallbackHook(nint menuPanel, nint a2, nint a3, nint a4)
     {
@@ -587,10 +699,18 @@ public partial class CatstableMod
             LogStr($"[HOOK] RegisterCallbackHook: openclose button not found, name={name} at 0x{namePtr:X}, mcPtr=0x{mcPtr:X}, movieclip=0x{movieclip:X}");
             return result;
         }
+
         var callbackMetaPtr = result + 0xB8;
         LogStr($"[HOOK] RegisterCallbackHook: CatMenu found at 0x{renderer:X}, openclose button found at 0x{mcPtr:X}, callbackMetaPtr=0x{callbackMetaPtr:X}");
         if (_btnCallbackMetadataPtr == 0)
         {
+            openCloseBtn = mcPtr;
+            catMenuRenderer = renderer;
+            // var openCloseBtnRenderer = Marshal.ReadIntPtr(mcPtr + 0x18);
+            // var openCloseBtnTransform = Marshal.ReadIntPtr(openCloseBtnRenderer + 0x38);
+            // var openCloseX = Read<float>(openCloseBtnTransform + 0x80);
+            // var openCloseY = Read<float>(openCloseBtnTransform + 0x88);
+            // LogStr($"[HOOK] RegisterCallbackHook: openclose button transform at 0x{openCloseBtnTransform:X}, x={openCloseX}, y={openCloseY}");
             _btnCallbackMetadataPtr = callbackMetaPtr;
             _originalPanel = houseDrawerPanel;
 
@@ -672,19 +792,20 @@ public partial class CatstableMod
             }
             // LogStr($"pointer 6: {pointer:X}");
             var count = Marshal.ReadInt32(pointer + 0xC);
-            if (_catsCount == count)
+            if (_totalCatsCount == count)
             {
                 // already updated, do nothing
+                // LogStr($"no change cat count (tick): {count} reading from 0x{pointer + 0xC:X}");
                 return 0;
             }
             if (count == 0)
             {
                 return 0;
             }
-            _catsCount = count;
-            LogStr($"cat count (tick): {count}");
+            _totalCatsCount = count;
+            // LogStr($"cat count (tick): {count}");
             CreateRows();
-            LogStr($"before read! {_originalDrawer:X}");
+            // LogStr($"before read! {_originalDrawer:X}");
         }
         return 0;
     }
@@ -694,34 +815,58 @@ public partial class CatstableMod
         var _updateBtn = (delegate* unmanaged<nint, void>)(MewjectorApi.GameBase + 0x9768e0);
         yOffset = yScrollAni == null ? yOffset : yScrollAni.Tick();
         xOffset = xMoveAni == null ? xOffset : xMoveAni.Tick();
-        LogStr($"xOffset {xOffset}");
-        double pos = -1.0 + yOffset;
+        // LogStr($"xOffset {xOffset}");
+        double yPos = -1.0 + yOffset;
         double xPos = xOffset;
-        double headerXpos = xPos - 10.0;
-        
+        double headerXpos = cachedVisibleCats.Length > 0 ? xPos - 10.0 : -300.0;
+        var _findButton = (delegate* unmanaged<nint, nint, nint, nint>)(MewjectorApi.GameBase + (nuint)0x9740c0);
+        var _trackMovieclipChildParentOffset = (delegate* unmanaged<nint, nint, nint, void>)(MewjectorApi.GameBase + (nuint)0x204010);
         if (headersRenderer != 0)
         {
             var headerTransform = Marshal.ReadIntPtr(headersRenderer + 0x40);
             Write(headerTransform + 0x80, headerXpos);
         }
-
-        foreach (var transform in transforms)
+        for (var i = 0; i < _totalCatsCount; i++)
         {
-            Write(transform + 0x80, xPos);
-            Write(transform + 0x88, pos);
-            pos -= 2.7;
+            var transform = rowTransforms[i];
+            if (i < cachedVisibleCats.Length)
+            {    
+                Write(transform + 0x80, xPos);
+                Write(transform + 0x88, yPos);
+                yPos -= 2.7;
+            } else
+            {
+                Write(transform + 0x80, (double)-300.0);
+            }
         }
-        foreach (var drawer in rowDrawers)
+        // if (openCloseBtn != 0)
+        // {
+        //     var openCloseBtnTransform = Marshal.ReadIntPtr(openCloseBtn + 0x40);
+        //     Write(openCloseBtnTransform + 0x80, (double)10);
+        //     Write(openCloseBtnTransform + 0x80, (double)10);
+        // }
+
+        for (var i = 0; i < _totalCatsCount; i++)
         {
-            // LogStr($"[HOOK] handleScrollAtUpdatePanelLayout: drawer 0x{drawer:X}");
+            var drawer = rowDrawers[i];
+            var menupanel1 = Marshal.ReadIntPtr(drawer + 0x60);
             var renderer = Marshal.ReadIntPtr(drawer + 0x40);
-            var movieclip = Marshal.ReadIntPtr(renderer + 0x80);
+            var transform = Marshal.ReadIntPtr(renderer + 0x40);
+            // LogStr($"[HOOK] handleScrollAtUpdatePanelLayout: drawer 0x{drawer:X} menupanel1=0x{menupanel1:X} transform=0x{transform:X}");
+            _trackMovieclipChildParentOffset(_originalPanel, transform, 1);
+            // var btnx = _findButton(menupanel1, GameString.Create("familytree"), 0);
+            // LogStr($"[HOOK] HouseClickHook: menupanel1=0x{menupanel1:X} drawer=0x{drawer:X} btnx=0x{btnx:X}");
+
+            // LogStr($"[HOOK] handleScrollAtUpdatePanelLayout: drawer 0x{drawer:X}");
+            // var renderer = Marshal.ReadIntPtr(drawer + 0x40);
+            // var movieclip = Marshal.ReadIntPtr(renderer + 0x80);
             // Write(renderer + 0x50, 0x0000002600000101);
             // LogStr($"[HOOK] handleScrollAtUpdatePanelLayout: drawer 0x{drawer:X} renderer 0x{renderer:X} movieclip 0x{movieclip:X}");
             // var btn = _findMovieClipTrampoline(movieclip, GameString.Create("familytree"), 0, 0);
             // LogStr($"[HOOK] handleScrollAtUpdatePanelLayout: found familytree button at 0x{btn:X}");
-            // _updateBtn(btn);
+            // _updateBtn(btnx);
         }
+
         
     }
 
@@ -730,16 +875,23 @@ public partial class CatstableMod
 
     static nint rowDrawer = 0;
     static List<nint> rowDrawers = new List<nint>();
-    static List<nint> transforms = new List<nint>();
+    static List<nint> rowTransforms = new List<nint>();
+    static List<nint> rowRenderers = new List<nint>();
     static nint headersRenderer = 0;
+    
+    static nint catMenuRenderer = 0;
+    static nint emptyRenderer = 0;
     
     static unsafe void CreateRows()
     {
         var _getRenderer = (delegate* unmanaged<nint, nint>)(MewjectorApi.GameBase + 0x6bea0);
         var _createEntity = (delegate* unmanaged<nint, nint>)(MewjectorApi.GameBase + 0x962fb0);
 
+
+
+
         IntPtr headers = Marshal.StringToHGlobalAnsi("RowHeaders");
-        // var _strBtn = _findMovieClipTrampoline(CreateGameString("x"));
+        // var _strBtn = _findMovieClipTrampoline(CreateUTF16GameString("x"));
 
         var headersEntity = _createEntity(scenePtr);
 
@@ -752,7 +904,7 @@ public partial class CatstableMod
 
         LogStr($"headersRenderer 0x{headersRenderer:X}");
 
-        for (int i = 0; i < _catsCount; i++)
+        for (int i = 0; i < _totalCatsCount; i++)
         {
             
 
@@ -781,9 +933,35 @@ public partial class CatstableMod
             
             var transform = Marshal.ReadIntPtr(rowRenderer + 0x40);
             LogStr($"Created new CallStatsDrawer: Renderer {rowRenderer:X} {rowDrawer:X} {rowEntity:X} {scenePtr:X} transform: {transform:X}");
-            transforms.Add(transform);
+            rowTransforms.Add(transform);
             rowDrawers.Add(rowDrawer);
+            rowRenderers.Add(rowRenderer);
         }
+
+        IntPtr emptyPlaceholder = Marshal.StringToHGlobalAnsi("EmptyPlaceholder");
+        var emptyPlaceholderEntity = _createEntity(scenePtr);
+
+        var emptyPlaceholderRenderer = _createUiRenderer(
+            scenePtr,
+            emptyPlaceholderEntity,
+            emptyPlaceholder,
+        0);
+        emptyRenderer = emptyPlaceholderRenderer;
+        Marshal.FreeHGlobal(emptyPlaceholder);
+        Write(emptyPlaceholderRenderer + 0x50, 0x0000002600000101);
+        LogStr($"emptyPlaceholderRenderer 0x{emptyPlaceholderRenderer:X}");
+
+        IntPtr bolatest = Marshal.StringToHGlobalAnsi("bolatest");
+        var bolatestEntity = _createEntity(scenePtr);
+
+        var bolatestRenderer = _createUiRenderer(
+            scenePtr,
+            bolatestEntity,
+            bolatest,
+        0);
+        Marshal.FreeHGlobal(bolatest);
+        Write(bolatestRenderer + 0x50, 0x0000002600000101);
+        LogStr($"bolatestRenderer 0x{bolatestRenderer:X}");
         
     }
 
@@ -832,6 +1010,8 @@ public partial class CatstableMod
     }
 
     static bool _panelIsOpen = false;
+    static bool panelAnimationInProgress = false;
+    static int waitingForPanelStatus = 0;
     [UnmanagedCallersOnly]
     private static unsafe nint UpdatePanelLayoutHook(nint a1)
     {
@@ -849,27 +1029,39 @@ public partial class CatstableMod
         catMenuMc = Marshal.ReadIntPtr(renderer + 0x80);
 
         var rendererState = Marshal.ReadInt32(renderer + 0x54);
-        if (!_panelIsOpen && rendererState == 37)
+        if (rendererState == waitingForPanelStatus)
         {
-            // IntPtr rightStr = Marshal.StringToHGlobalAnsi("right");
-            // CallWithCustomString(_goToLabel, slide, "right", a3, a4)
-            // _goToLabel(slide, GameString.Create("right"));
-            // _panelIsOpen = true;
-            // xOffsetTarget = 10;
-            // xMoveAni = new FloatAnimator(xOffset, xOffsetTarget, 0.5f);
-            MewjectorApi.Log($"[HOOK] 1- PanelSlideCallbackHook: xOffset {xOffset} xOffsetTarget {xOffsetTarget}");
+            if (waitingForPanelStatus == 37)
+            {
+                waitingForPanelStatus = 0;
+                panelAnimationInProgress = false;
+                // IntPtr rightStr = Marshal.StringToHGlobalAnsi("right");
+                // CallWithCustomString(_goToLabel, slide, "right", a3, a4)
+                // _goToLabel(slide, GameString.Create("right"));
+                // _panelIsOpen = true;
+                // xOffsetTarget = 10;
+                // xMoveAni = new FloatAnimator(xOffset, xOffsetTarget, 0.5f);
+                MewjectorApi.Log($"[HOOK] 1- Panel is open and animation finished: xOffset {xOffset} xOffsetTarget {xOffsetTarget}");
+            }
+            else if (waitingForPanelStatus == 36)
+            {
+                waitingForPanelStatus = 0;
+                panelAnimationInProgress = false;
+                for (int i = 0; i < rowDrawers.Count; i++)
+                {
+                    var drawer = rowDrawers[i];
+                    Write(drawer + 0x78, (nint)0); // setting HouseCat reference to zero
+                    // LogStr($"[HOOK] InitCatStatsCallbackHook: drawer[{i}] = {drawer:X} visibility set to 0");
+                }
+                // _panelIsOpen = false;
+                // xOffsetTarget = -35f;
+                // xMoveAni = new FloatAnimator(xOffset, xOffsetTarget, 0.5f);
+                MewjectorApi.Log($"[HOOK] 2- Pane is closed and animation finished: xOffset {xOffset} xOffsetTarget {xOffsetTarget}");
+                // IntPtr leftStr = Marshal.StringToHGlobalAnsi("left");
+                // MewjectorApi.Log($"[HOOK] PanelSlideCallbackHook: rendererState=24, going to label 'left' on slide 0x{slide:X}");
+                // _goToLabel(slide, GameString.Create("left"));
+            }
         }
-        else if (_panelIsOpen && rendererState == 36)
-        {
-            // _panelIsOpen = false;
-            // xOffsetTarget = -35f;
-            // xMoveAni = new FloatAnimator(xOffset, xOffsetTarget, 0.5f);
-            MewjectorApi.Log($"[HOOK] 2- PanelSlideCallbackHook: xOffset {xOffset} xOffsetTarget {xOffsetTarget}");
-            // IntPtr leftStr = Marshal.StringToHGlobalAnsi("left");
-            // MewjectorApi.Log($"[HOOK] PanelSlideCallbackHook: rendererState=24, going to label 'left' on slide 0x{slide:X}");
-            // _goToLabel(slide, GameString.Create("left"));
-        }
-
         return result;
     }
 
@@ -1001,7 +1193,7 @@ public partial class CatstableMod
     }
 
 
-    unsafe static nint CreateGameString(string text)
+    unsafe static nint CreateUTF16GameString(string text)
     {
         // Allocate enough space for the engine's std::wstring object.
         // 32 bytes is sufficient for the fields used by 370B100.
@@ -1041,12 +1233,14 @@ public partial class CatstableMod
             _originalPanel = 0;
             _ourPanel = 0;
             _originalDrawer = 0;
-            transforms.Clear();
+            rowTransforms.Clear();
             rowDrawers.Clear();
-            _catsCount = 0;
+            _totalCatsCount = 0;
             headersRenderer = 0;
             yOffset = 0;
             ClearExperimentState();
+            _renderersSoFar.Clear();
+            alreadyInitializedDrawers.Clear();
         }
         return _removeMovieClipTrampoline(a1, a2, a3, a4);
     }

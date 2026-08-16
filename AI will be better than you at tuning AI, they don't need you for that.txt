@@ -1,0 +1,57 @@
+AI will be better than you at tuning AI, they don't need you for that
+
+There is a reassuring argument about AI and employment that goes roughly like this: yes, AI will automate software engineering, data science and other technical work, but humans will simply move up the abstraction ladder. We will stop writing code and start designing systems. We will stop analyzing data and start deciding what questions matter. And, conveniently, we can all become “AI-native” professionals who supervise the machines.
+
+The problem is that this argument assumes there will always be another sufficiently valuable rung above the one AI just automated.
+
+There is already evidence that AI is approaching the work of experienced professionals, not merely their mechanical tasks. OpenAI's GDPval evaluates economically valuable work across 44 occupations using tasks produced by professionals averaging 14 years of experience. Its researchers report that frontier models are approaching experts in deliverable quality, with performance improving roughly linearly over time.
+
+That doesn't prove mass unemployment. It does, however, undermine the idea that AI will conveniently stop before reaching the valuable parts of white-collar jobs.
+
+The obvious rebuttal is that benchmarks aren't real jobs. That's true—and actually makes the argument more complicated, not safer. SWE-bench, one of the most prominent measures of autonomous software engineering, turned out to have serious problems. OpenAI found that at least 59.4% of an audited subset of difficult SWE-bench Verified problems contained flawed tests or problematic specifications, and later estimated roughly 30% of SWE-bench Pro tasks were broken.
+
+But notice what this actually demonstrates: humans had to improve the benchmark because AI was getting good enough that the benchmark itself was becoming inadequate. Benchmark criticism is evidence against simplistic claims about current capability, not evidence that autonomous engineering is impossible.
+
+And real engineering's ambiguity isn't necessarily a permanent human moat. Requirements, tests, architecture decisions and business objectives can themselves become inputs to optimization loops. If an AI can generate thousands of candidate implementations, run them, inspect failures, simulate users and compare outcomes, “the requirements are ambiguous” becomes an engineering problem for the AI system rather than an argument for keeping a human engineer permanently in the loop.
+
+The same applies to AI evaluating AI. Current LLM judges absolutely have weaknesses. Research finds instability, bias and situations where judges disagree with humans or fail to improve another model's output.
+
+But saying “AI judges aren't reliable enough yet” misses the important variable: yet. Meta's 2026 HyperAgents research explicitly describes systems combining an agent that solves a task with a meta-agent that modifies both itself and the task-solving agent. In coding, this creates a direct feedback loop: better coding ability can produce better self-improvement mechanisms.
+
+That is qualitatively different from a spreadsheet replacing an accountant. A spreadsheet doesn't redesign itself to become a better spreadsheet.
+
+Another popular counterargument is historical: spreadsheets didn't eliminate accountants, compilers didn't eliminate programmers, and the printing press didn't eliminate writers. But these examples conceal an important distinction. Previous technologies primarily increased the productivity of human labor. AI is unusual because its target is increasingly the cognitive labor itself, it's good a the statistical approximation of the output of any given job, including the ones need to mantain it, it's in a whole different level than what we commonly refer as sofware tools.
+
+If one programmer with AI can do the work of five programmers, the historical analogy doesn't tell us whether companies will hire five times as many programmers because software becomes cheaper. Sometimes they will. But they don't have to.
+
+Demand can expand, but not infinitely. There are only so many companies that need another internal dashboard, mobile app or CRUD system. At some point, making software cheaper stops creating proportional demand and starts destroying the price of the labor that produces it.
+
+And “learn AI to remain relevant” has the same problem. Learning AI is sensible today. It can make you dramatically more productive. But if the strategy is become the person who knows how to operate and improve AI, you are competing for a position whose entire purpose is being progressively automated.
+
+The METR randomized trial provides a useful warning here. In early 2025, experienced open-source developers using AI actually took 19% longer to complete their assigned tasks, despite expecting a substantial speedup.
+
+This doesn't prove AI is useless. It proves that today's tools aren't the end state—and that humans are remarkably bad at predicting where their own productivity advantages disappear. The optimistic engineer looks at a bad AI workflow and sees an opportunity to learn better prompting. The less optimistic interpretation is that prompting is itself a temporary skill on the automation ladder.
+
+Eventually, the AI may be better at prompting, evaluating prompts, designing experiments, selecting models and deciding when its own output is good enough.
+
+At that point, telling engineers to “learn AI” becomes a little like telling horses to learn automotive mechanics.
+
+And there is an economic reason employers will be happy to climb this ladder. Automation doesn't merely reduce the number of workers required; it can weaken the bargaining position of those who remain. Research finds that the threat of automation weakens workers' bargaining power and suppresses wage adjustments. A separate empirical study identifies automation as a major driver of the long-run decline in labor's share of income.
+
+The trend is not hypothetical anymore: U.S. labor's share of nominal GDP fell to a record-low 52.9% in Q2 2026, while productivity surged. AI is not solely responsible—the decline predates it—but AI is arriving in an economy where the bargaining power of labor is already under pressure.
+
+The final counterargument is that everyone benefits if AI makes everything cheaper. Perhaps. But who owns the AI matters. If productivity increases while the ownership of the productive machinery becomes increasingly concentrated, the result can be an economy producing more with fewer workers while distributing less of that production through wages.
+
+That is not a technological inevitability. It is a political choice.
+
+But neither is mass displacement impossible simply because previous technologies created new jobs.
+
+The uncomfortable possibility is that this time the technology is not merely replacing a task. It is learning how to replace the people who perform the task—and increasingly, how to improve the machinery that does the replacing.
+
+So yes, learn AI. Use it. Become more productive.
+
+Just don't confuse being good at using the automation with having permanently escaped it.
+
+Because eventually the machine you're supervising may become better than you at supervising the machine.
+
+BTW I'm looking for job as a Software Developer, but it's very likely that you don't need to hire me, it's very likely that AI already can do the same.
