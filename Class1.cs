@@ -1,98 +1,67 @@
 ﻿// using MewgenicsModSdk;
 // using MewgenicsModSdk.Game;
 using System.Collections.Generic;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Metadata;
-using System.Linq;
-using System.Reflection;
-using System.Diagnostics.CodeAnalysis;
 using System;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.IO;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Linq;
 using System.Diagnostics;
 
-using System.Collections.Concurrent;
-using System.Text;
-using System.Runtime.CompilerServices;
 namespace CatstableMod;
 
 public partial class CatstableMod
 {
 
-
-
     public string Id => "catstable";
     public string Name => "catstable";
     public bool IsEnabled { get; private set; } = true;
 
-    private CancellationTokenSource _cts = new CancellationTokenSource();
-    private static CatstableMod? _instance;
-    private Dictionary<string, string> _abilitiesLocalNames = new Dictionary<string, string>();
+    CancellationTokenSource _cts = new CancellationTokenSource();
+    static CatstableMod? _instance;
+    Dictionary<string, string> _abilitiesLocalNames = new Dictionary<string, string>();
 
 
-    private static volatile bool _genHooksInstalled = false;
+    static volatile bool _genHooksInstalled = false;
     internal static volatile bool _genLoggingEnabled = false;
-    private static nint _abilityTriggerHookTrampoline; // sub_7FF70C3F1ED0  glaiel::Ability::trigger
+    static nint _abilityTriggerHookTrampoline; // sub_7FF70C3F1ED0  glaiel::Ability::trigger
 
-    private static unsafe delegate* unmanaged<long, long, nint, nint, nint> _createMovieClipTrampoline;
-    private static int _count;
-    private static unsafe delegate* unmanaged<long, long, nint, nint, nint> _houseCreationTrampoline;
-    private static unsafe delegate* unmanaged<long, long, nint, nint, nint> _movieClipConstructroTrampoline;
-    private static unsafe delegate* unmanaged<nint, nint> _updatePanelLayout;
-    private static unsafe delegate* unmanaged<nint, nint> _createRenderer;
-    private static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _createUiRenderer;
-    private static unsafe delegate* unmanaged<nint, nint, nint, nint> _createPanel;
-    private static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _houseClickHandler;
-    private static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _registerCallback;
-    private static unsafe delegate* unmanaged<nint, nint> _statsCreator;
-    private static unsafe delegate* unmanaged<nint, nint, nint> _getHouseCatByOffset;
-    private static unsafe delegate* unmanaged<nint, nint> _gameTick;
-    private static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _catIterator;
+    static unsafe delegate* unmanaged<nint, nint> _updatePanelLayout;
+    static unsafe delegate* unmanaged<nint, nint> _createRenderer;
 
-    private static unsafe delegate* unmanaged<nint, nint> _buildRenderEntries;
+    static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _createUiRenderer;
+    static unsafe delegate* unmanaged<nint, nint, nint, nint> _createPanel;
+    static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _registerCallback;
+    static unsafe delegate* unmanaged<nint, nint> _statsCreator;
+    static unsafe delegate* unmanaged<nint, nint, nint> _getHouseCatByOffset;
+    static unsafe delegate* unmanaged<nint, nint> _gameTick;
+    static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _catIterator;
 
-    private static unsafe delegate* unmanaged<nint, nint> _houseClick;
-    private static unsafe delegate* unmanaged<nint, nint, nint, nint> _findButton;
-    private static unsafe delegate* unmanaged<nint, nint> _initCatStatsClickCallback;
-    private static unsafe delegate* unmanaged<nint, nint> _toggleHouseDrawer;
-    private static unsafe delegate* unmanaged<nint, nint, nint> _mutationToolTip;
+    static unsafe delegate* unmanaged<nint, nint, nint, nint> _findButton;
+    static unsafe delegate* unmanaged<nint, nint> _initCatStatsClickCallback;
+    static unsafe delegate* unmanaged<nint, nint> _toggleHouseDrawer;
+    static unsafe delegate* unmanaged<nint, nint, nint> _mutationToolTip;
+    static unsafe delegate* unmanaged<nint, nint, nint, nint> _hideIconsHandler;
+    static unsafe delegate* unmanaged<nint, byte> _isPanelActive;
+    static unsafe delegate* unmanaged<nint, nint> _renderPanel;
+    static unsafe delegate* unmanaged<nint, nint, nint, nint> _bindCat;
+    unsafe static delegate* unmanaged<nint, nint, nint> _mouseEventHandler;
+    unsafe static delegate* unmanaged<nint, nint, nint, nint> _isButtonActive;
+    unsafe static delegate* unmanaged<nint, nint, nint, nint> _hideChildren;
 
-    private static unsafe delegate* unmanaged<nint, byte> _isPanelActive;
-    private static unsafe delegate* unmanaged<nint, nint> _renderPanel;
-    private static unsafe delegate* unmanaged<nint, nint, nint, nint> _bindCat;
-    private unsafe static delegate* unmanaged<nint, nint, nint> _mouseEventHandler;
+    static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _removeMovieClipTrampoline;
+    unsafe static delegate* unmanaged<nint, char*, nuint, nint> _assignString;
 
-
-    private static unsafe delegate* unmanaged<long, long, nint, nint, nint> _MyHook;
-    private static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _findMovieClipTrampoline;
-    private static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _removeMovieClipTrampoline;
-    private unsafe static delegate* unmanaged<nint, char*, nuint, nint> _assignString;
+    static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _globalResourceManagerLookup;
     
-
-    private static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _globalResourceManagerLookup;
-    private static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _npcMapDrawer;
-
+    unsafe static delegate* unmanaged<nint, nint, void> _setText;
+    unsafe static delegate* unmanaged<nint, nint, uint, void> _attachChild;
+    unsafe static delegate* unmanaged<nint, nint, nint> _createCatStatsDrawer;
+    unsafe static delegate* unmanaged<nint, nint> _catStatsDrawerUpdate;
     
-    unsafe private static delegate* unmanaged<nint, nint, void> _setText;
-    unsafe private static delegate* unmanaged<nint, nint, void> _goToLabel;
-    unsafe private static delegate* unmanaged<nint, nint> _createInstance;
-    unsafe private static delegate* unmanaged<nint, nint, void> _copyState;
-    unsafe private static delegate* unmanaged<nint, nint, uint, void> _attachChild;
-    unsafe private static delegate* unmanaged<nint, nint, nint> _createCatStatsDrawer;
-    
-        
     
     const long RVA_CreateInstance = 0xA4E460; // DefineSprite::CreateInstance()
     const long RVA_CopyState      = 0x9b2d20; // sub_404062D20
     const long RVA_AttachChild    = 0x9901e0; // sub_40401E0
-
-
 
     unsafe static T Read<T>(nint p) where T : unmanaged
         => *(T*)p;
@@ -101,111 +70,11 @@ public partial class CatstableMod
     {
         *(T*)address = value;
     }
-
-    unsafe static void DestroyGameString(nint str)
-    {
-        if (str != 0)
-            Marshal.FreeHGlobal(str);
-    }
-    static List<nint> rows = new List<nint>();
-    unsafe public static nint Duplicate(nint original)
-    {
-        if (original == 0)
-        {
-            LogStr($"[HOOK] Duplicate: original is null, returning 0");
-            return 0;
-        }
-
-        // MovieClip +0x38 = parent
-        nint parent = Read<nint>(original + 0x38);
-        if (parent == 0)
-        {
-            LogStr($"[HOOK] Duplicate: parent is null, returning 0");
-            return 0;
-        }
-
-        // MovieClip +0xD0 = DefineSprite*
-        nint defineSprite = Read<nint>(original + 0xD0) - 0x60;
-        if (defineSprite == 0)
-        {
-            LogStr($"[HOOK] Duplicate: defineSprite is null, returning 0");
-            return 0;
-        }
     
-        // Call DefineSprite::CreateInstance()
-        nint clone = _createInstance(defineSprite);
-        
-        if (clone == 0)
-        {
-            LogStr($"[HOOK] Duplicate: CreateInstance returned null, returning 0");
-            return 0;
-        } else
-        {
-            LogStr($"[HOOK] Duplicate: Duplicated at 0x{clone:X}");
-        }
-
-        nint vtable = *(nint*)clone;
-
-        var advance =
-            (delegate* unmanaged<nint, void>)
-                (*(nint*)(vtable + 0x18));
-    
-        LogStr($"[HOOK] Running advance");
-        advance(clone);
-
-        // Copy transform/color/etc.
-        LogStr("[HOOK] Copying state from original to clone");
-        _copyState(clone, original);
-
-        float x = Read<float>(clone + 0x70);
-        float y = Read<float>(clone + 0x74);
-
-        LogStr($"clone_coords x={x} y={y}");
-
-        Write(clone + 0x74, y + 100.0f);
-        // parent->size (+0xAC)
-        uint depth = Read<uint>(parent + 0xAC);
-
-        // var textbox = CallWithCustomString(_findMovieClipTrampoline, clone, "test_text", 0, 0);
-        // nint gameString = CreateUTF16GameString("CatstableMod!");
-        // _setText(textbox, gameString);
-        // DestroyGameString(gameString);
-        // pendingTextClone = textbox;
-
-
-
-        _attachChild(parent, clone, depth);
-
-        return clone;
-    }
-
-    public static void SetDynamicText(nint dynamicTextBox, string text)
-    {
-        // Allocate UTF-16 buffer.
-        nint utf16 = Marshal.StringToHGlobalUni(text);
-
-        // Replace pointer.
-        Write(dynamicTextBox + 184, utf16);
-
-        // Character count.
-        Write(dynamicTextBox + 200, (ulong)text.Length);
-
-        // Capacity.
-        //
-        // The constructor initializes this to 7 for short strings,
-        // but once it points to a heap buffer it appears to simply be
-        // the allocated capacity. Setting it equal to the length is
-        // sufficient for read-only rendering.
-        Write(dynamicTextBox + 208, (ulong)text.Length);
-    }
-
-    private static nint _rightStr = 0;
-    private static nint _leftStr = 0;
+    static nint _rightStr = 0;
+    static nint _leftStr = 0;
     internal unsafe void MjInit()
     {
-
-        _findMovieClipTrampoline = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
-            0x990480, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&FindChildMovieClipHook);
 
         _removeMovieClipTrampoline = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0x99e030, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&RemoveMovieClip);
@@ -215,26 +84,18 @@ public partial class CatstableMod
 
         _createRenderer = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
             0x5A580, (void*)(delegate* unmanaged<nint, nint>)&CreateRendererHook);
-
+        
         // _globalResourceManagerLookup = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
         //     0x9adc50, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&GlobalResourceManagerLookupHook);
-
-        // _npcMapDrawer = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
-        // 0x1ac950,(void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&NpcMapDrawerHook);
 
         _createUiRenderer = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0x5a380, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&CreateUiRendererHook);
 
         _createPanel = (delegate* unmanaged<nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0xeecb0, (void*)(delegate* unmanaged<nint, nint, nint, nint>)&CreatePanelHook);
-        
 
-        // _houseClickHandler = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
-        //     0x2035c0, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&HouseClickHandlerHook);
-        
         _registerCallback = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0x973c40, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&RegisterCallbackHook);
-
 
         _statsCreator = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
             0xE9200, (void*)(delegate* unmanaged<nint, nint>)&CreateCatStatsDrawerHook);
@@ -257,74 +118,57 @@ public partial class CatstableMod
         _catIterator = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0xec960, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&CatIteratorHook);
 
-        // _buildRenderEntries = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
-        //     0x9845f0, (void*)(delegate* unmanaged<nint, nint>)&SwapRenderEntriesHook);
+        _mutationToolTip = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+            0xe4c40, (void*)(delegate* unmanaged<nint, nint, nint>)&MutationTooltipHook); 
 
-        // _mutationToolTip = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
-        //     0xe4c40, (void*)(delegate* unmanaged<nint, nint, nint>)&MutationTooltipHook); MUST UNCOMMENT SOON! ONLY FOR TESTING OTHER STUFF!
-
-
-
-// [[rcx+10]+A8]==0000007374617453
-        // byte([[rbx+20]+4480]+0xC)
-        
 
         var location = MewjectorApi.GameBase;
         LogStr($"Gamebase at {location:X}...");
         // LogStr("MjInit: installing hooks...");
-        _createInstance = (delegate* unmanaged<nint, nint>)(MewjectorApi.GameBase + (nuint)RVA_CreateInstance);
         _setText = (delegate* unmanaged<nint, nint, void>)(MewjectorApi.GameBase + (nuint)0x986470);
-        _goToLabel = (delegate* unmanaged<nint, nint, void>)(MewjectorApi.GameBase + (nuint)0x99f070);
-        _copyState = (delegate* unmanaged<nint, nint, void>)(MewjectorApi.GameBase + (nuint)RVA_CopyState);
         _assignString = (delegate* unmanaged<nint,char*,nuint,nint>)(MewjectorApi.GameBase + 0x5b100);
-
         
 
         _attachChild = (delegate* unmanaged<nint, nint, uint, void>)(MewjectorApi.GameBase + (nuint)RVA_AttachChild);
         _createCatStatsDrawer =  (delegate* unmanaged<nint, nint, nint>)(MewjectorApi.GameBase + (nuint)0x1ac430);
-                
-
-
-        // _isPanelActive = (delegate* unmanaged<nint, byte>)(void*)MewjectorApi.InstallHook(
-        //     0x203d90, (void*)(delegate* unmanaged<nint, byte>)&IsPanelActiveHook);
-
-        // _renderPanel = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
-        //     0x203eb0, (void*)(delegate* unmanaged<nint, nint>)&RenderPanelHook);
-        // _bindCat = (delegate* unmanaged<nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
-        //     0xebef0, (void*)(delegate* unmanaged<nint, nint, nint, nint>)&BindCatHook);
 
         _mouseEventHandler = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0xc2c390, (void*)(delegate* unmanaged<nint, nint, nint>)&MouseWheelHook);
-            
         
-        // _rightStr = GameString.Create("right");
-        // _leftStr = GameString.Create("left");
+        _catStatsDrawerUpdate = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
+            0xea8b0, (void*)(delegate* unmanaged<nint, nint>)&CatStatsDrawerUpdateHook);
+
+
     }
 
-    static nint[] cachedVisibleCats = new nint[0];
 
+    static nint currentlyDrawerWithOpenIconsPanel = 0;
     [UnmanagedCallersOnly]
-    private static unsafe nint SwapRenderEntriesHook(nint a1) {
-        if (emptyRenderer != 0 && catMenuRenderer != 0 && a1 != 0)
-        {
-            if (a1 == emptyRenderer) {
-                LogStr($"[HOOK] SwapRenderEntriesHook: a1={a1:X} returning catMenuRenderer={catMenuRenderer:X}");
-                return _buildRenderEntries(catMenuRenderer);
-            } else if (a1 == catMenuRenderer) {
-                LogStr($"[HOOK] SwapRenderEntriesHook: a1={a1:X} returning emptyRenderer={emptyRenderer:X}");
-                return _buildRenderEntries(emptyRenderer);
-            }
-        }
+    static unsafe nint CatStatsDrawerUpdateHook(nint a1)
+    {
 
-        var result = _buildRenderEntries(a1);
-        // LogStr($"[HOOK] BuildRenderEntriesHook: a1={a1:X} result={result:X}");
+        if (currentlyDrawerWithOpenIconsPanel != 0 && currentlyDrawerWithOpenIconsPanel != a1)
+        {
+            return 0;
+        }
+        var result = _catStatsDrawerUpdate(a1);
+        var iconsPanelIsOpen = Read<byte>(a1 + 0x71);
+        if (iconsPanelIsOpen == 1)
+        {
+            currentlyDrawerWithOpenIconsPanel = a1;
+        } else
+        {
+            currentlyDrawerWithOpenIconsPanel = 0;
+        }
         return result;
     }
 
-    
+
+    static nint[] cachedVisibleCats = new nint[0];
+
 
     [UnmanagedCallersOnly]
-    private static unsafe nint CatIteratorHook (nint a1, nint a2, nint a3, nint a4)
+    static unsafe nint CatIteratorHook (nint a1, nint a2, nint a3, nint a4)
     {
         cachedVisibleCats = new nint[a3];
         LogStr($"[HOOK] CatIteratorHook: a1={a1:X} a2={a2:X} a3={a3} a4={a4:X}");
@@ -341,7 +185,7 @@ public partial class CatstableMod
 
     static List<nint> _renderersSoFar = new List<nint>();
     [UnmanagedCallersOnly]
-    private static unsafe nint CreateRendererHook(nint a1)
+    static unsafe nint CreateRendererHook(nint a1)
     {
         var result = _createRenderer(a1);
         // _renderersSoFar.Add(result);
@@ -350,10 +194,10 @@ public partial class CatstableMod
 
     static Dictionary<nint, byte> _visibilityBefore = new Dictionary<nint, byte>();
     [UnmanagedCallersOnly]
-    private static unsafe nint ToggleHouseDrawerHook(nint a1)
+    static unsafe nint ToggleHouseDrawerHook(nint a1)
     {
         nint panel = Marshal.ReadIntPtr(a1 + 0x58);
-        nint state = Marshal.ReadIntPtr(a1 + 0x50);
+        // nint state = Marshal.ReadIntPtr(a1 + 0x50);
         var changed = false;
 
         if (panel != _originalPanel && _panelIsOpen)
@@ -363,35 +207,7 @@ public partial class CatstableMod
             changed = true;
             panelAnimationInProgress = true;
             waitingForPanelStatus = 36;
-            // for (int i = 0; i < _renderersSoFar.Count; i++)
-            // {
-            //     if (i >= 800)
-            //     {
-            //         break;
-            //     }
-            //     var renderer = _renderersSoFar[i];
-            //     var rendererName = TryReadCString(renderer + 0xA8);
-            //     if ((rendererName == null || rendererName == "") && IsLikelyPointer(Read<nint>(renderer + 0xA8)))
-            //     {
-            //         rendererName = TryReadCString(Read<nint>(renderer + 0xA8));
-            //     }
-            //     // if (rendererName == "HouseEnvironmentSkybox")
-            //     // {
-            //     //     LogStr($"[HOOK] ToggleHouseDrawerHook: HouseEnvironmentSkybox renderer at {renderer:X}");
-            //     // } else
-            //     // {
-            //     //     LogStr($"[HOOK] ToggleHouseDrawerHook: String found for renderer at {renderer:X}: {rendererName}");
-            //     // }
-            //     if (_visibilityBefore.TryGetValue(renderer, out var visibility))
-            //     {
-            //         Write(renderer + 0x51, visibility);
-            //     }
-            //     else
-            //     {
-            //         Write(renderer + 0x51, (byte)1);
-            //     }
-            // }
-            // _visibilityBefore.Clear();
+
         }
         else if (panel == _originalPanel && !_panelIsOpen)
         {
@@ -401,28 +217,13 @@ public partial class CatstableMod
             changed = true;
             panelAnimationInProgress = true;
             waitingForPanelStatus = 37;
-
-                        // hide 800 first renderers
-            // for (int i = 0; i < _renderersSoFar.Count; i++)
-            // {
-            //     if (i >= 800)
-            //     {
-            //         break;
-            //     }
-            //     var renderer = _renderersSoFar[i];
-            //     var visibility = Read<byte>(renderer +0x51);
-            //     _visibilityBefore[renderer] = visibility;
-            //     // Write(renderer + 0x51, (byte)0);
-            // }
-
-            // foreach (var rowRenderer in rowRenderers)
-            // {
-            //     Write(rowRenderer + 0x51, (byte)1);
-            // }
-            for (int i = 0; i < cachedVisibleCats.Length; i++)
+            if (rowRenderers.Count >= cachedVisibleCats.Length)
             {
-                var rowRenderer = rowRenderers[i];
-                // Write(rowRenderer + 0x51, (byte)1);
+                for (int i = 0; i < cachedVisibleCats.Length; i++)
+                {
+                    var rowRenderer = rowRenderers[i];
+                    // Write(rowRenderer + 0x51, (byte)1);
+                }
             }
         }
         if (changed)
@@ -435,7 +236,7 @@ public partial class CatstableMod
 
     static nint _lastButtonCSD = 0;
     [UnmanagedCallersOnly]
-    private static unsafe nint FindButtonHook(nint a1, nint a2, nint a3)
+    static unsafe nint FindButtonHook(nint a1, nint a2, nint a3)
     {
         var result = _findButton(a1, a2, a3);
         if (result != 0)
@@ -451,8 +252,12 @@ public partial class CatstableMod
     }
 
     [UnmanagedCallersOnly]
-    private static unsafe nint MutationTooltipHook(nint a1, nint a2)
+    static unsafe nint MutationTooltipHook(nint a1, nint a2)
     {
+        if (a1 == 0)
+        {
+            return 0;
+        }
         if (_lastButtonCSD != 0)
         {
             var opt1 = Read<nint>(Read<nint>(Read<nint>(a1 + 0x18) + 0x28) + 0x10);
@@ -475,29 +280,21 @@ public partial class CatstableMod
     
     private unsafe static float xOffset = -300f;
     private unsafe static float xOffsetTarget = -300f;
-    private static FloatAnimator? xMoveAni;
+    static FloatAnimator? xMoveAni;
 
     private unsafe static float yOffset = 0;
     private unsafe static float yOffsetTarget = 0;
-    private static FloatAnimator? yScrollAni;
+    static FloatAnimator? yScrollAni;
     [UnmanagedCallersOnly]
-    private static unsafe nint MouseWheelHook(nint a1, nint a2)
+    static unsafe nint MouseWheelHook(nint a1, nint a2)
     {
         if(_panelIsOpen && IsLikelyPointer(a2))
         {   
             var a2Val = Marshal.ReadInt32(a2);
-            if (a2Val == 1027)
+            if (a2Val == 1027 && cachedVisibleCats.Length > 10)
             {
                 // var y = 
                 var intValue = Marshal.ReadInt32(a2 + 0x1C);
-                // Write(a2 + 0x8, (uint)0);
-                // LogStr($"Emptying at {a2 - 0x100 + 0xB8:X}");
-                // Write(a2 - 0x100 + 0xB8, (uint)0);
-                // LogStr($"0x7F at {a2 - 0x100 + 0xC8:X}");
-                // Write(a2 - 0x100 + 0xC8, (uint)0x7F);
-                //00007FF7D14E6046 <=================
-                // [rdx-300+B8]=0
-                // byte[] bytes = BitConverter.GetBytes(intValue);
                 float floatValue = BitConverter.Int32BitsToSingle(intValue);
                 // LogStr($"Scroll! {floatValue}");
                 var _yOffsetTarget = yOffset - 5 * (int)floatValue;
@@ -505,9 +302,9 @@ public partial class CatstableMod
                 {
                     _yOffsetTarget = 0;
                 }
-                if (_yOffsetTarget > cachedVisibleCats.Length * 1.5)
+                if (_yOffsetTarget > cachedVisibleCats.Length * 0.8)
                 {
-                    _yOffsetTarget = (int)((double)cachedVisibleCats.Length * 1.5);
+                    _yOffsetTarget = (int)((double)cachedVisibleCats.Length * 0.8);
                 }
                 if (_yOffsetTarget != yOffsetTarget)
                 {
@@ -521,12 +318,12 @@ public partial class CatstableMod
         return _mouseEventHandler(a1, a2);
     }
 
-    unsafe private static bool _insideHouseCatByOffset = false;
-    unsafe private static int _totalCatsCount = 0;
-    unsafe private static bool _refreshPending = false;
+    unsafe static bool _insideHouseCatByOffset = false;
+    unsafe static int _totalCatsCount = -1;
+    unsafe static bool _refreshPending = false;
 
     [UnmanagedCallersOnly]
-    private static unsafe nint GetHouseCatByOffsetHook(nint a1, nint a2)
+    static unsafe nint GetHouseCatByOffsetHook(nint a1, nint a2)
     {
         _insideHouseCatByOffset = true;
         nint result;
@@ -546,14 +343,12 @@ public partial class CatstableMod
     }
 
 
-    unsafe private static int _catIndex = 0;
-    unsafe private static List<nint> alreadyInitializedDrawers = new List<nint>();
-    unsafe private static bool isIteratingOurDrawers = false;
+    unsafe static int _catIndex = 0;
+    unsafe static List<nint> alreadyInitializedDrawers = new List<nint>();
+    unsafe static bool isIteratingOurDrawers = false;
     [UnmanagedCallersOnly]
-    private static unsafe nint InitCatStatsCallbackHook(nint a1)
+    static unsafe nint InitCatStatsCallbackHook(nint a1)
     {   
-        // var maybeCatStats = Marshal.ReadIntPtr(a1 + 0x8);
-        // var result = _initCatStatsClickCallback(a1);
         Write(a1 + 0x8, _originalDrawer);
         var result = _initCatStatsClickCallback(a1);
         // nint result = 0;
@@ -561,10 +356,6 @@ public partial class CatstableMod
         _catIndex = 0;
         foreach (var drawer in rowDrawers)
         {
-            // if (alreadyInitializedDrawers.Contains(drawer))
-            // {
-            //     continue;
-            // }
             Write(a1 + 0x8, drawer);
             result = _initCatStatsClickCallback(a1);
             _catIndex++;
@@ -572,26 +363,16 @@ public partial class CatstableMod
             {
                 break;
             }
-            // alreadyInitializedDrawers.Add(drawer);
         }
 
         isIteratingOurDrawers = false;
-        // foreach (var drawer in rowDrawers)
-        // {
-        //     Write(a1 + 0x8, drawer);
-        //     result = _initCatStatsClickCallback(a1);
-        //     _catIndex += 1;
-        //     if (_catIndex >= _totalCatsCount)
-        //     {
-        //         break;
-        //     }
-        // }
+
         return result;
     }
 
 
     [UnmanagedCallersOnly]
-    private static unsafe nint CreatePanelHook(nint a1, nint a2, nint a3)
+    static unsafe nint CreatePanelHook(nint a1, nint a2, nint a3)
     {
         if (_originalPanel != 0)
         {
@@ -604,19 +385,8 @@ public partial class CatstableMod
         return result;
     }
 
-
-    [UnmanagedCallersOnly]
-    private static unsafe byte IsPanelActiveHook(nint panel)
-    {
-        if (panel == _originalPanel)
-        {
-            return _isPanelActive(_ourPanel);
-        }
-        return  _isPanelActive(panel);
-    }
-
      [UnmanagedCallersOnly]
-    private static unsafe void openCloseButtonCallbackHook(nint a1)
+    static unsafe void openCloseButtonCallbackHook(nint a1)
     {
         if (a1 != _ourBtnMetadataCallbackPtr && a1 != _btnCallbackMetadataPtr)
         {
@@ -632,17 +402,16 @@ public partial class CatstableMod
 
     }
 
-    unsafe private static nint _originalPanel = 0;
-    unsafe private static nint _ourPanel = 0;
-    unsafe private static nint _btnCallbackMetadataPtr = 0;
-    unsafe private static nint _ourBtnMetadataCallbackPtr = 0;
+    static nint _originalPanel = 0;
+    static nint _ourPanel = 0;
+    static nint _btnCallbackMetadataPtr = 0;
+    static nint _ourBtnMetadataCallbackPtr = 0;
 
-    unsafe private static delegate* unmanaged<nint, void>  _buttonCallbackResolverPtr = null;
-    private static bool isInsideCreateCatStatsDrawerHook = false;
-    private static nint _originalDrawer = 0;
-    private static nint _ourDrawer = 0;
+    unsafe static delegate* unmanaged<nint, void>  _buttonCallbackResolverPtr = null;
+    static bool isInsideCreateCatStatsDrawerHook = false;
+    static nint _originalDrawer = 0;
     [UnmanagedCallersOnly]
-    private static unsafe nint CreateCatStatsDrawerHook(nint a1)
+    static unsafe nint CreateCatStatsDrawerHook(nint a1)
     {
         LogStr($"[HOOK] CreateCatStatsDrawerHook called: a1=0x{a1:X}");
         isInsideCreateCatStatsDrawerHook = true;
@@ -651,19 +420,16 @@ public partial class CatstableMod
         if (_originalDrawer == 0)
         {
             _originalDrawer = a1;
-        } else if (_ourDrawer == 0)
-        {
-            _ourDrawer = a1;
-        }
+        } 
 
-        LogStr($"[HOOK] CreateCatStatsDrawerHook: a1=0x{a1:X}, result=0x{result:X}");
+        LogStr($"[HOOK] CreateCatStatsDrawerHookkkk: a1=0x{a1:X}, result=0x{result:X}");
         return result;
     }
 
     
     static nint openCloseBtn = 0;
     [UnmanagedCallersOnly]
-    private static unsafe nint RegisterCallbackHook(nint menuPanel, nint a2, nint a3, nint a4)
+    static unsafe nint RegisterCallbackHook(nint menuPanel, nint a2, nint a3, nint a4)
     {
         var result = _registerCallback(menuPanel, a2, a3, a4);
         var entityAddr = menuPanel + 0x18;
@@ -713,6 +479,9 @@ public partial class CatstableMod
             // LogStr($"[HOOK] RegisterCallbackHook: openclose button transform at 0x{openCloseBtnTransform:X}, x={openCloseX}, y={openCloseY}");
             _btnCallbackMetadataPtr = callbackMetaPtr;
             _originalPanel = houseDrawerPanel;
+            // var parent = Read<nint>(mcPtr + 0x38);
+            // uint depth = Read<uint>(parent + 0xAC);
+            // _attachChild(parent, clone, depth);
 
         } else if (_ourBtnMetadataCallbackPtr == 0)
         {
@@ -730,19 +499,10 @@ public partial class CatstableMod
         // LogStr($"[HOOK] RegisterCallbackHook: menuPanel=0x{a1:X}, a2=0x{a2:X}, a3=0x{a3:X}, a4=0x{a4:X}");
         return result;
     }
-
    
 
     [UnmanagedCallersOnly]
-    private static unsafe nint HouseClickHandlerHook(nint a1, nint a2, nint a3, nint a4)
-    {
-        var result = _houseClickHandler(a1, a2, a3, a4);
-        // LogStr($"[HOOK] HouseClickHandlerHook: a1=0x{a1:X}, a2=0x{a2:X}, a3=0x{a3:X}, a4=0x{a4:X}");
-        return result;
-    }
-
-    [UnmanagedCallersOnly]
-    private static unsafe nint GameTickHook(nint a1)
+    static unsafe nint GameTickHook(nint a1)
     {
         // call mewgenics.7FF647368A30
         // [[[rax+0x38]+18]+58] 
@@ -798,11 +558,13 @@ public partial class CatstableMod
                 // LogStr($"no change cat count (tick): {count} reading from 0x{pointer + 0xC:X}");
                 return 0;
             }
-            if (count == 0)
+            if (count == 0 || _totalCatsCount == 0)
             {
                 return 0;
             }
+            // _totalCatsCount = 0; // just for debugging!
             _totalCatsCount = count;
+
             // LogStr($"cat count (tick): {count}");
             CreateRows();
             // LogStr($"before read! {_originalDrawer:X}");
@@ -810,7 +572,7 @@ public partial class CatstableMod
         return 0;
     }
     
-    private static unsafe void handleScrollAtUpdatePanelLayout()
+    static unsafe void handleScrollAtUpdatePanelLayout()
     {
         var _updateBtn = (delegate* unmanaged<nint, void>)(MewjectorApi.GameBase + 0x9768e0);
         yOffset = yScrollAni == null ? yOffset : yScrollAni.Tick();
@@ -833,62 +595,41 @@ public partial class CatstableMod
             {    
                 Write(transform + 0x80, xPos);
                 Write(transform + 0x88, yPos);
-                yPos -= 2.7;
+                yPos -= 1.8;
             } else
             {
                 Write(transform + 0x80, (double)-300.0);
             }
         }
-        // if (openCloseBtn != 0)
-        // {
-        //     var openCloseBtnTransform = Marshal.ReadIntPtr(openCloseBtn + 0x40);
-        //     Write(openCloseBtnTransform + 0x80, (double)10);
-        //     Write(openCloseBtnTransform + 0x80, (double)10);
-        // }
 
         for (var i = 0; i < _totalCatsCount; i++)
         {
             var drawer = rowDrawers[i];
-            var menupanel1 = Marshal.ReadIntPtr(drawer + 0x60);
             var renderer = Marshal.ReadIntPtr(drawer + 0x40);
             var transform = Marshal.ReadIntPtr(renderer + 0x40);
-            // LogStr($"[HOOK] handleScrollAtUpdatePanelLayout: drawer 0x{drawer:X} menupanel1=0x{menupanel1:X} transform=0x{transform:X}");
             _trackMovieclipChildParentOffset(_originalPanel, transform, 1);
-            // var btnx = _findButton(menupanel1, GameString.Create("familytree"), 0);
-            // LogStr($"[HOOK] HouseClickHook: menupanel1=0x{menupanel1:X} drawer=0x{drawer:X} btnx=0x{btnx:X}");
 
-            // LogStr($"[HOOK] handleScrollAtUpdatePanelLayout: drawer 0x{drawer:X}");
-            // var renderer = Marshal.ReadIntPtr(drawer + 0x40);
-            // var movieclip = Marshal.ReadIntPtr(renderer + 0x80);
-            // Write(renderer + 0x50, 0x0000002600000101);
-            // LogStr($"[HOOK] handleScrollAtUpdatePanelLayout: drawer 0x{drawer:X} renderer 0x{renderer:X} movieclip 0x{movieclip:X}");
-            // var btn = _findMovieClipTrampoline(movieclip, GameString.Create("familytree"), 0, 0);
-            // LogStr($"[HOOK] handleScrollAtUpdatePanelLayout: found familytree button at 0x{btn:X}");
-            // _updateBtn(btnx);
         }
 
         
     }
 
-    static nint rowEntity = 0;
-    static nint rowRenderer = 0;
 
-    static nint rowDrawer = 0;
     static List<nint> rowDrawers = new List<nint>();
     static List<nint> rowTransforms = new List<nint>();
     static List<nint> rowRenderers = new List<nint>();
+
     static nint headersRenderer = 0;
     
     static nint catMenuRenderer = 0;
     static nint emptyRenderer = 0;
-    
+    static nint attachRendererIteration = 0;
+    static bool insideOurCatInstantiation = false;
+
     static unsafe void CreateRows()
     {
         var _getRenderer = (delegate* unmanaged<nint, nint>)(MewjectorApi.GameBase + 0x6bea0);
         var _createEntity = (delegate* unmanaged<nint, nint>)(MewjectorApi.GameBase + 0x962fb0);
-
-
-
 
         IntPtr headers = Marshal.StringToHGlobalAnsi("RowHeaders");
         // var _strBtn = _findMovieClipTrampoline(CreateUTF16GameString("x"));
@@ -903,36 +644,39 @@ public partial class CatstableMod
         Write(headersRenderer + 0x50, 0x0000002600000101);
 
         LogStr($"headersRenderer 0x{headersRenderer:X}");
-
         for (int i = 0; i < _totalCatsCount; i++)
         {
             
 
-            rowEntity = _createEntity(scenePtr);
+            nint rowEntity = _createEntity(scenePtr);
 
             int componentCount = *(int*)(rowEntity + 36);
             nint componentArray = *(nint*)(rowEntity + 40);
 
             
             var rendererFound = _getRenderer(rowEntity);
-            LogStr($"[EXP2] Renderer found by _getRenderer before _createUiRenderer 0x{rendererFound:X}");
             IntPtr name = Marshal.StringToHGlobalAnsi("RowCatStatus");
 
-            rowRenderer = _createUiRenderer(
+            nint rowRenderer = _createUiRenderer(
                 scenePtr,
                 rowEntity,
                 name,
                 0);
 
             Marshal.FreeHGlobal(name);
-
+            LogStr($"Creating CatStatsDrawer {i + 1}/{_totalCatsCount}: Renderer {rowRenderer:X} {rowEntity:X} {scenePtr:X}");
             rendererFound = _getRenderer(rowEntity);
+            insideOurCatInstantiation = true;
+            attachRendererIteration = 0;
             var rowDrawer = _createCatStatsDrawer(
                 scenePtr,
                 rowEntity);
-            
+            insideOurCatInstantiation = false;
+            // var iconsPanel = Marshal.ReadIntPtr(rowDrawer + 0x68);
+            // var panelB = Marshal.ReadIntPtr(rowDrawer + 0x68);
             var transform = Marshal.ReadIntPtr(rowRenderer + 0x40);
-            LogStr($"Created new CallStatsDrawer: Renderer {rowRenderer:X} {rowDrawer:X} {rowEntity:X} {scenePtr:X} transform: {transform:X}");
+            LogStr($"Created new CallStatsDrawer: Renderer {rowRenderer:X} Drawer:{rowDrawer:X} Entity: {rowEntity:X} {scenePtr:X} transform: {transform:X}");
+            // rowIconPanels.Add(iconsPanel);
             rowTransforms.Add(transform);
             rowDrawers.Add(rowDrawer);
             rowRenderers.Add(rowRenderer);
@@ -951,35 +695,30 @@ public partial class CatstableMod
         Write(emptyPlaceholderRenderer + 0x50, 0x0000002600000101);
         LogStr($"emptyPlaceholderRenderer 0x{emptyPlaceholderRenderer:X}");
 
-        IntPtr bolatest = Marshal.StringToHGlobalAnsi("bolatest");
-        var bolatestEntity = _createEntity(scenePtr);
+        Write(_originalPanel + 0x118, _originalDrawer);
 
-        var bolatestRenderer = _createUiRenderer(
-            scenePtr,
-            bolatestEntity,
-            bolatest,
-        0);
-        Marshal.FreeHGlobal(bolatest);
-        Write(bolatestRenderer + 0x50, 0x0000002600000101);
-        LogStr($"bolatestRenderer 0x{bolatestRenderer:X}");
+        // IntPtr bolatest = Marshal.StringToHGlobalAnsi("bolatest");
+        // var bolatestEntity = _createEntity(scenePtr);
+
+        // var bolatestRenderer = _createUiRenderer(
+        //     scenePtr,
+        //     bolatestEntity,
+        //     bolatest,
+        // 0);
+        // Marshal.FreeHGlobal(bolatest);
+        // Write(bolatestRenderer + 0x50, 0x0000002600000101);
+        // LogStr($"bolatestRenderer 0x{bolatestRenderer:X}");
         
     }
 
 
-    private static void ClearExperimentState()
-    {
-        rowEntity = 0;
-        rowRenderer = 0;
-        rowDrawer = 0;
-    }
+    static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _changeCloneText;
 
-    private static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _changeCloneText;
-
-    private static nint houseStatusEntityPtr = 0;
-    private static nint scenePtr = 0;
-    private static nint rowStatsRenderer = 0;
+    static nint houseStatusEntityPtr = 0;
+    static nint scenePtr = 0;
+    static nint rowStatsRenderer = 0;
     [UnmanagedCallersOnly]
-    private static unsafe nint CreateUiRendererHook(nint a1, nint entity, nint namePtr, nint a4)
+    static unsafe nint CreateUiRendererHook(nint a1, nint entity, nint namePtr, nint a4)
     {
         var name = TryReadCString(namePtr);
         if (name == "HouseCatStatus")
@@ -992,28 +731,17 @@ public partial class CatstableMod
             scenePtr = a1;
             houseStatusEntityPtr = entity;
         }
-        // if (rowStatsRenderer == 0 && scenePtr != 0)
-        // {
-        //     IntPtr rowCatStatusCStr = Marshal.StringToHGlobalAnsi("RowCatStatus");
-        //     rowStatsRenderer = _createUiRenderer(scenePtr, houseStatusEntityPtr, rowCatStatusCStr, a4);
-        //     if (rowStatsRenderer != 0)
-        //     {
-        //         LogStr($"[HOOK] RowCatStatus renderer creater at 0x{rowStatsRenderer:X}");
-        //         return rowStatsRenderer;
-        //     } else
-        //     {
-        //         LogStr($"[HOOK] WARNING: RowCatStatus renderer not created, got null pointer!");
-        //         rowStatsRenderer = -1;
-        //     }
-        // }
+
         return _createUiRenderer(a1, entity, namePtr, a4);
     }
 
     static bool _panelIsOpen = false;
     static bool panelAnimationInProgress = false;
     static int waitingForPanelStatus = 0;
+    static nint catMenuMc = 0;
+
     [UnmanagedCallersOnly]
-    private static unsafe nint UpdatePanelLayoutHook(nint a1)
+    static unsafe nint UpdatePanelLayoutHook(nint a1)
     {
 
         var result = _updatePanelLayout(a1);
@@ -1035,12 +763,6 @@ public partial class CatstableMod
             {
                 waitingForPanelStatus = 0;
                 panelAnimationInProgress = false;
-                // IntPtr rightStr = Marshal.StringToHGlobalAnsi("right");
-                // CallWithCustomString(_goToLabel, slide, "right", a3, a4)
-                // _goToLabel(slide, GameString.Create("right"));
-                // _panelIsOpen = true;
-                // xOffsetTarget = 10;
-                // xMoveAni = new FloatAnimator(xOffset, xOffsetTarget, 0.5f);
                 MewjectorApi.Log($"[HOOK] 1- Panel is open and animation finished: xOffset {xOffset} xOffsetTarget {xOffsetTarget}");
             }
             else if (waitingForPanelStatus == 36)
@@ -1051,92 +773,18 @@ public partial class CatstableMod
                 {
                     var drawer = rowDrawers[i];
                     Write(drawer + 0x78, (nint)0); // setting HouseCat reference to zero
-                    // LogStr($"[HOOK] InitCatStatsCallbackHook: drawer[{i}] = {drawer:X} visibility set to 0");
                 }
-                // _panelIsOpen = false;
-                // xOffsetTarget = -35f;
-                // xMoveAni = new FloatAnimator(xOffset, xOffsetTarget, 0.5f);
+
                 MewjectorApi.Log($"[HOOK] 2- Pane is closed and animation finished: xOffset {xOffset} xOffsetTarget {xOffsetTarget}");
-                // IntPtr leftStr = Marshal.StringToHGlobalAnsi("left");
-                // MewjectorApi.Log($"[HOOK] PanelSlideCallbackHook: rendererState=24, going to label 'left' on slide 0x{slide:X}");
-                // _goToLabel(slide, GameString.Create("left"));
             }
         }
         return result;
     }
 
-        // _abilityTriggerHookTrampoline = MewjectorApi.InstallHook(
-        //     0x31ED0, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&AbilityTriggerHook);
-        // LogStr("AbilityTriggerHook at RVA 0x31ED0 installed");
-
-
-        // LogStr("AbilityTriggerHook at RVA 0x31ED0 installed");
-        
-        // LogStr("MjInit complete");
-
-        // var targetAddress = Process.GetCurrentProcess().MainModule.BaseAddress + 0xA1AA50;
-        // byte[] bytes = new byte[16];
-        // Marshal.Copy(targetAddress, bytes, 0, 16);
-
-        // byte[] buf = new byte[0xA0];
-        // Marshal.Copy(thisPtr, buf, 0, buf.Length);
-
-
-        // _instance.Log(BitConverter.ToString(bytes));
-        // _MyHook = MewjectorApi.InstallHook(0xB631C0, (void*)(delegate* unmanaged<long, long, nint, nint, nint>)&MyHook);
-
-    // internal unsafe void MjInit()
-    // {
-
-    //     0xA1AA50, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&FindChildMovieClipHook);
-    //     LogStr("AbilityTriggerHook at RVA 0x31ED0 installed");
-    // }
-
-    // 1. Thread-safe bag to hold the pointers to our SymbolClasses
-    private static ConcurrentBag<nint> _symbolClasses = new ConcurrentBag<nint>();
-
-    // Windows API for safe memory reading (prevents Access Violation crashes)
-    [DllImport("kernel32.dll", SetLastError = true)]
-    private static extern bool ReadProcessMemory(nint hProcess, nint lpBaseAddress, [Out] byte[] lpBuffer, nint dwSize, out nint lpNumberOfBytesRead);
-
     [DllImport("kernel32.dll")]
-    private static extern nint GetCurrentProcess();
-
-    static public HashSet<string> a2ArgsUnique = new HashSet<string>();
-
-
-    private static unsafe nint CallWithCustomString(
-        delegate* unmanaged<nint, nint, nint, nint, nint> trampoline,
-        nint a1,
-        string text,
-        nint a3,
-        nint a4)
-    {
-        StdStringSso str = default;
-        StdStringSso* pStr = &str;
-
-        byte[] utf8 = Encoding.UTF8.GetBytes(text);
-
-        if (utf8.Length > 15)
-            throw new ArgumentException("Not SSO");
-
-        for (int i = 0; i < utf8.Length; i++)
-            pStr->Buffer[i] = utf8[i];
-
-        pStr->Buffer[utf8.Length] = 0;
-
-        pStr->Size = (ulong)utf8.Length;
-        pStr->Capacity = 15;
-
-        return trampoline(
-            a1,
-            (nint)pStr,
-            a3,
-            a4);
-    }
+    static extern nint GetCurrentProcess();
 
     static nint movieClipModContainer = 0;
-    static nint rowMovieClip = 0;
 
      [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
     private delegate nint CreateInstanceDelegate(nint defineSprite);
@@ -1181,16 +829,6 @@ public partial class CatstableMod
 
         return clone;
     }
-    private static bool readyToDuplicate = false;
-    private static nint slide = 0;
-    private static nint catMenuMc = 0;
-    [UnmanagedCallersOnly]
-    private static unsafe nint FindChildMovieClipHook(nint a1, nint a2, nint a3, nint a4)
-    {
-
-        var result = _findMovieClipTrampoline(a1, a2, a3, a4);
-        return result;
-    }
 
 
     unsafe static nint CreateUTF16GameString(string text)
@@ -1219,7 +857,7 @@ public partial class CatstableMod
     }
     
     [UnmanagedCallersOnly]
-    private static unsafe nint RemoveMovieClip(nint a1, nint a2, nint a3, nint a4)
+    static unsafe nint RemoveMovieClip(nint a1, nint a2, nint a3, nint a4)
     {
         if (catMenuMc != 0 && a1 == catMenuMc)
         {
@@ -1235,73 +873,34 @@ public partial class CatstableMod
             _originalDrawer = 0;
             rowTransforms.Clear();
             rowDrawers.Clear();
-            _totalCatsCount = 0;
+            _totalCatsCount = -1;
             headersRenderer = 0;
             yOffset = 0;
-            ClearExperimentState();
             _renderersSoFar.Clear();
             alreadyInitializedDrawers.Clear();
         }
         return _removeMovieClipTrampoline(a1, a2, a3, a4);
     }
+    
 
-    private static byte[] SafeReadProcessMemory(nint hProcess, nint address, long size)
-    {
-        byte[] buffer = new byte[size];
-        long bytesReadTotal = 0;
-        long chunkSize = 4096; // Standard memory page size
-        
-        for (long i = 0; i < size; i += chunkSize)
-        {
-            long toRead = Math.Min(chunkSize, size - i);
-            byte[] chunk = new byte[toRead];
-            
-            if (ReadProcessMemory(hProcess, address + (nint)i, chunk, (nint)toRead, out nint read) && (long)read > 0)
-            {
-                Buffer.BlockCopy(chunk, 0, buffer, (int)i, (int)read);
-                bytesReadTotal += (long)read;
-            }
-            else
-            {
-                // We hit an unallocated memory page. Stop reading, but KEEP what we successfully read!
-                break; 
-            }
-        }
-        
-        if (bytesReadTotal == 0) return null;
-        
-        if (bytesReadTotal < size)
-        {
-            byte[] resized = new byte[bytesReadTotal];
-            Buffer.BlockCopy(buffer, 0, resized, 0, (int)bytesReadTotal);
-            return resized;
-        }
-        
-        return buffer;
-    }
-
-    private static bool _active;   // static — accessible from [UnmanagedCallersOnly]
+    static bool _active;   // static — accessible from [UnmanagedCallersOnly]
 
 
     protected void OnEnable()
     {
         Log("Catstable enabled");
-        // OverlayManager.Start(Log);
-        Log("OverlayManager started");
     }
 
     protected void OnDisable()
     {
         Log("Catstable disabled");
-        // OverlayManager.Stop();
-        Log("OverlayManager stopped");
     }
 
-    private static readonly string LogFilePath = @"E:\Documents\catstable\log.txt";
-    private static readonly StreamWriter _logWriter = new StreamWriter(
+    static readonly string LogFilePath = @"E:\Documents\catstable\log.txt";
+    static readonly StreamWriter _logWriter = new StreamWriter(
         new FileStream(LogFilePath, FileMode.Append, FileAccess.Write, FileShare.Read),
         System.Text.Encoding.UTF8, bufferSize: 4096, leaveOpen: false) { AutoFlush = true };
-    private static readonly object _logLock = new();
+    static readonly object _logLock = new();
 
     private new void Log(string message)
     {
@@ -1310,7 +909,7 @@ public partial class CatstableMod
         // File.AppendAllText(LogFilePath, message + Environment.NewLine);
     }
 
-    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> _seenFns = new();
+    static readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> _seenFns = new();
 
     static public void LogStr(string message)
     {
@@ -1338,7 +937,7 @@ public partial class CatstableMod
     // Reads a MSVC x64 std::string object at strObjPtr.
     // Layout: [+0x00] char* ptr (heap) OR char buf[16] (SSO), [+0x10] size_t size, [+0x18] size_t capacity.
     // SSO when capacity == 15: data is inline at +0x00.  Heap when capacity > 15: +0x00 is char*.
-    private static unsafe bool TryGetStdStringLayout(nint strObjPtr, out ulong size, out ulong capacity, out nint dataPtr, bool debug = false)
+    static unsafe bool TryGetStdStringLayout(nint strObjPtr, out ulong size, out ulong capacity, out nint dataPtr, bool debug = false)
     {
         size = 0;
         capacity = 0;
@@ -1372,7 +971,7 @@ public partial class CatstableMod
         return true;
     }
 
-    private static unsafe string? TryReadStdString(nint strObjPtr, bool debug = false)
+    static unsafe string? TryReadStdString(nint strObjPtr, bool debug = false)
     {
         if (!TryGetStdStringLayout(strObjPtr, out ulong size, out _, out nint dataPtr, debug)) return null;
 
@@ -1393,7 +992,7 @@ public partial class CatstableMod
 
     // Returns a printable ASCII string from ptr if it looks like one, otherwise null.
     // Reads up to maxLen chars; rejects if any non-printable byte found before '\0'.
-    private static unsafe string? TryReadCString(nint ptr, int maxLen = 128)
+    static unsafe string? TryReadCString(nint ptr, int maxLen = 128)
     {
         if (!IsLikelyPointer(ptr) || !IsMemReadable(ptr, 1)) return null;
         byte* p = (byte*)ptr;
@@ -1410,14 +1009,14 @@ public partial class CatstableMod
         return null; // no null terminator within maxLen
     }
 
-    private static int _diagCallCount = 0;
+    static int _diagCallCount = 0;
     // Key: dedup token — each unique string+path combination is logged at most once
-    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> _seenStrings = new();
-    private static readonly System.Collections.Concurrent.ConcurrentDictionary<nint, bool> _seenGonObjects = new();
+    static readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> _seenStrings = new();
+    static readonly System.Collections.Concurrent.ConcurrentDictionary<nint, bool> _seenGonObjects = new();
 
     // Pointer range of the game's PE image (code, rdata, vtables — not heap objects).
-    private static readonly nint IMAGE_RANGE_START = unchecked((nint)0x7FF70C3C0000L);
-    private static readonly nint IMAGE_RANGE_END   = unchecked((nint)0x7FF70D900000L);
+    static readonly nint IMAGE_RANGE_START = unchecked((nint)0x7FF70C3C0000L);
+    static readonly nint IMAGE_RANGE_END   = unchecked((nint)0x7FF70D900000L);
 
 
     [StructLayout(LayoutKind.Sequential)]
@@ -1436,10 +1035,10 @@ public partial class CatstableMod
     }
 
     [DllImport("kernel32.dll", SetLastError = false)]
-    private static extern unsafe nint VirtualQuery(
+    static extern unsafe nint VirtualQuery(
         nint lpAddress, MEMORY_BASIC_INFORMATION* lpBuffer, nint dwLength);
 
-    private static unsafe bool IsMemReadable(nint ptr, int size)
+    static unsafe bool IsMemReadable(nint ptr, int size)
     {
         MEMORY_BASIC_INFORMATION mbi;
         if (VirtualQuery(ptr, &mbi, (nint)sizeof(MEMORY_BASIC_INFORMATION)) == 0) return false;
@@ -1450,162 +1049,14 @@ public partial class CatstableMod
     }
 
     // Filters out small integers and kernel-space values; passes user-mode pointers.
-    private static bool IsLikelyPointer(nint val)
+    static bool IsLikelyPointer(nint val)
     {
         ulong v = (ulong)(nuint)val;
         return v >= 0x10000 && v <= 0x0000_7FFF_FFFF_FFFF;
-    }    
-
-    // ── Localization lookup via game's localization manager ──────────────────
-    //
-    // RVAs (verified against online reference implementation):
-    //   0x13B2590  localization manager global (NOT 0xBB2590 — that was wrong)
-    //   0x52640    sub_7FF70C412640 — init narrow std::string from C-string
-    //   0x956270   sub_7FF70CD16270 — 3-arg lookup wrapper: (mgr*, out_wstr*, key_str*) void
-    //   0x522D0    sub_7FF70C4122D0 — destroy narrow std::string (frees heap if cap>15)
-    //   0x51DE0    sub_7FF70C411DE0 — destroy wide std::wstring (frees heap if cap>7)
-    //
-    // MSVC std::string / std::wstring layout (x64, 32 bytes):
-    //   [+0x00..+0x0F]  inline buf (SSO) OR heap pointer
-    //   [+0x10]         size_t size
-    //   [+0x18]         size_t capacity  (SSO threshold: 15 narrow, 7 wide)
-
-    private const ulong LOCALIZATION_MGR_RVA    = 0x13B2590UL; // global localization manager
-    private const ulong NARROW_STR_INIT_RVA     = 0x52640UL;   // init narrow std::string
-    private const ulong LOCALIZE_KEY_RVA        = 0x956270UL;  // 3-arg lookup wrapper
-    private const ulong NARROW_STR_DESTROY_RVA  = 0x522D0UL;   // destroy narrow std::string
-    private const ulong WIDE_STR_DESTROY_RVA    = 0x51DE0UL;   // destroy wide std::wstring
-
-    // Constructs an empty MSVC std::wstring (SSO) at the given 32-byte allocation.
-    // Constructor (sub_7FF70C412640) zeroes all 32 bytes itself, but we pre-zero the
-    // output wstring so sub_7FF70CD15510 sees a valid empty string if it assigns into it.
-    private static unsafe void InitEmptyWString(byte* ws)
-    {
-        for (int i = 0; i < 32; i++) ws[i] = 0;
-        *(ulong*)(ws + 0x18) = 7UL;   // capacity = 7 → SSO sentinel
     }
 
-    // Reads a std::wstring from the 32-byte MSVC layout into a .NET string.
-    // size at +0x10, capacity at +0x18; SSO inline data starts at +0x00.
-    private static unsafe string? ReadWString(byte* ws)
-    {
-        ulong size = *(ulong*)(ws + 0x10);
-        ulong cap  = *(ulong*)(ws + 0x18);
-        if (size == 0) return "";
-        if (size > 65536) return null;
-
-        char* data;
-        if (cap <= 7)
-        {
-            data = (char*)ws;  // SSO: inline buffer at +0x00
-        }
-        else
-        {
-            data = *(char**)ws;  // heap ptr at +0x00
-            if (!IsLikelyPointer((nint)data) || !IsMemReadable((nint)data, (int)size * 2 + 2))
-                return null;
-        }
-        return new string(data, 0, (int)size);
-    }
-
-    private static unsafe string? LookupLocalized(string key)
-    {
-        nuint gameBase = MewjectorApi.GameBase;
-        if (gameBase == 0) return null;
-
-        nint locMgr      = (nint)(gameBase + LOCALIZATION_MGR_RVA);
-        nint initFn      = (nint)(gameBase + NARROW_STR_INIT_RVA);
-        nint lookupFn    = (nint)(gameBase + LOCALIZE_KEY_RVA);
-        nint destroyNarrow = (nint)(gameBase + NARROW_STR_DESTROY_RVA);
-        nint destroyWide   = (nint)(gameBase + WIDE_STR_DESTROY_RVA);
-
-        _instance?.Log($"[LKP-1] key=\"{key}\" mgr=0x{locMgr:X} lookup=0x{lookupFn:X}");
-
-        nint keyAlloc = Marshal.AllocHGlobal(32);
-        nint outAlloc = Marshal.AllocHGlobal(32);
-        bool keyInited = false;
-
-        try
-        {
-            // Zero both structs (mirrors C reference: memset to 0)
-            for (int i = 0; i < 32; i++) ((byte*)keyAlloc)[i] = 0;
-            for (int i = 0; i < 32; i++) ((byte*)outAlloc)[i] = 0;
-
-            // Build narrow std::string for the key
-            byte[] keyBytes = System.Text.Encoding.ASCII.GetBytes(key + "\0");
-            fixed (byte* kp = keyBytes)
-                ((delegate* unmanaged<nint, nint, void>)initFn)(keyAlloc, (nint)kp);
-            keyInited = true;
-
-            _instance?.Log($"[LKP-2] key_str: size=0x{*(ulong*)((byte*)keyAlloc+0x10):X} cap=0x{*(ulong*)((byte*)keyAlloc+0x18):X}");
-            _instance?.Log($"[LKP-3] calling lookup...");
-
-            // 3-arg lookup: (localization_manager*, out_wstring*, key_string*) → void
-            ((delegate* unmanaged<nint, nint, nint, void>)lookupFn)(locMgr, outAlloc, keyAlloc);
-
-            ulong outSize = *(ulong*)((byte*)outAlloc + 0x10);
-            ulong outCap  = *(ulong*)((byte*)outAlloc + 0x18);
-            _instance?.Log($"[LKP-4] out_wstr: size=0x{outSize:X} cap=0x{outCap:X}");
-
-            string? result = outSize > 0 ? ReadWString((byte*)outAlloc) : null;
-            _instance?.Log($"[LKP-5] result=\"{result ?? "<empty>"}\"");
-
-            // Destroy output wstring buffer (frees heap data if cap > 7)
-            ((delegate* unmanaged<nint, void>)destroyWide)(outAlloc);
-
-            // Destroy narrow key string
-            ((delegate* unmanaged<nint, void>)destroyNarrow)(keyAlloc);
-            keyInited = false;
-
-            return result;
-        }
-        catch (Exception ex)
-        {
-            _instance?.Log($"[LKP-EX] {ex.GetType().Name}: {ex.Message}");
-            return null;
-        }
-        finally
-        {
-            if (keyInited)
-            {
-                try { ((delegate* unmanaged<nint, void>)destroyNarrow)(keyAlloc); } catch { }
-            }
-            Marshal.FreeHGlobal(outAlloc);
-            Marshal.FreeHGlobal(keyAlloc);
-        }
-    }
 
 };
-
-[StructLayout(LayoutKind.Sequential, Pack = 8)]
-unsafe struct GameString
-{
-    public ulong A;
-    public ulong B;
-    public ulong Length;
-    public ulong Capacity;
-
-    public static nint Create(string text)
-    {
-        GameString* s = (GameString*)Marshal.AllocHGlobal(sizeof(GameString));
-
-        *s = default;
-
-        byte* bytes = (byte*)s;
-
-        for (int i = 0; i < text.Length; i++)
-            bytes[i] = (byte)text[i];
-
-        bytes[text.Length] = 0;
-
-        s->Length = (ulong)text.Length;
-        s->Capacity = 15;
-        
-        // CatstableMod.LogStr(sizeof(GameString).ToString());
-        // CatstableMod.LogStr(((nuint)s).ToString("X"));
-        return (nint)s;
-    }
-}
 
 
 public class FloatAnimator
@@ -1645,7 +1096,7 @@ public class FloatAnimator
         (_stopwatch.ElapsedTicks - _startTicks) >=
         _durationSeconds * Stopwatch.Frequency;
 
-    private static float Lerp(float a, float b, float t)
+    static float Lerp(float a, float b, float t)
     {
         return a + (b - a) * t;
     }

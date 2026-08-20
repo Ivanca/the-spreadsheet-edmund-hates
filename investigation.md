@@ -46,3 +46,15 @@ Menupanel
 
 renderer #33 is the catMenu renderer
 movieclip # 353 is catMenu root
+
+
+Menupanel+0x70 disables icon clicking with value 0x408, value 0x40A restores it but is not enough, depends on something else
+
+the problem is in catstats update apparently (00007FF708B9B1B3)
+
+tengo que guardar todos los MenuPanel
+luego en 0x9745D0 condicional rcx==Algun_menu_panel && streq(ansi(rdx),"icon_selecter")
+ setiar las 2 flags
+
+y colocar una flag que haga que sub_7FF6B4028A30 devuelta true una sola vez
+y sub_7FF6B402D6C0 devuelva false una sola vez (serian 2 flags en total)
