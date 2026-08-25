@@ -6,6 +6,7 @@ using System.Threading;
 using System.Runtime.InteropServices;
 using System.IO;
 using System.Diagnostics;
+using System.Reflection;
 
 using System.Linq;
 
@@ -59,6 +60,8 @@ public partial class CatstableMod
     static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _globalResourceManagerLookup;
     
     unsafe static delegate* unmanaged<nint, nint, nint> _setText;
+    unsafe static delegate* unmanaged<nint, nint, nint> _getChild;
+
     unsafe static delegate* unmanaged<nint, nint, uint, void> _attachChild;
     unsafe static delegate* unmanaged<nint, nint, nint> _createCatStatsDrawer;
     unsafe static delegate* unmanaged<nint, nint> _catStatsDrawerUpdate;
@@ -78,6 +81,8 @@ public partial class CatstableMod
     
     static nint _rightStr = 0;
     static nint _leftStr = 0;
+    static Dictionary<string, int> executionCounts = new Dictionary<string, int>();
+    
     internal unsafe void MjInit()
     {
 
@@ -143,7 +148,8 @@ public partial class CatstableMod
         LogStr($"Gamebase at {location:X}...");
         // LogStr("MjInit: installing hooks...");
         _assignString = (delegate* unmanaged<nint,char*,nuint,nint>)(MewjectorApi.GameBase + 0x5b100);
-        
+        _getChild = (delegate* unmanaged<nint, nint, nint>)(MewjectorApi.GameBase + 0x990480);
+
 
         _attachChild = (delegate* unmanaged<nint, nint, uint, void>)(MewjectorApi.GameBase + (nuint)RVA_AttachChild);
         _createCatStatsDrawer =  (delegate* unmanaged<nint, nint, nint>)(MewjectorApi.GameBase + (nuint)0x1ac430);
@@ -163,10 +169,12 @@ public partial class CatstableMod
 
     static string sortByStat = "";
     static string sortByStatDirection = "dsc";
+    static Dictionary<nint, double> averages = new Dictionary<nint, double>();
 
     [UnmanagedCallersOnly]
     static unsafe nint SetTextHook (nint a1, nint a2)
     {
+
         var renderer = GetRenderer(a1);
         if (rowRenderers.Count > 0 && rowRenderers.Contains(renderer))
         {
@@ -179,10 +187,20 @@ public partial class CatstableMod
             var stat = getStat(a1);
             if (stat != "")
             {
+                // LogStr($"[HOOK] SetTextHook: a1=0x{a1:X} a2=0x{a2:X} is one of our row renderers, stat={stat}, renderer={renderer:X}");
                 var str = ReadUtf16CustomString(a2);
+                if (str == "")
+                {
+                    str = "0";
+                }
                 catStats[renderer][stat] = int.Parse(str);
                 var index = rowRenderers.IndexOf(renderer);
-                // LogStr($"[HOOK] SetTextHook: a1=0x{a1:X} is one of our row renderers at #{index}, stat={stat}, text={str}, value={catStats[renderer][stat]}, renderer={renderer:X}");
+                double average = catStats[renderer].Where(kv => kv.Key != "bdc" && kv.Key != "muc").Average(kv => kv.Value);
+                // force it to have 1 single decimal place:
+                average = Math.Round(average, 1);
+                averages[renderer] = (double)average;
+                averagesDirty = true;
+                // LogStr($"[HOOK] SetTextHook: average={average} for renderer 0x{renderer:X} at index {index}");
             }
             // LogStr($"[HOOK] SetTextHook: a1=0x{a1:X} is one of our row renderers, text={str}, renderer={renderer:X}");
         }
@@ -200,7 +218,7 @@ public partial class CatstableMod
             var movieclipname = TryReadCString(Read<nint>(movieclip + 0x48));
             // get first 3 letters
             var subname = movieclipname.Substring(0, Math.Min(3, movieclipname.Length));
-            if (stats.Contains(subname))
+            if (stats.Contains(subname) || subname == "avg")
             {
                 if (sortByStat == subname)
                 {
@@ -228,8 +246,11 @@ public partial class CatstableMod
             LogStr($"[HOOK] SortCats: sortByStat is empty, sortedCats = {string.Join(", ", sortedCats.Select(e => e.ToString("X")))}");
             return;
         }
-        var sorted = catStats.OrderBy(e => e.Value[sortByStat]);
-        sortedCats = sorted.Select(e => e.Key).ToArray();
+
+        var sorted = sortByStat == "avg"
+            ? catStats.OrderBy(e => averages.ContainsKey(e.Key) ? averages[e.Key] : 0)
+            : catStats.OrderBy(e => e.Value[sortByStat]);
+        sortedCats = sorted.Select(e => e.Key).Where(e => visibleRenderers.Contains(e)).ToArray();
         if (sortByStatDirection == "dsc")
         {
             sortedCats = sortedCats.Reverse().ToArray();
@@ -327,10 +348,6 @@ public partial class CatstableMod
             // OPEN
             MewjectorApi.Log($"[HOOK] Panel Open");
             _panelIsOpen = true;
-            if (sortedCats.Length == 0)
-            {
-                SortCats();
-            }
             cachedPointers.Clear();
             initializeButtons();
             changed = true;
@@ -351,6 +368,10 @@ public partial class CatstableMod
             xMoveAni = new FloatAnimator(xOffset, xOffsetTarget, 0.5f);
         }
         return _toggleHouseDrawer(a1);
+    }
+    static unsafe void SumStats()
+    {
+        
     }
 
     static nint _lastButtonCSD = 0;
@@ -409,29 +430,13 @@ public partial class CatstableMod
 
         initializedButtons = true;
 
-        IntPtr spdName = GameString.Create("spd_btn");
-
         nint headersMc = Marshal.ReadIntPtr(headersRenderer + 0x80);
         nint headersEntity = Marshal.ReadIntPtr(headersRenderer + 0x18);
         var allocate = (delegate* unmanaged<nint, nint, nint>)(MewjectorApi.GameBase + 0x961090);
 
         LogStr($"headersRenderer MovieClip = 0x{headersMc:X}");
 
-        var _getChild = (delegate* unmanaged<nint, nint, nint>)(
-            MewjectorApi.GameBase + 0x990480);
 
-        nint spdBtn = _getChild(headersMc, spdName);
-
-        LogStr($"spd_btn lookup result = 0x{spdBtn:X}");
-
-        if (spdBtn == 0)
-            return;
-        var _createEntity = (delegate* unmanaged<nint, nint>)(MewjectorApi.GameBase + 0x962fb0);
-
-        nint storage = allocate(
-            (nint)MewjectorApi.GameBase + 0x13D4D60,
-            0
-        );
         nint callbackVtable = Marshal.AllocHGlobal(0x30);
 
         Buffer.MemoryCopy(
@@ -515,25 +520,28 @@ public partial class CatstableMod
         if(_panelIsOpen && IsLikelyPointer(a2))
         {   
             var a2Val = Marshal.ReadInt32(a2);
-            if (a2Val == 1027 && cachedVisibleCats.Length > 10)
+            if (a2Val == 1027)
             {
-                // var y = 
-                var intValue = Marshal.ReadInt32(a2 + 0x1C);
-                float floatValue = BitConverter.Int32BitsToSingle(intValue);
-                // LogStr($"Scroll! {floatValue}");
-                var _yOffsetTarget = yOffset - 5 * (int)floatValue;
-                if (_yOffsetTarget < 0)
+                if (cachedVisibleCats.Length > 10)
                 {
-                    _yOffsetTarget = 0;
-                }
-                if (_yOffsetTarget > cachedVisibleCats.Length * 0.8)
-                {
-                    _yOffsetTarget = (int)((double)cachedVisibleCats.Length * 0.8);
-                }
-                if (_yOffsetTarget != yOffsetTarget)
-                {
-                    yOffsetTarget = _yOffsetTarget;
-                    yScrollAni = new FloatAnimator(yOffset, _yOffsetTarget, 0.1f);
+                    // var y = 
+                    var intValue = Marshal.ReadInt32(a2 + 0x1C);
+                    float floatValue = BitConverter.Int32BitsToSingle(intValue);
+                    // LogStr($"Scroll! {floatValue}");
+                    var _yOffsetTarget = yOffset - 5 * (int)floatValue;
+                    if (_yOffsetTarget < 0)
+                    {
+                        _yOffsetTarget = 0;
+                    }
+                    if (_yOffsetTarget > cachedVisibleCats.Length * 0.8)
+                    {
+                        _yOffsetTarget = (int)((double)cachedVisibleCats.Length * 0.8);
+                    }
+                    if (_yOffsetTarget != yOffsetTarget)
+                    {
+                        yOffsetTarget = _yOffsetTarget;
+                        yScrollAni = new FloatAnimator(yOffset, _yOffsetTarget, 0.1f);
+                    }
                 }
                 return 0;
             }
@@ -570,24 +578,30 @@ public partial class CatstableMod
     unsafe static int _catIndex = 0;
     unsafe static List<nint> alreadyInitializedDrawers = new List<nint>();
     unsafe static bool isIteratingOurDrawers = false;
+    unsafe static List<nint> visibleRenderers = new List<nint>();
     [UnmanagedCallersOnly]
     static unsafe nint InitCatStatsCallbackHook(nint a1)
     {   
+        LogStr($"[HOOK] InitCatStatsCallbackHook called: a1=0x{a1:X}");
         Write(a1 + 0x8, _originalDrawer);
         var result = _initCatStatsClickCallback(a1);
         // nint result = 0;
         isIteratingOurDrawers = true;
         _catIndex = 0;
+        visibleRenderers = new List<nint>();
         foreach (var drawer in rowDrawers)
         {
             Write(a1 + 0x8, drawer);
             result = _initCatStatsClickCallback(a1);
+            visibleRenderers.Add(Marshal.ReadIntPtr(drawer + 0x40));
             _catIndex++;
             if (_catIndex == cachedVisibleCats.Length)
             {
                 break;
             }
         }
+
+        SortCats();
 
         isIteratingOurDrawers = false;
 
@@ -753,8 +767,8 @@ public partial class CatstableMod
         return result;
     }
 
-    static string[] buttonList = ["spd_btn", "cha_btn", "int_btn", "str_btn", "lck_btn", "con_btn", "dex_btn"];
-    static string[] stats = ["spd", "cha", "int", "str", "lck", "con", "dex"];
+    static string[] buttonList = ["spd_btn", "cha_btn", "int_btn", "str_btn", "lck_btn", "con_btn", "dex_btn", "avg_btn", "bdc_btn", "muc_btn"];
+    static string[] stats = ["spd", "cha", "int", "str", "lck", "con", "dex", "bdc", "muc"];
     
     static Dictionary<nint, Dictionary<string, int>> catStats = new Dictionary<nint, Dictionary<string, int>>();
     // static sortedCats:
@@ -767,6 +781,16 @@ public partial class CatstableMod
             return "";
         }
         var name = TryReadCString(Marshal.ReadIntPtr(dynamicTextBox + 0x48));
+        if (name == "birthdefectcount")
+        {
+            LogStr($"[HOOK] getStat: birthdefectcount found for dynamicTextBox=0x{dynamicTextBox:X}");
+            return "bdc";
+        }
+        if (name == "mutationcount")
+        {
+            LogStr($"[HOOK] getStat: mutationcount found for dynamicTextBox=0x{dynamicTextBox:X}");
+            return "muc";
+        }
         if (name == "total")
         {
             var parentMovieclip = Marshal.ReadIntPtr(dynamicTextBox + 0x38);
@@ -787,7 +811,7 @@ public partial class CatstableMod
         return Marshal.ReadIntPtr(movieClip + 0x40); // renderer
     }
    
-
+    static bool averagesDirty = false;
     [UnmanagedCallersOnly]
     static unsafe nint GameTickHook(nint a1)
     {
@@ -797,7 +821,21 @@ public partial class CatstableMod
 
         // 00007FF646AD4C40
         // [[[rcx+0x18]+0x28]] or [[[rcx+0x18]+0x28]+10]
-
+        if (averagesDirty)
+        {
+            // LogStr($"[HOOK] GameTickHook: updating averages for {averages.Count} renderers");
+            foreach (var renderer in averages.Keys)
+            {
+                var average = averages[renderer];
+                var movieclip = Marshal.ReadIntPtr(renderer + 0x80);
+                var avgTextbox = _getChild(movieclip, GameString.Create("average"));
+                _setText(avgTextbox, CreateUTF16GameString($"{average}"));
+                // LogStr($"[HOOK] GameTickHook: average={average} for renderer 0x{renderer:X}");
+            }
+            averagesDirty = false;
+            
+            // LogStr($"[HOOK] GameTickHook: average={average} total={total} count={count}");
+        }
         if (_originalDrawer != 0) {
             handleScrollAtUpdatePanelLayout();
             var pointer = Marshal.ReadIntPtr(_originalDrawer + 0x20);
@@ -856,6 +894,7 @@ public partial class CatstableMod
             CreateRows();
             // LogStr($"before read! {_originalDrawer:X}");
         }
+
         return 0;
     }
     
@@ -878,11 +917,17 @@ public partial class CatstableMod
         }
         for (var i = 0; i < _totalCatsCount; i++)
         {
+            // var cat = sortedCats[i];
+            var index = Array.IndexOf(sortedCats, rowRenderers[i]);
             var transform = rowTransforms[i];
-            if (i < cachedVisibleCats.Length)
+            // if (Array.IndexOf(sortedCats, cat) != -1)
+            // {
+            //     transform = rowTransforms[Array.IndexOf(sortedCats, cat)];
+            // }
+            if (index != -1)
             {    
                 Write(transform + 0x80, xPos);
-                yPos = -1.0 + yOffset - (1.8 * Array.IndexOf(sortedCats, rowRenderers[i]));
+                yPos = -1.0 + yOffset - (1.8 * index);
                 Write(transform + 0x88, yPos);
                 // if ( Array.IndexOf(sortedCats, rowRenderers[i]) == -1)
                 // {
@@ -938,44 +983,6 @@ public partial class CatstableMod
             headers,
         0);
         Write(headersRenderer + 0x50, 0x0000002400000101);
-        LogStr($"headersRenderer 0x{headersRenderer:X}");
-
-        // Experiment: find the MovieClip child "spd_btn"
-        IntPtr spdName = GameString.Create("spd_btn");
-
-        try
-        {
-            // headersRenderer + 0x80 appears to be the MovieClip/root instance.
-            nint headersMc = Marshal.ReadIntPtr(headersRenderer + 0x80);
-
-            LogStr($"headersRenderer MovieClip = 0x{headersMc:X}");
-
-            // We don't currently have a typed get_child function pointer,
-            // so temporarily use the known game function directly.
-            var _getChild = (delegate* unmanaged<nint, nint, nint>)(
-                MewjectorApi.GameBase + 0x990480);
-
-            nint spdBtn = _getChild(headersMc, spdName);
-
-            LogStr($"spd_btn lookup result = 0x{spdBtn:X} spdName=0x{spdName:X}");
-
-            // if (spdBtn != 0)
-            // {
-            //     nint namePtr = Marshal.ReadIntPtr(spdBtn + 0x48);
-            //     LogStr($"spd_btn actual name = {TryReadCString(namePtr)}");
-
-            //     // Experiment: try registering it through the game's normal
-            //     // MenuPanel/Button machinery.
-            //     //
-            //     // We don't yet know the correct MenuPanel for this renderer,
-            //     // so don't call _registerButton here until that is established.
-            // }
-        }
-        finally
-        {
-            Marshal.FreeHGlobal(spdName);
-        }
-
         LogStr($"headersRenderer 0x{headersRenderer:X}");
         for (int i = 0; i < _totalCatsCount; i++)
         {
@@ -1217,6 +1224,10 @@ public partial class CatstableMod
             _renderersSoFar.Clear();
             alreadyInitializedDrawers.Clear();
             initializedButtons = false;
+            yOffset = 0;
+            yOffsetTarget = 0;
+            xOffset = -300;
+            xOffsetTarget = -300;
         }
         return _removeMovieClipTrampoline(a1, a2, a3, a4);
     }
@@ -1439,6 +1450,7 @@ public class FloatAnimator
     {
         return a + (b - a) * t;
     }
+
 }
 
 
@@ -1471,3 +1483,4 @@ unsafe struct GameString
         return (nint)s;
     }
 }
+
