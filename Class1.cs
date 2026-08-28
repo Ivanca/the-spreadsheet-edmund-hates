@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 using System.IO;
 using System.Diagnostics;
 using System.Reflection;
-
+using System.Text;
 using System.Linq;
 
 namespace CatstableMod;
@@ -55,7 +55,7 @@ public partial class CatstableMod
     unsafe static delegate* unmanaged<nint, nint, nint, nint> _hideChildren;
 
     static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _removeMovieClipTrampoline;
-    unsafe static delegate* unmanaged<nint, char*, nuint, nint> _assignString;
+    public unsafe static delegate* unmanaged<nint, char*, nuint, nint> assignString;
 
     static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _globalResourceManagerLookup;
     
@@ -85,6 +85,13 @@ public partial class CatstableMod
     
     internal unsafe void MjInit()
     {
+        var tenSecondsAfterNow = DateTime.Now.AddSeconds(0);
+        LogStr($"Waiting for 15 seconds to connect using x64dbg...");
+        while (DateTime.Now < tenSecondsAfterNow)
+        {
+            Thread.Sleep(1);
+        }
+        Autoinjector();
 
         _removeMovieClipTrampoline = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0x99e030, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&RemoveMovieClip);
@@ -92,8 +99,9 @@ public partial class CatstableMod
         _updatePanelLayout = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
             0x2038b0, (void*)(delegate* unmanaged<nint, nint>)&UpdatePanelLayoutHook);
 
-        _createRenderer = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
-            0x5A580, (void*)(delegate* unmanaged<nint, nint>)&CreateRendererHook);
+        // intercepting the CreateRenderer crashes the game, avoid!!
+        // _createRenderer = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
+        //     0x5A580, (void*)(delegate* unmanaged<nint, nint>)&CreateRendererHook);
         
         // _globalResourceManagerLookup = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
         //     0x9adc50, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&GlobalResourceManagerLookupHook);
@@ -136,7 +144,8 @@ public partial class CatstableMod
 
         _setText = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0x986470, (void*)(delegate* unmanaged<nint, nint, nint>)&SetTextHook);
-            
+        
+
         delegate* unmanaged<nint, nint> ptr = &ToggleHouseDrawerHook;
         
         LogStr($"Our ToggleHouseDrawerHook memory address at 0x{(nint)ptr:X}");
@@ -147,7 +156,7 @@ public partial class CatstableMod
         var location = MewjectorApi.GameBase;
         LogStr($"Gamebase at {location:X}...");
         // LogStr("MjInit: installing hooks...");
-        _assignString = (delegate* unmanaged<nint,char*,nuint,nint>)(MewjectorApi.GameBase + 0x5b100);
+        assignString = (delegate* unmanaged<nint,char*,nuint,nint>)(MewjectorApi.GameBase + 0x5b100);
         _getChild = (delegate* unmanaged<nint, nint, nint>)(MewjectorApi.GameBase + 0x990480);
 
 
@@ -849,7 +858,7 @@ public partial class CatstableMod
                 var average = averages[renderer];
                 var movieclip = Marshal.ReadIntPtr(renderer + 0x80);
                 var avgTextbox = _getChild(movieclip, GameString.Create("average"));
-                _setText(avgTextbox, CreateUTF16GameString($"{average}"));
+                _setText(avgTextbox, GameString.CreateUTF16GameString($"{average}"));
                 // LogStr($"[HOOK] GameTickHook: average={average} for renderer 0x{renderer:X}");
             }
             averagesDirty = false;
@@ -1160,7 +1169,6 @@ public partial class CatstableMod
     static extern nint GetCurrentProcess();
 
     static nint movieClipModContainer = 0;
-
      [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
     private delegate nint CreateInstanceDelegate(nint defineSprite);
 
@@ -1205,34 +1213,6 @@ public partial class CatstableMod
         return clone;
     }
 
-
-    unsafe static nint CreateUTF16GameString(string text)
-    {
-        string currentMethod = MethodBase.GetCurrentMethod().Name;
-        executionCounts[currentMethod] = executionCounts.ContainsKey(currentMethod) ? executionCounts[currentMethod] + 1 : 1;
-        // Allocate enough space for the engine's std::wstring object.
-        // 32 bytes is sufficient for the fields used by 370B100.
-        
-        nint str = Marshal.AllocHGlobal(0x30);
-        LogStr($"[HOOK] Allocated std::wstring at 0x{str:X} for text '{text}'");
-        // Initialize as an empty small-string.
-        Buffer.MemoryCopy(null, (void*)str, 0, 0);
-
-        *(ulong*)(str + 0x10) = 0; // length
-        *(ulong*)(str + 0x18) = 7; // SSO capacity
-
-        LogStr($"[HOOK] Writing text '{text}' to std::wstring at 0x{str:X}");
-
-        fixed (char* p = text)
-        {
-            _assignString(str, p, (nuint)text.Length);
-        }
-
-        LogStr($"[HOOK] Finished writing text '{text}' to std::wstring at 0x{str:X}");
-
-        return str;
-    }
-    
     [UnmanagedCallersOnly]
     static unsafe nint RemoveMovieClip(nint a1, nint a2, nint a3, nint a4)
     {
@@ -1440,80 +1420,3 @@ public partial class CatstableMod
 
 
 };
-
-
-public class FloatAnimator
-{
-    private readonly Stopwatch _stopwatch = Stopwatch.StartNew();
-
-    private readonly float _startValue;
-    private readonly float _targetValue;
-    private readonly float _durationSeconds;
-    private readonly long _startTicks;
-
-    public FloatAnimator(float startValue, float targetValue, float durationSeconds)
-    {
-        _startValue = startValue;
-        _targetValue = targetValue;
-        _durationSeconds = durationSeconds;
-        _startTicks = _stopwatch.ElapsedTicks;
-    }
-
-    /// <summary>
-    /// Current interpolated value.
-    /// </summary>
-    public float Tick()
-    {
-        float elapsedSeconds =
-            (float)(_stopwatch.ElapsedTicks - _startTicks) / Stopwatch.Frequency;
-
-        float t = Math.Min(elapsedSeconds / _durationSeconds, 1.0f);
-
-        return Lerp(_startValue, _targetValue, t);
-    }
-
-    /// <summary>
-    /// Returns true once the animation has finished.
-    /// </summary>
-    public bool IsFinished =>
-        (_stopwatch.ElapsedTicks - _startTicks) >=
-        _durationSeconds * Stopwatch.Frequency;
-
-    static float Lerp(float a, float b, float t)
-    {
-        return a + (b - a) * t;
-    }
-
-}
-
-
-[StructLayout(LayoutKind.Sequential, Pack = 8)]
-unsafe struct GameString
-{
-    public ulong A;
-    public ulong B;
-    public ulong Length;
-    public ulong Capacity;
-
-    public static nint Create(string text)
-    {
-        GameString* s = (GameString*)Marshal.AllocHGlobal(sizeof(GameString));
-
-        *s = default;
-
-        byte* bytes = (byte*)s;
-
-        for (int i = 0; i < text.Length; i++)
-            bytes[i] = (byte)text[i];
-
-        bytes[text.Length] = 0;
-
-        s->Length = (ulong)text.Length;
-        s->Capacity = 15;
-        
-        // CatstableMod.LogStr(sizeof(GameString).ToString());
-        // CatstableMod.LogStr(((nuint)s).ToString("X"));
-        return (nint)s;
-    }
-}
-
