@@ -232,27 +232,39 @@ public partial class CatstableMod
         string currentMethod = MethodBase.GetCurrentMethod().Name;
         executionCounts[currentMethod] = executionCounts.ContainsKey(currentMethod) ? executionCounts[currentMethod] + 1 : 1;
 
-        if (a1 != 0 && Ourbuttons.ContainsValue(a1) && IsMemReadable(a1 + 0x48, 8))
+        if (a1 != 0 && IsMemReadable(a1 + 0x48, 8))
         {
-            LogStr($"[HOOK] ClickHandlerHook: a1=0x{a1:X} is one of our header buttons, ignoring click");
-            var movieclip = Read<nint>(a1 + 0x48);
-            var movieclipname = TryReadCString(Read<nint>(movieclip + 0x48));
-            // get first 3 letters
-            var subname = movieclipname.Substring(0, Math.Min(3, movieclipname.Length));
-            if (stats.Contains(subname) || subname == "avg")
-            {
-                if (sortByStat == subname)
+            if (OurHeaderbuttons.ContainsValue(a1))
+            {            
+                LogStr($"[HOOK] ClickHandlerHook: a1=0x{a1:X} is one of our header buttons, ignoring click");
+                var movieclip = Read<nint>(a1 + 0x48);
+                var movieclipname = TryReadCString(Read<nint>(movieclip + 0x48));
+                // get first 3 letters
+                var subname = movieclipname.Substring(0, Math.Min(3, movieclipname.Length));
+                if (stats.Contains(subname) || subname == "avg")
                 {
-                    sortByStatDirection = sortByStatDirection == "asc" ? "dsc" : "asc";
-                } else
-                {
-                    sortByStat = subname;
-                    sortByStatDirection = "dsc";
+                    if (sortByStat == subname)
+                    {
+                        sortByStatDirection = sortByStatDirection == "asc" ? "dsc" : "asc";
+                    } else
+                    {
+                        sortByStat = subname;
+                        sortByStatDirection = "dsc";
+                    }
+                    SortCats();
+                    LogStr($"[HOOK] ClickHandlerHook: sorting by {sortByStat} {sortByStatDirection}");
                 }
-                SortCats();
-                LogStr($"[HOOK] ClickHandlerHook: sorting by {sortByStat} {sortByStatDirection}");
+                return 0;
+            } else if (a1 == footerButton)
+            {
+                LogStr($"[HOOK] ClickHandlerHook: a1=0x{a1:X} is our footer button, opening kofi link");
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "https://ko-fi.com/chimplants",
+                    UseShellExecute = true
+                });
+                return 0;
             }
-            return 0;
         }
         var result = _clickHandler(a1, a2);
         return result;
@@ -262,7 +274,7 @@ public partial class CatstableMod
     {
         string currentMethod = MethodBase.GetCurrentMethod().Name;
         executionCounts[currentMethod] = executionCounts.ContainsKey(currentMethod) ? executionCounts[currentMethod] + 1 : 1;
-
+        positionDirty = true;
         if (sortByStat == "")
         {
             sortedCats = catStats.Select(e => e.Key).ToArray();
@@ -466,7 +478,8 @@ public partial class CatstableMod
 
     static bool initializedButtons = false;
     // static List<nint> headerButtons = new List<nint>();
-    static Dictionary<string, nint> Ourbuttons = new Dictionary<string, nint>();
+    static Dictionary<string, nint> OurHeaderbuttons = new Dictionary<string, nint>();
+    static nint footerButton = 0;
     static unsafe void initializeButtons()
     {
         if (initializedButtons)
@@ -474,11 +487,10 @@ public partial class CatstableMod
 
         initializedButtons = true;
 
-        nint headersMc = Marshal.ReadIntPtr(headersRenderer + 0x80);
         nint headersEntity = Marshal.ReadIntPtr(headersRenderer + 0x18);
+        nint footerMc = Marshal.ReadIntPtr(footerRenderer + 0x80);
+        nint footerEntity = Marshal.ReadIntPtr(footerRenderer + 0x18);
         var allocate = (delegate* unmanaged<nint, nint, nint>)(MewjectorApi.GameBase + 0x961090);
-
-        LogStr($"headersRenderer MovieClip = 0x{headersMc:X}");
 
 
         nint callbackVtable = Marshal.AllocHGlobal(0x30);
@@ -507,14 +519,19 @@ public partial class CatstableMod
             (delegate* unmanaged<nint, nint, nint>)
             (MewjectorApi.GameBase + 0xe8a80);;
 
-        nint menuPanel = _createMenuPanel(
+        nint headerMenuPanel = _createMenuPanel(
             headersEntity,
             GameString.Create("row_headers")
         );
+        nint footerMenuPanel = _createMenuPanel(
+            footerEntity,
+            GameString.Create("row_footer")
+        );
 
-        LogStr($"Created test MenuPanel = 0x{menuPanel:X}");
+        LogStr($"Created test MenuPanel = 0x{headerMenuPanel:X}");
+        LogStr($"Created test MenuPanel = 0x{footerMenuPanel:X}");
 
-        if (menuPanel == 0)
+        if (headerMenuPanel == 0 || footerMenuPanel == 0)
             return;
 
         // Empty callback storage for the experiment.
@@ -530,24 +547,32 @@ public partial class CatstableMod
         {
             var btnName = buttonList[i];
             nint newButton = _registerButton(
-                menuPanel,
+                headerMenuPanel,
                 GameString.Create(btnName),
                 callbackStorage,
                 callback
             );
             LogStr($"Registered {btnName} with the game's register-newButton function, result = 0x{newButton:X}");
             Write(newButton + 0x50, 0x000003EA);
-            Ourbuttons[btnName] = newButton;
-        }
+            OurHeaderbuttons[btnName] = newButton;
+        }   
 
-
+        footerButton = _registerButton(
+            footerMenuPanel,
+            GameString.Create("kofi_btn"),
+            callbackStorage,
+            callback
+        );
+        Write(footerButton + 0x50, 0x000003EA);
+        LogStr($"Registered kofi_btn with the game's register-newButton function, result = 0x{footerButton:X}");
 
     }
 
     [UnmanagedCallersOnly]
     static nint TestButtonCallback(nint callbackObject)
     {
-        LogStr("!!! SPD BUTTON CLICKED !!!");
+        // This is never executed, don't know why, doesn't matter
+        // we just intercept our buttons at ClickHandlerHook
         return 0;
     }
     
@@ -840,6 +865,7 @@ public partial class CatstableMod
     }
    
     static bool averagesDirty = false;
+    static bool positionDirty = false;
     static int framesSoFarAfterInit = 0;
     [UnmanagedCallersOnly]
     static unsafe nint GameTickHook(nint a1)
@@ -951,10 +977,11 @@ public partial class CatstableMod
     {
         var newYOffset = yScrollAni == null ? yOffset : yScrollAni.Tick();
         var newXOffset = xMoveAni == null ? xOffset : xMoveAni.Tick();
-        // if (newYOffset == yOffset && newXOffset == xOffset)
-        // {
-        //     return;
-        // }
+        if (newYOffset == yOffset && newXOffset == xOffset && !positionDirty)
+        {
+            return;
+        }
+        positionDirty = false;
         string currentMethod = MethodBase.GetCurrentMethod().Name;
         executionCounts[currentMethod] = executionCounts.ContainsKey(currentMethod) ? executionCounts[currentMethod] + 1 : 1;
         yOffset = newYOffset;
@@ -970,6 +997,13 @@ public partial class CatstableMod
             var headerTransform = Marshal.ReadIntPtr(headersRenderer + 0x40);
             Write(headerTransform + 0x80, headerXpos);
             _trackMovieclipChildParentOffset(_originalPanel, headerTransform, 1);
+        }
+        if (footerRenderer != 0)
+        {
+            var footerTransform = Marshal.ReadIntPtr(footerRenderer + 0x40);
+            Write(footerTransform + 0x80, headerXpos);
+            Write(footerTransform + 0x88,  -1.0 + yOffset - (1.8 * visibleRenderers.Count));
+            _trackMovieclipChildParentOffset(_originalPanel, footerTransform, 1);
         }
         for (var i = 0; i < _totalCatsCount; i++)
         {
@@ -1015,6 +1049,7 @@ public partial class CatstableMod
     static List<nint> rowRenderers = new List<nint>();
 
     static nint headersRenderer = 0;
+    static nint footerRenderer = 0;
     
     static nint attachRendererIteration = 0;
     static bool insideOurCatInstantiation = false;
@@ -1027,9 +1062,11 @@ public partial class CatstableMod
         var _createEntity = (delegate* unmanaged<nint, nint>)(MewjectorApi.GameBase + 0x962fb0);
 
         IntPtr headers = Marshal.StringToHGlobalAnsi("RowHeaders");
+        IntPtr footer = Marshal.StringToHGlobalAnsi("BuyMeACoffee");
         // var _strBtn = _findMovieClipTrampoline(CreateUTF16GameString("x"));
 
         var headersEntity = _createEntity(scenePtr);
+        var footerEntity = _createEntity(scenePtr);
 
 
         headersRenderer = _createUiRenderer(
@@ -1037,12 +1074,20 @@ public partial class CatstableMod
             headersEntity,
             headers,
         0);
+        footerRenderer = _createUiRenderer(
+            scenePtr,
+            footerEntity,
+            footer,
+        0);
         Write(headersRenderer + 0x50, 0x0000002400000101);
+        Write(footerRenderer + 0x50, 0x0000002400000101);
+        var headerTransform = Marshal.ReadIntPtr(headersRenderer + 0x40);
+        var footerTransform = Marshal.ReadIntPtr(footerRenderer + 0x40);
+        Write(headerTransform + 0x80, -300.0);
+        Write(footerTransform + 0x80, -300.0);
         LogStr($"headersRenderer 0x{headersRenderer:X}");
         for (int i = 0; i < _totalCatsCount; i++)
         {
-            
-
             nint rowEntity = _createEntity(scenePtr);
 
             int componentCount = *(int*)(rowEntity + 36);
@@ -1083,18 +1128,6 @@ public partial class CatstableMod
         }
 
         Write(_originalPanel + 0x118, _originalDrawer);
-
-        // IntPtr bolatest = Marshal.StringToHGlobalAnsi("bolatest");
-        // var bolatestEntity = _createEntity(scenePtr);
-
-        // var bolatestRenderer = _createUiRenderer(
-        //     scenePtr,
-        //     bolatestEntity,
-        //     bolatest,
-        // 0);
-        // Marshal.FreeHGlobal(bolatest);
-        // Write(bolatestRenderer + 0x50, 0x0000002600000101);
-        // LogStr($"bolatestRenderer 0x{bolatestRenderer:X}");
         
     }
 
@@ -1231,6 +1264,7 @@ public partial class CatstableMod
             rowRenderers.Clear();
             _totalCatsCount = -1;
             headersRenderer = 0;
+            footerRenderer = 0;
             yOffset = 0;
             _renderersSoFar.Clear();
             allStatsAlreadyFound = false;
