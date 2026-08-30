@@ -5,9 +5,9 @@ using System.Runtime.InteropServices;
 using System.IO;
 using System.Text;
 
-namespace CatstableMod;
+namespace CatsTableMod;
 
-public partial class CatstableMod
+public partial class CatsTableMod
 {
 
     unsafe static delegate* unmanaged<nint, nint, nint, nint> _hookProcessCmds;

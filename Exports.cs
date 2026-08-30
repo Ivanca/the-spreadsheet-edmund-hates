@@ -2,11 +2,11 @@
 // using MewgenicsModSdk.Api;
 using System.Runtime.InteropServices;
 
-namespace CatstableMod;
+namespace CatsTableMod;
 
 internal static unsafe class Exports
 {
-    private static readonly CatstableMod _mod = new();
+    private static readonly CatsTableMod _mod = new();
 
     // [UnmanagedCallersOnly(EntryPoint = "MewMod_GetInfo")]
     // public static ModInfo* GetInfo()       { try { return ModInfoHelper.GetInfo(_mod); } catch { return null; } }

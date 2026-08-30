@@ -10,9 +10,9 @@ using System.Reflection;
 using System.Text;
 using System.Linq;
 
-namespace CatstableMod;
+namespace CatsTableMod;
 
-public partial class CatstableMod
+public partial class CatsTableMod
 {
 
     public string Id => "catstable";
@@ -20,7 +20,7 @@ public partial class CatstableMod
     public bool IsEnabled { get; private set; } = true;
 
     CancellationTokenSource _cts = new CancellationTokenSource();
-    static CatstableMod? _instance;
+    static CatsTableMod? _instance;
     Dictionary<string, string> _abilitiesLocalNames = new Dictionary<string, string>();
 
 
@@ -1303,12 +1303,12 @@ public partial class CatstableMod
 
     protected void OnEnable()
     {
-        Log("Catstable enabled");
+        Log("CatsTable enabled");
     }
 
     protected void OnDisable()
     {
-        Log("Catstable disabled");
+        Log("CatsTable disabled");
     }
 
     static readonly string LogFilePath = @"E:\Documents\catstable\log.txt";

@@ -20,9 +20,9 @@ using System.Diagnostics;
 using System.Collections.Concurrent;
 using System.Text;
 using System.Runtime.CompilerServices;
-namespace CatstableMod;
+namespace CatsTableMod;
 
-public partial class CatstableMod
+public partial class CatsTableMod
 {
 
 
@@ -32,7 +32,7 @@ public partial class CatstableMod
     public bool IsEnabled { get; private set; } = true;
 
     private CancellationTokenSource _cts = new CancellationTokenSource();
-    private static CatstableMod? _instance;
+    private static CatsTableMod? _instance;
     private Dictionary<string, string> _abilitiesLocalNames = new Dictionary<string, string>();
 
 
@@ -161,7 +161,7 @@ public partial class CatstableMod
         uint depth = Read<uint>(parent + 0xAC);
 
         // var textbox = CallWithCustomString(_findMovieClipTrampoline, clone, "test_text", 0, 0);
-        // nint gameString = CreateGameString("CatstableMod!");
+        // nint gameString = CreateGameString("CatsTableMod!");
         // _setText(textbox, gameString);
         // DestroyGameString(gameString);
         // pendingTextClone = textbox;
@@ -1091,14 +1091,14 @@ public partial class CatstableMod
 
     protected void OnEnable()
     {
-        Log("Catstable enabled");
+        Log("CatsTable enabled");
         // OverlayManager.Start(Log);
         Log("OverlayManager started");
     }
 
     protected void OnDisable()
     {
-        Log("Catstable disabled");
+        Log("CatsTable disabled");
         // OverlayManager.Stop();
         Log("OverlayManager stopped");
     }
@@ -1427,8 +1427,8 @@ unsafe struct GameString
         s->Length = (ulong)text.Length;
         s->Capacity = 15;
         
-        // CatstableMod.LogStr(sizeof(GameString).ToString());
-        // CatstableMod.LogStr(((nuint)s).ToString("X"));
+        // CatsTableMod.LogStr(sizeof(GameString).ToString());
+        // CatsTableMod.LogStr(((nuint)s).ToString("X"));
         return (nint)s;
     }
 }
