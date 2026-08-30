@@ -260,7 +260,7 @@ public partial class CatstableMod
                 LogStr($"[HOOK] ClickHandlerHook: a1=0x{a1:X} is our footer button, opening kofi link");
                 Process.Start(new ProcessStartInfo
                 {
-                    FileName = "https://ko-fi.com/chimplants",
+                    FileName = showingChimplantsPromo ? "https://www.chimplants.com/" : "https://ko-fi.com/chimplants",
                     UseShellExecute = true
                 });
                 return 0;
@@ -390,8 +390,6 @@ public partial class CatstableMod
             changed = true;
             panelAnimationInProgress = true;
             waitingForPanelStatus = 36;
-
-
         }
         else if (panel == _originalPanel && !_panelIsOpen)
         {
@@ -400,6 +398,9 @@ public partial class CatstableMod
             LogStr($"[HOOK] ToggleHouseDrawerHook: executionCounts = {string.Join(", ", executionCounts.Select(kv => $"{kv.Key}={kv.Value}"))}");
             // OPEN
             MewjectorApi.Log($"[HOOK] Panel Open");
+            yOffset = 0;
+            yOffsetTarget = 0;
+            yScrollAni = null;
             _panelIsOpen = true;
             cachedPointers.Clear();
             initializeButtons();
@@ -419,6 +420,7 @@ public partial class CatstableMod
         {
             xOffsetTarget = _panelIsOpen ? 10 : -35;
             xMoveAni = new FloatAnimator(xOffset, xOffsetTarget, 0.5f);
+            positionDirty = true;
         }
         return _toggleHouseDrawer(a1);
     }
@@ -488,8 +490,6 @@ public partial class CatstableMod
         initializedButtons = true;
 
         nint headersEntity = Marshal.ReadIntPtr(headersRenderer + 0x18);
-        nint footerMc = Marshal.ReadIntPtr(footerRenderer + 0x80);
-        nint footerEntity = Marshal.ReadIntPtr(footerRenderer + 0x18);
         var allocate = (delegate* unmanaged<nint, nint, nint>)(MewjectorApi.GameBase + 0x961090);
 
 
@@ -523,15 +523,12 @@ public partial class CatstableMod
             headersEntity,
             GameString.Create("row_headers")
         );
-        nint footerMenuPanel = _createMenuPanel(
-            footerEntity,
-            GameString.Create("row_footer")
-        );
+        
+
 
         LogStr($"Created test MenuPanel = 0x{headerMenuPanel:X}");
-        LogStr($"Created test MenuPanel = 0x{footerMenuPanel:X}");
 
-        if (headerMenuPanel == 0 || footerMenuPanel == 0)
+        if (headerMenuPanel == 0)
             return;
 
         // Empty callback storage for the experiment.
@@ -557,14 +554,23 @@ public partial class CatstableMod
             OurHeaderbuttons[btnName] = newButton;
         }   
 
-        footerButton = _registerButton(
-            footerMenuPanel,
-            GameString.Create("kofi_btn"),
-            callbackStorage,
-            callback
-        );
-        Write(footerButton + 0x50, 0x000003EA);
-        LogStr($"Registered kofi_btn with the game's register-newButton function, result = 0x{footerButton:X}");
+        if (footerRenderer != 0)
+        {
+            nint footerEntity = Marshal.ReadIntPtr(footerRenderer + 0x18);
+            nint footerMenuPanel = _createMenuPanel(
+                footerEntity,
+                GameString.Create("row_footer")
+            );
+            LogStr($"Created test MenuPanel = 0x{footerMenuPanel:X}");
+            footerButton = _registerButton(
+                footerMenuPanel,
+                GameString.Create(showingChimplantsPromo ? "chimp_btn" : "kofi_btn"),
+                callbackStorage,
+                callback
+            );
+            Write(footerButton + 0x50, 0x000003EA);
+            LogStr($"Registered footer btn with the game's register-newButton function, result = 0x{footerButton:X}");
+        }
 
     }
 
@@ -614,6 +620,9 @@ public partial class CatstableMod
                         yOffsetTarget = _yOffsetTarget;
                         yScrollAni = new FloatAnimator(yOffset, _yOffsetTarget, 0.1f);
                     }
+                } else
+                {
+                    yScrollAni = null;
                 }
                 return 0;
             }
@@ -1053,6 +1062,7 @@ public partial class CatstableMod
     
     static nint attachRendererIteration = 0;
     static bool insideOurCatInstantiation = false;
+    static bool showingChimplantsPromo = false;
 
     static unsafe void CreateRows()
     {
@@ -1060,13 +1070,12 @@ public partial class CatstableMod
         executionCounts[currentMethod] = executionCounts.ContainsKey(currentMethod) ? executionCounts[currentMethod] + 1 : 1;
         var _getRenderer = (delegate* unmanaged<nint, nint>)(MewjectorApi.GameBase + 0x6bea0);
         var _createEntity = (delegate* unmanaged<nint, nint>)(MewjectorApi.GameBase + 0x962fb0);
+        DateTime currentDateTime = DateTime.Now; 
 
         IntPtr headers = Marshal.StringToHGlobalAnsi("RowHeaders");
-        IntPtr footer = Marshal.StringToHGlobalAnsi("BuyMeACoffee");
         // var _strBtn = _findMovieClipTrampoline(CreateUTF16GameString("x"));
 
         var headersEntity = _createEntity(scenePtr);
-        var footerEntity = _createEntity(scenePtr);
 
 
         headersRenderer = _createUiRenderer(
@@ -1074,17 +1083,25 @@ public partial class CatstableMod
             headersEntity,
             headers,
         0);
-        footerRenderer = _createUiRenderer(
-            scenePtr,
-            footerEntity,
-            footer,
-        0);
+
+        if (currentDateTime > dateInstalled.AddDays(3))
+        {
+            showingChimplantsPromo = currentDateTime > dateInstalled.AddDays(60) || currentDateTime > new DateTime(2027, 7, 1);
+            IntPtr footer = Marshal.StringToHGlobalAnsi(showingChimplantsPromo ? "Chimplants" : "BuyMeACoffee");
+            var footerEntity = _createEntity(scenePtr);
+            footerRenderer = _createUiRenderer(
+                scenePtr,
+                footerEntity,
+                footer,
+            0);
+            Write(footerRenderer + 0x50, 0x0000002400000101);
+            var footerTransform = Marshal.ReadIntPtr(footerRenderer + 0x40);
+            Write(footerTransform + 0x80, -300.0);
+        }
+        
         Write(headersRenderer + 0x50, 0x0000002400000101);
-        Write(footerRenderer + 0x50, 0x0000002400000101);
         var headerTransform = Marshal.ReadIntPtr(headersRenderer + 0x40);
-        var footerTransform = Marshal.ReadIntPtr(footerRenderer + 0x40);
         Write(headerTransform + 0x80, -300.0);
-        Write(footerTransform + 0x80, -300.0);
         LogStr($"headersRenderer 0x{headersRenderer:X}");
         for (int i = 0; i < _totalCatsCount; i++)
         {
@@ -1268,6 +1285,7 @@ public partial class CatstableMod
             yOffset = 0;
             _renderersSoFar.Clear();
             allStatsAlreadyFound = false;
+            cachedVisibleCats = new nint[0];
             framesSoFarAfterInit = 0;
             alreadyInitializedDrawers.Clear();
             initializedButtons = false;

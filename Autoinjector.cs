@@ -11,6 +11,7 @@ public partial class CatstableMod
 {
 
     unsafe static delegate* unmanaged<nint, nint, nint, nint> _hookProcessCmds;
+    static DateTime dateInstalled = DateTime.Now;
 
     internal unsafe void Autoinjector()
     {
@@ -60,7 +61,12 @@ public partial class CatstableMod
 
         string ModPath = Path.GetDirectoryName(buffer.ToString())! + "/mods/catstable";
 
-        LogStr($"[HOOK] HookProcessCmds: ModPath={ModPath} hasModPaths={hasModPaths} args={string.Join(" ", args)}");
+        // get the dateCreated time of the dll file
+        string dllPath = Path.Combine(ModPath, "catstable.dll");
+        dateInstalled = File.GetCreationTime(dllPath);
+        LogStr($"[HOOK] HookProcessCmds: ModPath={ModPath} hasModPaths={hasModPaths} args={string.Join(" ", args)} dateInstalled={dateInstalled:yyyy-MM-dd HH:mm:ss} ");
+
+        dateInstalled = DateTime.Now.AddDays(-94); // for testing purposes, set the dateInstalled
 
         if (hasModPaths)
         {

@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="UTF-8"?><!--
+WARNING: The structure of this XML is not final.
+In later versions of FFDec it can be changed.
+Make sure you use compatible reader/writer based on _xmlExportMajor/_xmlExportMinor keys.
+--><swf _xmlExportMajor="2" _xmlExportMinor="1" _generator="JPEXS Free Flash Decompiler v.26.0.0" type="SWF" charset="UTF-8" compression="NONE" encrypted="false" frameCount="1" frameRate="60.0" gfx="false" hasEndTag="true" version="17">
+  <displayRect type="RECT" Xmax="11000" Xmin="0" Ymax="8000" Ymin="0" nbits="15"/>
+  <tags>
+    <item type="FileAttributesTag" actionScript3="true" forceWriteAsLong="false" hasMetadata="false" noCrossDomainCache="false" reservedA="false" reservedB="0" swfRelativeUrls="false" useDirectBlit="false" useGPU="false" useNetwork="false"/>
+    <item type="SetBackgroundColorTag" forceWriteAsLong="false">
+      <backgroundColor type="RGB" blue="255" green="255" red="255"/>
+    </item>
+    <item type="DefineSceneAndFrameLabelDataTag" forceWriteAsLong="true">
+      <sceneOffsets>
+        <item>0</item>
+      </sceneOffsets>
+      <sceneNames>
+        <item>Scene 1</item>
+      </sceneNames>
+      <frameNums/>
+      <frameNames/>
+    </item>
+    <item type="DefineShape4Tag" forceWriteAsLong="true" reserved="0" shapeId="1" usesFillWindingRule="false" usesNonScalingStrokes="false" usesScalingStrokes="true">
+      <edgeBounds type="RECT" Xmax="3503" Xmin="-245" Ymax="4622" Ymin="874" nbits="14"/>
+      <shapeBounds type="RECT" Xmax="3543" Xmin="-285" Ymax="4662" Ymin="834" nbits="14"/>
+      <shapes type="SHAPEWITHSTYLE" numFillBits="1" numLineBits="1">
+        <fillStyles type="FILLSTYLEARRAY">
+          <fillStyles>
+            <item type="FILLSTYLE" bitmapId="0" fillStyleType="0">
+              <color type="RGBA" alpha="255" blue="0" green="0" red="0"/>
+            </item>
+          </fillStyles>
+        </fillStyles>
+        <lineStyles type="LINESTYLEARRAY">
+          <lineStyles/>
+          <lineStyles2>
+            <item type="LINESTYLE2" endCapStyle="0" hasFillFlag="false" joinStyle="0" miterLimitFactor="0.0" noClose="false" noHScaleFlag="false" noVScaleFlag="false" pixelHintingFlag="false" reserved="0" startCapStyle="0" width="80">
+              <color type="RGBA" alpha="255" blue="0" green="0" red="0"/>
+            </item>
+          </lineStyles2>
+        </lineStyles>
+        <shapeRecords>
+          <item type="StyleChangeRecord" fillStyle0="0" fillStyle1="1" lineStyle="1" moveBits="13" moveDeltaX="3503" moveDeltaY="2748" numFillBits="0" numLineBits="0" stateFillStyle0="false" stateFillStyle1="true" stateLineStyle="true" stateMoveTo="true" stateNewStyles="false"/>
+          <item type="CurvedEdgeRecord" anchorDeltaX="-549" anchorDeltaY="549" controlDeltaX="0" controlDeltaY="776" numBits="9"/>
+          <item type="CurvedEdgeRecord" anchorDeltaX="-776" anchorDeltaY="0" controlDeltaX="-549" controlDeltaY="549" numBits="9"/>
+          <item type="CurvedEdgeRecord" anchorDeltaX="-549" anchorDeltaY="-549" controlDeltaX="-776" controlDeltaY="0" numBits="9"/>
+          <item type="CurvedEdgeRecord" anchorDeltaX="0" anchorDeltaY="-776" controlDeltaX="-549" controlDeltaY="-549" numBits="9"/>
+          <item type="CurvedEdgeRecord" anchorDeltaX="549" anchorDeltaY="-549" controlDeltaX="0" controlDeltaY="-776" numBits="9"/>
+          <item type="CurvedEdgeRecord" anchorDeltaX="776" anchorDeltaY="0" controlDeltaX="549" controlDeltaY="-549" numBits="9"/>
+          <item type="CurvedEdgeRecord" anchorDeltaX="549" anchorDeltaY="549" controlDeltaX="776" controlDeltaY="0" numBits="9"/>
+          <item type="CurvedEdgeRecord" anchorDeltaX="0" anchorDeltaY="776" controlDeltaX="549" controlDeltaY="549" numBits="9"/>
+          <item type="EndShapeRecord" endOfShape="0"/>
+        </shapeRecords>
+      </shapes>
+    </item>
+    <item type="DefineSpriteTag" forceWriteAsLong="true" frameCount="1" hasEndTag="true" spriteId="2">
+      <subTags>
+        <item type="PlaceObject2Tag" characterId="1" clipDepth="0" depth="1" forceWriteAsLong="false" placeFlagHasCharacter="true" placeFlagHasClipActions="false" placeFlagHasClipDepth="false" placeFlagHasColorTransform="false" placeFlagHasMatrix="true" placeFlagHasName="false" placeFlagHasRatio="false" placeFlagMove="false" ratio="0">
+          <matrix type="MATRIX" hasRotate="false" hasScale="false" nRotateBits="0" nScaleBits="0" nTranslateBits="0" rotateSkew0="0.0" rotateSkew1="0.0" scaleX="0.0" scaleY="0.0" translateX="0" translateY="0"/>
+        </item>
+        <item type="ShowFrameTag" forceWriteAsLong="false"/>
+      </subTags>
+    </item>
+    <item type="PlaceObject2Tag" characterId="2" clipDepth="0" depth="1" forceWriteAsLong="false" placeFlagHasCharacter="true" placeFlagHasClipActions="false" placeFlagHasClipDepth="false" placeFlagHasColorTransform="false" placeFlagHasMatrix="true" placeFlagHasName="false" placeFlagHasRatio="false" placeFlagMove="false" ratio="0">
+      <matrix type="MATRIX" hasRotate="false" hasScale="false" nRotateBits="0" nScaleBits="0" nTranslateBits="14" rotateSkew0="0.0" rotateSkew1="0.0" scaleX="0.0" scaleY="0.0" translateX="4246" translateY="2507"/>
+    </item>
+    <item type="DoABC2Tag" flags="1" forceWriteAsLong="true" name="">
+      <abc type="ABC">
+        <version type="ABCVersion" major="46" minor="16"/>
+        <constants type="AVM2ConstantPool">
+          <constant_int/>
+          <constant_uint/>
+          <constant_double/>
+          <constant_decimal/>
+          <constant_float/>
+          <constant_float4/>
+          <constant_string>
+            <item isNull="true"/>
+            <item/>
+            <item>_Append_CatMenu</item>
+            <item>flash.display</item>
+            <item>MovieClip</item>
+            <item>frame1</item>
+            <item>stop</item>
+            <item>http://adobe.com/AS3/2006/builtin</item>
+            <item>adobe.utils</item>
+            <item>flash.accessibility</item>
+            <item>flash.desktop</item>
+            <item>flash.errors</item>
+            <item>flash.events</item>
+            <item>flash.external</item>
+            <item>flash.filters</item>
+            <item>flash.geom</item>
+            <item>flash.globalization</item>
+            <item>flash.media</item>
+            <item>flash.net</item>
+            <item>flash.net.drm</item>
+            <item>flash.printing</item>
+            <item>flash.profiler</item>
+            <item>flash.sampler</item>
+            <item>flash.sensors</item>
+            <item>flash.system</item>
+            <item>flash.text</item>
+            <item>flash.text.ime</item>
+            <item>flash.text.engine</item>
+            <item>flash.ui</item>
+            <item>flash.utils</item>
+            <item>flash.xml</item>
+            <item>flash.display:MovieClip</item>
+            <item>flash.display:Sprite</item>
+            <item>flash.display:DisplayObjectContainer</item>
+            <item>flash.display:InteractiveObject</item>
+            <item>flash.display:DisplayObject</item>
+            <item>flash.events:EventDispatcher</item>
+            <item>addFrameScript</item>
+            <item>Object</item>
+            <item>EventDispatcher</item>
+            <item>DisplayObject</item>
+            <item>InteractiveObject</item>
+            <item>DisplayObjectContainer</item>
+            <item>Sprite</item>
+          </constant_string>
+          <constant_namespace>
+            <item isNull="true"/>
+            <item type="Namespace" kind="22" name_index="1"/>
+            <item type="Namespace" kind="22" name_index="3"/>
+            <item type="Namespace" kind="24" name_index="2"/>
+            <item type="Namespace" kind="23" name_index="1"/>
+            <item type="Namespace" kind="5" name_index="0"/>
+            <item type="Namespace" kind="5" name_index="0"/>
+            <item type="Namespace" kind="8" name_index="7"/>
+            <item type="Namespace" kind="8" name_index="8"/>
+            <item type="Namespace" kind="22" name_index="9"/>
+            <item type="Namespace" kind="8" name_index="10"/>
+            <item type="Namespace" kind="22" name_index="11"/>
+            <item type="Namespace" kind="22" name_index="12"/>
+            <item type="Namespace" kind="8" name_index="13"/>
+            <item type="Namespace" kind="22" name_index="14"/>
+            <item type="Namespace" kind="22" name_index="15"/>
+            <item type="Namespace" kind="8" name_index="16"/>
+            <item type="Namespace" kind="22" name_index="17"/>
+            <item type="Namespace" kind="22" name_index="18"/>
+            <item type="Namespace" kind="22" name_index="19"/>
+            <item type="Namespace" kind="8" name_index="20"/>
+            <item type="Namespace" kind="8" name_index="21"/>
+            <item type="Namespace" kind="8" name_index="22"/>
+            <item type="Namespace" kind="8" name_index="23"/>
+            <item type="Namespace" kind="22" name_index="24"/>
+            <item type="Namespace" kind="22" name_index="25"/>
+            <item type="Namespace" kind="22" name_index="26"/>
+            <item type="Namespace" kind="8" name_index="27"/>
+            <item type="Namespace" kind="22" name_index="28"/>
+            <item type="Namespace" kind="22" name_index="29"/>
+            <item type="Namespace" kind="8" name_index="30"/>
+            <item type="Namespace" kind="26" name_index="2"/>
+            <item type="Namespace" kind="26" name_index="31"/>
+            <item type="Namespace" kind="26" name_index="32"/>
+            <item type="Namespace" kind="26" name_index="33"/>
+            <item type="Namespace" kind="26" name_index="34"/>
+            <item type="Namespace" kind="26" name_index="35"/>
+            <item type="Namespace" kind="26" name_index="36"/>
+          </constant_namespace>
+          <constant_namespace_set>
+            <item isNull="true"/>
+            <item type="NamespaceSet">
+              <namespaces>
+                <item>5</item>
+                <item>6</item>
+                <item>1</item>
+                <item>4</item>
+                <item>7</item>
+                <item>8</item>
+                <item>9</item>
+                <item>10</item>
+                <item>2</item>
+                <item>11</item>
+                <item>12</item>
+                <item>13</item>
+                <item>14</item>
+                <item>15</item>
+                <item>16</item>
+                <item>17</item>
+                <item>18</item>
+                <item>19</item>
+                <item>20</item>
+                <item>21</item>
+                <item>22</item>
+                <item>23</item>
+                <item>24</item>
+                <item>25</item>
+                <item>26</item>
+                <item>27</item>
+                <item>28</item>
+                <item>29</item>
+                <item>30</item>
+                <item>3</item>
+                <item>31</item>
+                <item>32</item>
+                <item>33</item>
+                <item>34</item>
+                <item>35</item>
+                <item>36</item>
+                <item>37</item>
+              </namespaces>
+            </item>
+          </constant_namespace_set>
+          <constant_multiname>
+            <item isNull="true"/>
+            <item type="Multiname" kind="7" name_index="2" namespace_index="1" namespace_set_index="0" qname_index="0"/>
+            <item type="Multiname" kind="7" name_index="4" namespace_index="2" namespace_set_index="0" qname_index="0"/>
+            <item type="Multiname" kind="7" name_index="5" namespace_index="4" namespace_set_index="0" qname_index="0"/>
+            <item type="Multiname" kind="9" name_index="6" namespace_index="0" namespace_set_index="1" qname_index="0"/>
+            <item type="Multiname" kind="9" name_index="37" namespace_index="0" namespace_set_index="1" qname_index="0"/>
+            <item type="Multiname" kind="9" name_index="5" namespace_index="0" namespace_set_index="1" qname_index="0"/>
+            <item type="Multiname" kind="7" name_index="38" namespace_index="1" namespace_set_index="0" qname_index="0"/>
+            <item type="Multiname" kind="7" name_index="39" namespace_index="12" namespace_set_index="0" qname_index="0"/>
+            <item type="Multiname" kind="7" name_index="40" namespace_index="2" namespace_set_index="0" qname_index="0"/>
+            <item type="Multiname" kind="7" name_index="41" namespace_index="2" namespace_set_index="0" qname_index="0"/>
+            <item type="Multiname" kind="7" name_index="42" namespace_index="2" namespace_set_index="0" qname_index="0"/>
+            <item type="Multiname" kind="7" name_index="43" namespace_index="2" namespace_set_index="0" qname_index="0"/>
+          </constant_multiname>
+        </constants>
+        <method_info>
+          <item type="MethodInfo" flags="0" name_index="0" ret_type="0">
+            <param_types/>
+            <optional/>
+            <paramNames/>
+          </item>
+          <item type="MethodInfo" flags="0" name_index="0" ret_type="0">
+            <param_types/>
+            <optional/>
+            <paramNames/>
+          </item>
+          <item type="MethodInfo" flags="0" name_index="0" ret_type="0">
+            <param_types/>
+            <optional/>
+            <paramNames/>
+          </item>
+          <item type="MethodInfo" flags="0" name_index="0" ret_type="0">
+            <param_types/>
+            <optional/>
+            <paramNames/>
+          </item>
+        </method_info>
+        <metadata_info/>
+        <instance_info>
+          <item type="InstanceInfo" flags="8" iinit_index="2" name_index="1" protectedNS="3" super_index="2">
+            <interfaces/>
+            <instance_traits type="Traits">
+              <traits>
+                <item type="TraitMethodGetterSetter" bytes="03010001" deleted="false" disp_id="0" fileOffset="1048" kindFlags="0" kindType="1" method_info="1" name_index="3">
+                  <metadata/>
+                </item>
+              </traits>
+            </instance_traits>
+          </item>
+        </instance_info>
+        <class_info>
+          <item type="ClassInfo" cinit_index="0">
+            <static_traits type="Traits">
+              <traits/>
+            </static_traits>
+          </item>
+        </class_info>
+        <script_info>
+          <item type="ScriptInfo" init_index="3">
+            <traits type="Traits">
+              <traits>
+                <item type="TraitClass" bytes="01040100" class_info="0" deleted="false" fileOffset="1057" kindFlags="0" kindType="4" name_index="1" slot_id="1">
+                  <metadata/>
+                </item>
+              </traits>
+            </traits>
+          </item>
+        </script_info>
+        <bodies>
+          <item type="MethodBody" codeBytes="d03047" init_scope_depth="9" max_regs="1" max_scope_depth="10" max_stack="1" method_info="0">
+            <exceptions/>
+            <traits type="Traits">
+              <traits/>
+            </traits>
+          </item>
+          <item type="MethodBody" codeBytes="d0305d044f040047" init_scope_depth="10" max_regs="1" max_scope_depth="11" max_stack="1" method_info="1">
+            <exceptions/>
+            <traits type="Traits">
+              <traits/>
+            </traits>
+          </item>
+          <item type="MethodBody" codeBytes="d030d049005d052400d066064f050247" init_scope_depth="10" max_regs="1" max_scope_depth="11" max_stack="3" method_info="2">
+            <exceptions/>
+            <traits type="Traits">
+              <traits/>
+            </traits>
+          </item>
+          <item type="MethodBody" codeBytes="d0306500600730600830600930600a30600b30600c30600230600258001d1d1d1d1d1d1d680147" init_scope_depth="1" max_regs="1" max_scope_depth="9" max_stack="2" method_info="3">
+            <exceptions/>
+            <traits type="Traits">
+              <traits/>
+            </traits>
+          </item>
+        </bodies>
+      </abc>
+    </item>
+    <item type="SymbolClassTag" forceWriteAsLong="true">
+      <tags>
+        <item>2</item>
+      </tags>
+      <names>
+        <item>_Append_CatMenu</item>
+      </names>
+    </item>
+    <item type="ShowFrameTag" forceWriteAsLong="false"/>
+  </tags>
+</swf>
