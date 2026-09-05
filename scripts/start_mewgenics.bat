@@ -1,6 +1,6 @@
 @echo off
 
-cd /d "D:\Games\Mewgenics.v1.1\game"
+cd /d "E:\SteamLibrary\steamapps\common\Mewgenics"
 start "" "Mewgenics.exe" -dev_mode true -enable_debugconsole true
 
 timeout /t 4

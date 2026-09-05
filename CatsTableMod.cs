@@ -120,137 +120,137 @@ public partial class CatsTableMod
     
     internal unsafe void MjInit()
     {
-        var tenSecondsAfterNow = DateTime.Now.AddSeconds(15);
-        LogStr($"Waiting for 15 seconds to connect using x64dbg...");
-        while (DateTime.Now < tenSecondsAfterNow)
-        {
-            Thread.Sleep(1);
-        }
-
-        // var buffer = new StringBuilder(32768);
-        // uint length = GetModuleFileName(IntPtr.Zero, buffer, buffer.Capacity);
-        // var gamePath = buffer.ToString();
-        // LogStr($"MjInit: gamePath={gamePath} length={length}");
-        // bool valid = BinaryValidator.Validate(gamePath);
-
-        // if (!valid)
+        // var tenSecondsAfterNow = DateTime.Now.AddSeconds(15);
+        // LogStr($"Waiting for 15 seconds to connect using x64dbg...");
+        // while (DateTime.Now < tenSecondsAfterNow)
         // {
-        //     LogStr("Binary validation failed.");
-        //     return;
+        //     Thread.Sleep(1);
         // }
 
-        // Autoinjector();
+        var buffer = new StringBuilder(32768);
+        uint length = GetModuleFileName(IntPtr.Zero, buffer, buffer.Capacity);
+        var gamePath = buffer.ToString();
+        LogStr($"MjInit: gamePath={gamePath} length={length}");
+        bool valid = BinaryValidator.Validate(gamePath);
 
-        // InitMouse();
-        //         /*
-        //  * sub_7FF6B392D180
-        //  *
-        //  * Returns the game's mouse/input source object.
-        //  */
-        // // _getMouseSource =
-        // //     (delegate* unmanaged<nint>)
-        // //         (MewjectorApi.GameBase + 0x27d180);
+        if (!valid)
+        {
+            LogStr("Binary validation failed.");
+            return;
+        }
 
-        // /*
-        //  * sub_7FF6B402EAB0
-        //  *
-        //  * Converts the mouse position from window/input coordinates
-        //  * into the game's 1280x720 logical coordinate system.
-        //  *
-        //  * The actual function is:
-        //  *
-        //  *     sub_7FF6B402EAB0(inputSource, &point);
-        //  *
-        //  * So the second argument is an output pointer, not another nint
-        //  * object.
-        //  */
+        Autoinjector();
+
+        InitMouse();
+                /*
+         * sub_7FF6B392D180
+         *
+         * Returns the game's mouse/input source object.
+         */
+        // _getMouseSource =
+        //     (delegate* unmanaged<nint>)
+        //         (MewjectorApi.GameBase + 0x27d180);
+
+        /*
+         * sub_7FF6B402EAB0
+         *
+         * Converts the mouse position from window/input coordinates
+         * into the game's 1280x720 logical coordinate system.
+         *
+         * The actual function is:
+         *
+         *     sub_7FF6B402EAB0(inputSource, &point);
+         *
+         * So the second argument is an output pointer, not another nint
+         * object.
+         */
 
 
 
-        // _removeMovieClipTrampoline = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
-        //     0x99e030, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&RemoveMovieClip);
+        _removeMovieClipTrampoline = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+            0x99e030, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&RemoveMovieClip);
 
-        // _updatePanelLayout = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
-        //     0x2038b0, (void*)(delegate* unmanaged<nint, nint>)&UpdatePanelLayoutHook);
+        _updatePanelLayout = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
+            0x2038b0, (void*)(delegate* unmanaged<nint, nint>)&UpdatePanelLayoutHook);
 
-        // // intercepting the CreateRenderer crashes the game, avoid!!
-        // // _createRenderer = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
-        // //     0x5A580, (void*)(delegate* unmanaged<nint, nint>)&CreateRendererHook);
+        // intercepting the CreateRenderer crashes the game, avoid!!
+        // _createRenderer = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
+        //     0x5A580, (void*)(delegate* unmanaged<nint, nint>)&CreateRendererHook);
         
-        // // _globalResourceManagerLookup = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
-        // //     0x9adc50, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&GlobalResourceManagerLookupHook);
+        // _globalResourceManagerLookup = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+        //     0x9adc50, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&GlobalResourceManagerLookupHook);
 
-        // _createUiRenderer = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
-        //     0x5a380, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&CreateUiRendererHook);
+        _createUiRenderer = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+            0x5a380, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&CreateUiRendererHook);
 
-        // _createPanel = (delegate* unmanaged<nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
-        //     0xeecb0, (void*)(delegate* unmanaged<nint, nint, nint, nint>)&CreatePanelHook);
+        _createPanel = (delegate* unmanaged<nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+            0xeecb0, (void*)(delegate* unmanaged<nint, nint, nint, nint>)&CreatePanelHook);
 
-        // _registerButton = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
-        //     0x973c40, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&RegisterCallbackHook);
+        _registerButton = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+            0x973c40, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&RegisterCallbackHook);
 
-        // _statsCreator = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
-        //     0xE9200, (void*)(delegate* unmanaged<nint, nint>)&CreateCatStatsDrawerHook);
+        _statsCreator = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
+            0xE9200, (void*)(delegate* unmanaged<nint, nint>)&CreateCatStatsDrawerHook);
 
-        // _getHouseCatByOffset = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
-        //     0xEA3B0, (void*)(delegate* unmanaged<nint, nint, nint>)&GetHouseCatByOffsetHook);
+        _getHouseCatByOffset = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+            0xEA3B0, (void*)(delegate* unmanaged<nint, nint, nint>)&GetHouseCatByOffsetHook);
 
-        // _findButton = (delegate* unmanaged<nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
-        //     0x978a30, (void*)(delegate* unmanaged<nint, nint, nint, nint>)&FindButtonHook);
+        _findButton = (delegate* unmanaged<nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+            0x978a30, (void*)(delegate* unmanaged<nint, nint, nint, nint>)&FindButtonHook);
 
-        // _initCatStatsClickCallback = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
-        //     0xEEB10, (void*)(delegate* unmanaged<nint, nint>)&InitCatStatsCallbackHook);
+        _initCatStatsClickCallback = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
+            0xEEB10, (void*)(delegate* unmanaged<nint, nint>)&InitCatStatsCallbackHook);
 
-        // _toggleHouseDrawer = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
-        //     0x203210, (void*)(delegate* unmanaged<nint, nint>)&ToggleHouseDrawerHook);
+        _toggleHouseDrawer = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
+            0x203210, (void*)(delegate* unmanaged<nint, nint>)&ToggleHouseDrawerHook);
 
-        // _clickHandler = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
-        //     0x9764B0, (void*)(delegate* unmanaged<nint, nint, nint>)&ClickHandlerHook);
+        _clickHandler = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+            0x9764B0, (void*)(delegate* unmanaged<nint, nint, nint>)&ClickHandlerHook);
         
-        // _gameTick = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
-        //     0x962820, (void*)(delegate* unmanaged<nint, nint>)&GameTickHook);
+        _gameTick = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
+            0x962820, (void*)(delegate* unmanaged<nint, nint>)&GameTickHook);
 
-        // _catIterator = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
-        //     0xec960, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&CatIteratorHook);
+        _catIterator = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+            0xec960, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&CatIteratorHook);
 
-        // _mutationToolTip = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
-        //     0xe4c40, (void*)(delegate* unmanaged<nint, nint, nint>)&MutationTooltipHook); 
+        _mutationToolTip = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+            0xe4c40, (void*)(delegate* unmanaged<nint, nint, nint>)&MutationTooltipHook); 
 
-        // _setText = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
-        //     0x986470, (void*)(delegate* unmanaged<nint, nint, nint>)&SetTextHook);
+        _setText = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+            0x986470, (void*)(delegate* unmanaged<nint, nint, nint>)&SetTextHook);
 
-        // // EndDayHook and GoToMainMenuHook are the only places where mod state is reset
+        // EndDayHook and GoToMainMenuHook are the only places where mod state is reset
 
-        // _endDay = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
-        //     0x1F83C0, (void*)(delegate* unmanaged<nint, nint>)&EndDayHook);
+        _endDay = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
+            0x1F83C0, (void*)(delegate* unmanaged<nint, nint>)&EndDayHook);
 
-        // _goToMainMenu = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
-        //     0x29c420, (void*)(delegate* unmanaged<nint, nint>)&GoToMainMenuHook);
+        _goToMainMenu = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
+            0x29c420, (void*)(delegate* unmanaged<nint, nint>)&GoToMainMenuHook);
         
 
-        // delegate* unmanaged<nint, nint> ptr = &ToggleHouseDrawerHook;
+        delegate* unmanaged<nint, nint> ptr = &ToggleHouseDrawerHook;
         
-        // LogStr($"Our ToggleHouseDrawerHook memory address at 0x{(nint)ptr:X}");
-        // // _createMenuPanel = (delegate* unmanaged<nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
-        // //     0xe8a80, (void*)(delegate* unmanaged<nint, nint, nint, nint>)&CreateMenuPanelHook);
+        LogStr($"Our ToggleHouseDrawerHook memory address at 0x{(nint)ptr:X}");
+        // _createMenuPanel = (delegate* unmanaged<nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+        //     0xe8a80, (void*)(delegate* unmanaged<nint, nint, nint, nint>)&CreateMenuPanelHook);
 
 
-        // var location = MewjectorApi.GameBase;
-        // LogStr($"Gamebase at {location:X}...");
-        // // LogStr("MjInit: installing hooks...");
-        // assignString = (delegate* unmanaged<nint,char*,nuint,nint>)(MewjectorApi.GameBase + 0x5b100);
-        // _getChild = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
-        //     0x990480, (void*)(delegate* unmanaged<nint, nint, nint>)&GetChildHook);
+        var location = MewjectorApi.GameBase;
+        LogStr($"Gamebase at {location:X}...");
+        // LogStr("MjInit: installing hooks...");
+        assignString = (delegate* unmanaged<nint,char*,nuint,nint>)(MewjectorApi.GameBase + 0x5b100);
+        _getChild = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+            0x990480, (void*)(delegate* unmanaged<nint, nint, nint>)&GetChildHook);
 
 
-        // _attachChild = (delegate* unmanaged<nint, nint, uint, void>)(MewjectorApi.GameBase + (nuint)RVA_AttachChild);
-        // _createCatStatsDrawer =  (delegate* unmanaged<nint, nint, nint>)(MewjectorApi.GameBase + (nuint)0x1ac430);
+        _attachChild = (delegate* unmanaged<nint, nint, uint, void>)(MewjectorApi.GameBase + (nuint)RVA_AttachChild);
+        _createCatStatsDrawer =  (delegate* unmanaged<nint, nint, nint>)(MewjectorApi.GameBase + (nuint)0x1ac430);
 
-        // _mouseEventHandler = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
-        //     0xc2c390, (void*)(delegate* unmanaged<nint, nint, nint>)&MouseWheelHook);
+        _mouseEventHandler = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+            0xc2c390, (void*)(delegate* unmanaged<nint, nint, nint>)&MouseWheelHook);
         
-        // _catStatsDrawerUpdate = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
-        //     0xea8b0, (void*)(delegate* unmanaged<nint, nint>)&CatStatsDrawerUpdateHook);
+        _catStatsDrawerUpdate = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
+            0xea8b0, (void*)(delegate* unmanaged<nint, nint>)&CatStatsDrawerUpdateHook);
 
     }
 

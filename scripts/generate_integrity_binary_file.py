@@ -8,15 +8,14 @@ from pathlib import Path
 # ============================================================
 
 SOURCE_FILES = [
-    Path("./CatstableMod.cs"),
-    Path("./Autoinjector.cs"),
+    Path("../CatstableMod.cs"),
+    Path("../Autoinjector.cs"),
 ]
 
-BINARY_PATH = Path(r"D:\Games\Mewgenics.v1.1\game\Mewgenics.exe")
-OUTPUT_PATH = Path("./expectedBinaryData.cs")
+BINARY_PATH = Path(r"E:\SteamLibrary\steamapps\common\Mewgenics\Mewgenics.exe")
+OUTPUT_PATH = Path("../expectedBinaryData.cs")
 
 BYTES_PER_RVA = 64
-
 
 # ============================================================
 # PE parsing

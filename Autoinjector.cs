@@ -112,6 +112,7 @@ public partial class CatsTableMod
 
         try
         {
+            LogStr($"[HOOK] HookProcessCmds: Calling _hookProcessCmds with newArgs={string.Join(" ", newArgs)}");
             _hookProcessCmds(
                 application,
                 newArgs.Length,

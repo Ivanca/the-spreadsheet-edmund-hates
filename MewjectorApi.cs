@@ -81,11 +81,25 @@ internal static unsafe class MewjectorApi
         if (IsAvailable) return true;
 
         nint hMJ = GetModuleHandleA("version.dll");
-        if (hMJ == 0) return false;
+        
+        if (hMJ == 0) {
+            using (var writer = new System.IO.StreamWriter("./text.txt", append: true))
+            {
+                writer.WriteLine("Catstable DllMain failed to get handle for version.dll");
+            }
+            return false;
+        }
+
 
         // Version gate: reject older chainloaders before touching any other export.
         nint fnVer = GetProcAddress(hMJ, "MJ_GetVersion");
-        if (fnVer == 0) return false;
+        if (fnVer == 0) {
+            using (var writer = new System.IO.StreamWriter("./text.txt", append: true))
+            {
+                writer.WriteLine("Catstable DllMain failed to get address for MJ_GetVersion");
+            }
+            return false;
+        }
         _getVersion = (delegate* unmanaged[Cdecl]<int>)fnVer;
         if (_getVersion() < MJ_API_VERSION) return false;
 
