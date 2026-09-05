@@ -8,6 +8,7 @@ AppVersion={#MyAppVersion}
 AppPublisher=YourName
 DefaultDirName={code:GetDefaultGameDir}
 DisableProgramGroupPage=yes
+DirExistsWarning=no
 Uninstallable=no
 OutputBaseFilename=MewgenicsCatStatsInstaller
 Compression=lzma2/max
@@ -25,25 +26,67 @@ CloseApplications=no
 ;   mod\catstable\swfs\swflist.gon.append
 Source: "mod\catstable\*"; DestDir: "{app}\mods\catstable"; Flags: recursesubdirs createallsubdirs ignoreversion
 
-; Vendor archives. These should contain their normal release contents at the ZIP root.
-Source: "vendor\Mewtator.zip"; Flags: dontcopy
-Source: "vendor\Mewjector.zip"; Flags: dontcopy
+; Vendor archives.
+; Mewjector: Release-218-3-3-1778034265.zip\release\...
+; Mewtator: Mewtator-1-0-5-1-1775012446.zip\Mewtator\...
+Source: "vendor\Release-218-3-3-1778034265.zip"; Flags: dontcopy
+Source: "vendor\Mewtator-1-0-5-1-1775012446.zip"; Flags: dontcopy
+Source: "Find-Mewgenics.ps1"; Flags: dontcopy
 
 [Code]
 var
   MewtatorDir: String;
   MewtatorPage: TInputDirWizardPage;
 
-function FindMewgenicsInSteam: String; forward;
-procedure AddSteamLibrary(var Libraries: TArrayOfString; SteamRoot: String); forward;
-procedure AddUniquePath(var Paths: TArrayOfString; P: String); forward;
+function FindMewgenicsWithPowerShell: String; forward;
 
-procedure RegisterPreviousData(PreviousDataKey: Integer);
+function FindMewgenicsWithPowerShell: String;
+var
+  ScriptPath, ResultPath, Command, Params: String;
+  ResultCode: Integer;
+  Lines: TArrayOfString;
 begin
-  SetPreviousData(
-    PreviousDataKey,
-    'GameDir',
-    WizardDirValue);
+  Result := '';
+
+  ExtractTemporaryFile('Find-Mewgenics.ps1');
+
+  ScriptPath := ExpandConstant('{tmp}\Find-Mewgenics.ps1');
+  ResultPath := ExpandConstant('{tmp}\Find-Mewgenics.result');
+  DeleteFile(ResultPath);
+
+  Command :=
+    '$result = & ' + AddQuotes(ScriptPath) + '; ' +
+    '$code = $LASTEXITCODE; ' +
+    '$result | Set-Content -LiteralPath ' + AddQuotes(ResultPath) +
+    ' -Encoding UTF8; exit $code';
+
+  Params :=
+    '-NoProfile -ExecutionPolicy Bypass -Command ' + AddQuotes(Command);
+
+  if not Exec(
+      ExpandConstant('{sysnative}\WindowsPowerShell\v1.0\powershell.exe'),
+      Params,
+      ExpandConstant('{tmp}'),
+      SW_HIDE,
+      ewWaitUntilTerminated,
+      ResultCode) then
+    Exit;
+
+  if ResultCode <> 0 then begin
+    DeleteFile(ResultPath);
+    Exit;
+  end;
+
+  if not FileExists(ResultPath) then
+    Exit;
+
+  if not LoadStringsFromFile(ResultPath, Lines) then
+    Exit;
+
+  if GetArrayLength(Lines) > 0 then
+    Result := Trim(Lines[0]);
+
+  DeleteFile(ResultPath);
 end;
 
 function GetDefaultGameDir(Param: String): String;
@@ -56,104 +99,17 @@ begin
     Exit;
   end;
 
-  P := FindMewgenicsInSteam;
+  P := FindMewgenicsWithPowerShell;
   if P <> '' then begin
     Result := P;
     Exit;
   end;
 
-  Result := 'C:\Program Files (x86)\Steam\steamapps\common\Mewgenics\game';
-end;
+  MsgBox(
+    'Couldn''t find Mewgenics game, you may try to manually select it instead.',
+    mbInformation, MB_OK);
 
-function FindMewgenicsInSteam: String;
-var
-  SteamPath: String;
-  Libraries: TArrayOfString;
-  I: Integer;
-  Candidate: String;
-begin
-  Result := '';
-  SetArrayLength(Libraries, 0);
-
-  if RegQueryStringValue(HKEY_CURRENT_USER, 'Software\Valve\Steam', 'SteamPath', SteamPath) then
-    AddSteamLibrary(Libraries, SteamPath);
-  if RegQueryStringValue(HKEY_CURRENT_USER_32, 'Software\Valve\Steam', 'SteamPath', SteamPath) then
-    AddSteamLibrary(Libraries, SteamPath);
-  if RegQueryStringValue(HKEY_CURRENT_USER_64, 'Software\Valve\Steam', 'SteamPath', SteamPath) then
-    AddSteamLibrary(Libraries, SteamPath);
-  if RegQueryStringValue(HKEY_LOCAL_MACHINE, 'Software\Valve\Steam', 'InstallPath', SteamPath) then
-    AddSteamLibrary(Libraries, SteamPath);
-  if RegQueryStringValue(HKEY_LOCAL_MACHINE_32, 'Software\Valve\Steam', 'InstallPath', SteamPath) then
-    AddSteamLibrary(Libraries, SteamPath);
-  if RegQueryStringValue(HKEY_LOCAL_MACHINE_64, 'Software\Valve\Steam', 'InstallPath', SteamPath) then
-    AddSteamLibrary(Libraries, SteamPath);
-
-  for I := 0 to GetArrayLength(Libraries) - 1 do begin
-    Candidate := PathCombine(PathCombine(Libraries[I], 'steamapps\common\Mewgenics'), 'game');
-    if FileExists(PathCombine(Candidate, 'Mewgenics.exe')) then begin
-      Result := Candidate;
-      Exit;
-    end;
-  end;
-end;
-
-procedure AddSteamLibrary(var Libraries: TArrayOfString; SteamRoot: String);
-var
-  VdfPath: String;
-  Lines: TArrayOfString;
-  I, P1, P2: Integer;
-  Line, LibPath: String;
-begin
-  if SteamRoot = '' then
-    Exit;
-
-  StringChangeEx(SteamRoot, '/', '\', False);
-  AddUniquePath(Libraries, SteamRoot);
-
-  VdfPath := PathCombine(PathCombine(SteamRoot, 'steamapps'), 'libraryfolders.vdf');
-  if not FileExists(VdfPath) then
-    Exit;
-
-  if not LoadStringsFromFile(VdfPath, Lines) then
-    Exit;
-
-  for I := 0 to GetArrayLength(Lines) - 1 do begin
-    Line := Trim(Lines[I]);
-    P1 := Pos('"path"', LowerCase(Line));
-    if P1 = 0 then
-      Continue;
-
-    { Find the opening quote of the path value. }
-    P1 := Pos('"', Copy(Line, P1 + 6, Length(Line))) + P1 + 5;
-    if P1 <= 5 then
-      Continue;
-
-    P2 := Pos('"', Copy(Line, P1 + 1, Length(Line)));
-    if P2 = 0 then
-      Continue;
-
-    LibPath := Copy(Line, P1 + 1, P2 - 1);
-    StringChangeEx(LibPath, '\\', '\', False);
-    AddUniquePath(Libraries, LibPath);
-  end;
-end;
-
-procedure AddUniquePath(var Paths: TArrayOfString; P: String);
-var
-  I, N: Integer;
-begin
-  if P = '' then
-    Exit;
-
-  P := RemoveBackslashUnlessRoot(P);
-  N := GetArrayLength(Paths);
-
-  for I := 0 to N - 1 do
-    if PathSame(Paths[I], P) then
-      Exit;
-
-  SetArrayLength(Paths, N + 1);
-  Paths[N] := P;
+  Result := 'C:\Program Files (x86)\Steam\steamapps\common\Mewgenics';
 end;
 
 function FindExistingMewtatorDir(GameDir: String): String;
@@ -214,12 +170,13 @@ begin
   if CurPageID = wpSelectDir then begin
     if not FileExists(PathCombine(WizardDirValue, 'Mewgenics.exe')) then begin
       MsgBox(
-        'The selected folder does not appear to be the Mewgenics game folder.'#13#10#13#10 +
+        'The selected folder does not appear to be the Mewgenics installation folder.'#13#10#13#10 +
         'Select the folder containing Mewgenics.exe.',
         mbError, MB_OK);
       Result := False;
       Exit;
     end;
+
   end
   else if CurPageID = MewtatorPage.ID then begin
     MewtatorDir := RemoveBackslashUnlessRoot(MewtatorPage.Values[0]);
@@ -231,73 +188,133 @@ begin
   end;
 end;
 
+procedure RegisterPreviousData(PreviousDataKey: Integer);
+begin
+  SetPreviousData(PreviousDataKey, 'GameDir', WizardDirValue);
+end;
+
+function CopyDirectoryContents(SourceDir, DestDir: String): Boolean;
+var
+  FindData: TFindRec;
+  SourcePath, DestPath: String;
+begin
+  Result := False;
+
+  if not ForceDirectories(DestDir) then
+    Exit;
+
+  if FindFirst(SourceDir + '\*', FindData) then
+  try
+    repeat
+      if (FindData.Name = '.') or (FindData.Name = '..') then
+        Continue;
+
+      SourcePath := AddBackslash(SourceDir) + FindData.Name;
+      DestPath := AddBackslash(DestDir) + FindData.Name;
+
+      if FindData.Attributes and FILE_ATTRIBUTE_DIRECTORY <> 0 then begin
+        if not CopyDirectoryContents(SourcePath, DestPath) then
+          Exit;
+      end
+      else begin
+        if not CopyFile(SourcePath, DestPath, False) then
+          Exit;
+      end;
+    until not FindNext(FindData);
+  finally
+    FindClose(FindData);
+  end;
+
+  Result := True;
+end;
+
 procedure InstallMewjector(GameDir: String);
 var
-  ZipPath, TempDir, VersionDll, VendorIni, DestIni: String;
+  ZipPath, TempDir, ReleaseDir, VendorIni, DestIni, BackupIni: String;
+  HadIni: Boolean;
 begin
-  ExtractTemporaryFile('Mewjector.zip');
+  ExtractTemporaryFile('Release-218-3-3-1778034265.zip');
 
-  ZipPath := ExpandConstant('{tmp}\Mewjector.zip');
+  ZipPath := ExpandConstant('{tmp}\Release-218-3-3-1778034265.zip');
   TempDir := PathCombine(ExpandConstant('{tmp}'), 'MewjectorExtract');
+  ReleaseDir := PathCombine(TempDir, 'release');
   ForceDirectories(TempDir);
   ExtractArchive(ZipPath, TempDir, '', True, nil);
 
-  VersionDll := PathCombine(TempDir, 'version.dll');
-  VendorIni := PathCombine(TempDir, 'chainloader.ini');
-  DestIni := PathCombine(GameDir, 'chainloader.ini');
-
-  if not FileExists(VersionDll) then
-    RaiseException('Mewjector.zip does not contain version.dll at its root.');
-
-  if not CopyFile(
-      VersionDll,
-      PathCombine(GameDir, 'version.dll'),
-      False) then
+  if not FileExists(PathCombine(ReleaseDir, 'version.dll')) then
     RaiseException(
-      'Could not install/update Mewjector version.dll.'#13#10#13#10 +
+      'Release-218-3-3-1778034265.zip does not contain release\version.dll.');
+
+  VendorIni := PathCombine(ReleaseDir, 'chainloader.ini');
+  DestIni := PathCombine(GameDir, 'chainloader.ini');
+  BackupIni := PathCombine(ExpandConstant('{tmp}'), 'chainloader.ini.bak');
+  HadIni := FileExists(DestIni);
+
+  if HadIni then
+    if not CopyFile(DestIni, BackupIni, False) then
+      RaiseException('Could not back up the existing chainloader.ini.');
+
+  { Install every file from release\, not just version.dll. }
+  if not CopyDirectoryContents(ReleaseDir, GameDir) then
+    RaiseException(
+      'Could not install/update the Mewjector files.'#13#10#13#10 +
       'Make sure Mewgenics is closed.');
 
-  { Never blindly overwrite an existing chainloader.ini: users may have
-    custom Mewjector settings. We only add/update MewtatorManifest later. }
-  if (not FileExists(DestIni)) and FileExists(VendorIni) then
+  { Preserve an existing chainloader.ini, including custom settings. }
+  if HadIni then begin
+    if not CopyFile(BackupIni, DestIni, False) then
+      RaiseException('Could not restore the existing chainloader.ini.');
+  end
+  else if not FileExists(DestIni) and FileExists(VendorIni) then
     if not CopyFile(VendorIni, DestIni, False) then
       RaiseException('Could not install Mewjector chainloader.ini.');
 end;
 
 procedure InstallMewtator;
 var
-  ZipPath, BackupConfig: String;
+  ZipPath, TempDir, SourceDir, BackupConfig: String;
   HadConfig: Boolean;
 begin
   MewtatorDir := RemoveBackslashUnlessRoot(MewtatorPage.Values[0]);
-
   ForceDirectories(MewtatorDir);
 
   HadConfig := FileExists(PathCombine(MewtatorDir, 'config.json'));
   BackupConfig := PathCombine(
     ExpandConstant('{tmp}'), 'mewtator_config.json.bak');
 
-  if HadConfig then begin
+  if HadConfig then
     if not CopyFile(
         PathCombine(MewtatorDir, 'config.json'),
         BackupConfig,
         False) then
       RaiseException('Could not back up Mewtator config.json.');
-  end;
 
-  ExtractTemporaryFile('Mewtator.zip');
+  ExtractTemporaryFile('Mewtator-1-0-5-1-1775012446.zip');
 
-  ZipPath := ExpandConstant('{tmp}\Mewtator.zip');
-  ExtractArchive(ZipPath, MewtatorDir, '', True, nil);
+  ZipPath := ExpandConstant(
+    '{tmp}\Mewtator-1-0-5-1-1775012446.zip');
+  TempDir := PathCombine(ExpandConstant('{tmp}'), 'MewtatorExtract');
+  SourceDir := PathCombine(TempDir, 'Mewtator');
+  ForceDirectories(TempDir);
+  ExtractArchive(ZipPath, TempDir, '', True, nil);
 
-  { Mewtator updates should not overwrite the user's config. }
-  if HadConfig then begin
+  if not FileExists(PathCombine(SourceDir, 'Mewtator.exe')) then
+    RaiseException(
+      'Mewtator-1-0-5-1-1775012446.zip does not contain ' +
+      'Mewtator\Mewtator.exe.');
+
+  if not CopyDirectoryContents(SourceDir, MewtatorDir) then
+    RaiseException(
+      'Could not install/update the Mewtator files.'#13#10#13#10 +
+      'Make sure Mewtator is not running.');
+
+  { Preserve the user's existing config; ConfigureMewtator updates it later. }
+  if HadConfig then
     if not CopyFile(
         BackupConfig,
         PathCombine(MewtatorDir, 'config.json'),
         False) then
       RaiseException('Could not restore Mewtator config.json.');
-  end;
 end;
 
 procedure UpdateModList(GameDir: String);
@@ -460,7 +477,6 @@ begin
 
   MsgBox(
     'Mewgenics Cat Stats Mod was installed successfully.'#13#10#13#10 +
-    'Mewjector and Mewtator were installed/updated, catstable was added ' +
-    'to Mewtator''s modlist, and DLL loading was enabled.',
+    'Happy cat hoarding!',
     mbInformation, MB_OK);
 end;

@@ -109,6 +109,10 @@
       public var tobox:MovieClip;
       
       public var topipe:MovieClip;
+	  
+	  public var bounds:MovieClip;
+	  
+	  public var clickblock:MovieClip;
       
       public function RowCatStatus()
       {

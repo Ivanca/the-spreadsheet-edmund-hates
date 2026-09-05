@@ -6,14 +6,14 @@ public class FloatAnimator
     private readonly Stopwatch _stopwatch = Stopwatch.StartNew();
 
     private readonly float _startValue;
-    private readonly float _targetValue;
+    public readonly float targetValue;
     private readonly float _durationSeconds;
     private readonly long _startTicks;
 
     public FloatAnimator(float startValue, float targetValue, float durationSeconds)
     {
         _startValue = startValue;
-        _targetValue = targetValue;
+        this.targetValue = targetValue;
         _durationSeconds = durationSeconds;
         _startTicks = _stopwatch.ElapsedTicks;
     }
@@ -28,7 +28,7 @@ public class FloatAnimator
 
         float t = Math.Min(elapsedSeconds / _durationSeconds, 1.0f);
 
-        return Lerp(_startValue, _targetValue, t);
+        return Lerp(_startValue, this.targetValue, t);
     }
 
     /// <summary>
