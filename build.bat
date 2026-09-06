@@ -21,10 +21,16 @@ rem Remove obj and bin folders
 if exist "obj" rmdir /S /Q "obj"
 if exist "bin" rmdir /S /Q "bin"
 
-rem Create installer/mod if missing
-if not exist "installer\mod" mkdir "installer\mod"
-if not exist "installer\mod\catstable" mkdir "installer\mod\catstable"
-if not exist "installer\mod\catstable\swfs" mkdir "installer\mod\catstable\swfs"
+if "%1"=="--include-installer" (
+    rem Create installer/mod if missing
+    if not exist "installer\mod" mkdir "installer\mod"
+    if not exist "installer\mod\catstable" mkdir "installer\mod\catstable"
+    if not exist "installer\mod\catstable\swfs" mkdir "installer\mod\catstable\swfs"
+    echo Compiling installer...
+    "C:\Program Files\Inno Setup 7\ISCC.exe" "installer\MewgenicsCatStatsInstaller.iss"
+    if errorlevel 1 exit /B 1
+)
+
 
 rem Find the latest Visual Studio installation containing the x64 C++ tools
 set "VSWHERE=C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
@@ -77,12 +83,12 @@ dotnet publish -c Release -r win-x64 --self-contained
 if errorlevel 1 exit /B 1
 
 rem Copy the .NET mod to the installer
-copy /Y "bin\Release\net8.0-windows\win-x64\publish\catstable.dll" "installer\mod\catstable.dll" >NUL
+copy /Y "bin\x64\Release\net8.0-windows\win-x64\publish\catstable.dll" "installer\mod\catstable\catstable.dll" >NUL
 if errorlevel 1 exit /B 1
-echo Copied catstable.dll to installer\mod\catstable.dll
+echo Copied catstable.dll to installer\mod\catstable\catstable.dll
 
 rem Copy the .NET mod to the live Mewgenics installation while live debugging
-copy /Y "bin\Release\net8.0-windows\win-x64\publish\catstable.dll" "E:\SteamLibrary\steamapps\common\Mewgenics\mods\catstable\catstable.dll" >NUL
+copy /Y "bin\x64\Release\net8.0-windows\win-x64\publish\catstable.dll" "E:\SteamLibrary\steamapps\common\Mewgenics\mods\catstable\catstable.dll" >NUL
 if errorlevel 1 exit /B 1
 
 rem Copy SWF files to the installer
@@ -98,8 +104,8 @@ rem Example save-file copies:
 rem copy /Y "%APPDATA%\Glaiel Games\Mewgenics\76561197960287930\saves\steamcampaign01 - Copy.sav" "%APPDATA%\Glaiel Games\Mewgenics\76561197960287930\saves\steamcampaign01.sav"
 rem copy /Y "%APPDATA%\Glaiel Games\Mewgenics\76561197960287930\saves\steamcampaign02 - Copy.sav" "%APPDATA%\Glaiel Games\Mewgenics\76561197960287930\saves\steamcampaign02.sav"
 
-rem Wait one second to ensure memory is freed up
-timeout /T 1 /NOBREAK >NUL
+@REM rem Wait one second to ensure memory is freed up
+@REM C:\Windows\System32\timeout.exe /T 1 /NOBREAK >NUL
 
 echo.
 echo Build completed successfully.
