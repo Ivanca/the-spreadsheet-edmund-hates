@@ -16,7 +16,7 @@ public partial class CatsTableMod
     internal unsafe void Autoinjector()
     {
         _hookProcessCmds = (delegate* unmanaged<nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
-            0x9ab0c0, (void*)(delegate* unmanaged<nint, nint, nint, nint>)&HookProcessCmds);
+            0x9b8bb0, (void*)(delegate* unmanaged<nint, nint, nint, nint>)&HookProcessCmds);
 
     }
     

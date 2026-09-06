@@ -23,6 +23,7 @@ CloseApplications=no
 [Files]
 ; Your mod files:
 ;   mod\catstable\catstable.dll
+;   mod\catstable\CatsTableBridge.dll
 ;   mod\catstable\swfs\swflist.gon.append
 Source: "mod\catstable\*"; DestDir: "{app}\mods\catstable"; Flags: recursesubdirs createallsubdirs ignoreversion
 
@@ -376,7 +377,7 @@ begin
   Manifest := PathCombine(ModDir, 'mewtator_dll_manifest.txt');
   DllPath := PathCombine(
     PathCombine(ModDir, 'catstable'),
-    'catstable.dll');
+    'CatsTableBridge.dll');
 
   Normalized := DllPath;
   StringChangeEx(Normalized, '\', '/', False);

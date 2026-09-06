@@ -157,7 +157,7 @@ static bool InstallBootstrapHook()
 
     void* trampoline = nullptr;
 
-    constexpr UINT_PTR GAME_LOADER_RVA = 0x9ABE80;
+    constexpr UINT_PTR GAME_LOADER_RVA = 0x9b9970;
 
     int result = g_MJ_InstallHook(
         GAME_LOADER_RVA,

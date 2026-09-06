@@ -100,6 +100,8 @@ copy /Y "swf\swflist.gon.append" "installer\mod\catstable\swfs\swflist.gon.appen
 if errorlevel 1 exit /B 1
 echo Copied swflist.gon.append to installer\mod\catstable\swfs\swflist.gon.append
 
+"E:\SteamLibrary\steamapps\common\Mewgenics\Mewgenics.exe"
+
 rem Example save-file copies:
 rem copy /Y "%APPDATA%\Glaiel Games\Mewgenics\76561197960287930\saves\steamcampaign01 - Copy.sav" "%APPDATA%\Glaiel Games\Mewgenics\76561197960287930\saves\steamcampaign01.sav"
 rem copy /Y "%APPDATA%\Glaiel Games\Mewgenics\76561197960287930\saves\steamcampaign02 - Copy.sav" "%APPDATA%\Glaiel Games\Mewgenics\76561197960287930\saves\steamcampaign02.sav"

@@ -10,9 +10,11 @@ from pathlib import Path
 SOURCE_FILES = [
     Path("../CatstableMod.cs"),
     Path("../Autoinjector.cs"),
+    Path("../MouseLogic.cs"),
 ]
 
 BINARY_PATH = Path(r"E:\SteamLibrary\steamapps\common\Mewgenics\Mewgenics.exe")
+# BINARY_PATH = Path(r"D:\Games\_Mewgenics.v1.1\game\_Mewgenics.exe")
 OUTPUT_PATH = Path("../expectedBinaryData.cs")
 
 BYTES_PER_RVA = 64

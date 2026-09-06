@@ -32,24 +32,12 @@ public partial class CatsTableMod
     //     Transform a point into a MovieClip's coordinate space.
     //
     unsafe static delegate* unmanaged<
-        nint,
-        double*,
-        double*,
-        nint,
-        void
-        > _transformPoint;
+        nint, double*, double*, nint, double, void> _transformPoint;
 
 
 
-    unsafe private static delegate* unmanaged<nint, float*, float*> _getWorldTransform;
 
-unsafe static delegate* unmanaged<
-    nint,       // RCX = transform object
-    float*,     // RDX = output 4x4 matrix
-    nint        // RAX = resulting matrix
-> _getTransformMatrix;
 
-    unsafe private static delegate* unmanaged<float*, float*, float*> _invertMatrix;
 
     // ---------------------------------------------------------------------
     // Initialization
@@ -65,7 +53,7 @@ unsafe static delegate* unmanaged<
 
         _getMouseSource =
             (delegate* unmanaged<nint, nint>)
-            (MewjectorApi.GameBase + (nuint)0x27d180);
+            (MewjectorApi.GameBase + (nuint)0x27dc50);
 
 
         // -------------------------------------------------------------
@@ -73,7 +61,7 @@ unsafe static delegate* unmanaged<
         // -------------------------------------------------------------
 
         _getMousePosition =(delegate* unmanaged<nint, double*, double*>)(void*)MewjectorApi.InstallHook(
-            0x9712a0, (void*)(delegate* unmanaged<nint, double*, double*>)&GetMousePositionHook);
+            0x9796d0, (void*)(delegate* unmanaged<nint, double*, double*>)&GetMousePositionHook);
 
 
         // -------------------------------------------------------------
@@ -81,20 +69,11 @@ unsafe static delegate* unmanaged<
         // -------------------------------------------------------------
 
         _transformPoint =
-            (delegate* unmanaged<nint, double*, double*, nint, void>)
-            (MewjectorApi.GameBase + (nuint)0x972d00);
+            (delegate* unmanaged<nint, double*, double*, nint, double, void>)
+            (MewjectorApi.GameBase + (nuint)0x97b130);
 
-        _getWorldTransform =
-            (delegate* unmanaged<nint, float*, float*>)
-            (MewjectorApi.GameBase + (nuint)0x9b2b90);
 
-            _getTransformMatrix =
-                (delegate* unmanaged<nint, float*, nint>)
-                (MewjectorApi.GameBase + (nuint)0x9571A0);
 
-        _invertMatrix =
-            (delegate* unmanaged<float*, float*, float*>)
-            (MewjectorApi.GameBase + (nuint)0x9fd880);
     }
 
     unsafe static int GetRendererIndexWhereMouseIsHitting()
@@ -107,7 +86,7 @@ unsafe static delegate* unmanaged<
         {
             _getMousePosition(MainCamera, mousePtr);
         }
-        for (int i = 0; i < rowRenderers.Count; i++)
+        for (int i = 0; i < rowRenderers.Length; i++)
         {
             var renderer = rowRenderers[i];
 
@@ -115,9 +94,7 @@ unsafe static delegate* unmanaged<
             var movieclip = _getChild(rootMovieclip, GameString.Create("xxx"));
             // LogStr($"[HOOK] ClickHandlerHook: a1=0x{movieclip:X} is our test button");
 
-            var _transformPoint =
-                (delegate* unmanaged<nint, double*, double*, nint, double, void>)
-                (MewjectorApi.GameBase + (nuint)0x972d00);
+
                 
 
             double[] output = new double[2];
