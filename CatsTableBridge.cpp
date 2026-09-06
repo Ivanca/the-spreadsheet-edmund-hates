@@ -32,7 +32,7 @@ using GameLoaderFn = UINT_PTR (*)(UINT_PTR arg1, UINT_PTR arg2, UINT_PTR arg3);
 // -----------------------------------------------------------------------------
 // Globals
 // -----------------------------------------------------------------------------
-
+static HINSTANCE g_hInstance = nullptr;
 static MJ_InstallHook_t g_MJ_InstallHook = nullptr;
 static MJ_GetGameBase_t g_MJ_GetGameBase = nullptr;
 
@@ -74,26 +74,21 @@ static bool ResolveMewjector()
 // -----------------------------------------------------------------------------
 // AOT loader
 // -----------------------------------------------------------------------------
-
 static bool LoadAotDll()
 {
-    // Adjust this to wherever catstable.dll actually lives.
-    //
-    // Using the game directory rather than the current working directory
-    // makes this independent of CWD.
-    char gameDirectory[MAX_PATH];
+    char bridgePath[MAX_PATH];
 
     DWORD length = GetModuleFileNameA(
-        nullptr,
-        gameDirectory,
+        g_hInstance,
+        bridgePath,
         MAX_PATH
     );
 
     if (length == 0 || length >= MAX_PATH)
         return false;
 
-    // Remove executable filename.
-    char* slash = strrchr(gameDirectory, '\\');
+    // Remove the bridge DLL filename.
+    char* slash = strrchr(bridgePath, '\\');
 
     if (!slash)
         return false;
@@ -102,12 +97,7 @@ static bool LoadAotDll()
 
     char dllPath[MAX_PATH];
 
-    int written = lstrlenA(gameDirectory);
-
-    if (written + lstrlenA("catstable.dll") + 1 >= MAX_PATH)
-        return false;
-
-    lstrcpyA(dllPath, gameDirectory);
+    lstrcpyA(dllPath, bridgePath);
     lstrcatA(dllPath, "catstable.dll");
 
     HMODULE hDll = LoadLibraryA(dllPath);
@@ -117,13 +107,6 @@ static bool LoadAotDll()
 
     g_AotModule = hDll;
 
-    // Native AOT cannot use a managed DllMain.
-    //
-    // Therefore catstable should expose an explicit native entry point:
-    //
-    // [UnmanagedCallersOnly(EntryPoint = "MjInit")]
-    //
-    // and we invoke it after LoadLibrary has successfully completed.
     using MjInitFn = void (*)();
 
     auto MjInit =
@@ -131,13 +114,10 @@ static bool LoadAotDll()
             GetProcAddress(hDll, "MjInit"));
 
     if (MjInit)
-    {
         MjInit();
-    }
 
     return true;
 }
-
 
 // -----------------------------------------------------------------------------
 // Bootstrap hook
@@ -260,7 +240,7 @@ BOOL WINAPI DllMain(
         //
         // We only install the Mewjector hook. The actual AOT load happens
         // later when the game executes RVA 0x9764B0.
-
+        g_hInstance = hInstance;
         InstallBootstrapHook();
     }
 
