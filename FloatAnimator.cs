@@ -28,7 +28,7 @@ public class FloatAnimator
 
         float t = Math.Min(elapsedSeconds / _durationSeconds, 1.0f);
 
-        return Lerp(_startValue, this.targetValue, t);
+        return LerpWithEaseInAndOut(_startValue, this.targetValue, t);
     }
 
     /// <summary>
@@ -41,6 +41,13 @@ public class FloatAnimator
     static float Lerp(float a, float b, float t)
     {
         return a + (b - a) * t;
+    }
+
+    static float LerpWithEaseInAndOut(float a, float b, float t)
+    {
+        // Ease in and out using a cubic function
+        t = t * t * (3f - 2f * t);
+        return Lerp(a, b, t);
     }
 
 }

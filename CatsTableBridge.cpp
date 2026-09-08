@@ -149,15 +149,68 @@ static UINT_PTR GameLoaderHook(
 // -----------------------------------------------------------------------------
 // Install bootstrap hook
 // -----------------------------------------------------------------------------
-
 static bool InstallBootstrapHook()
 {
     if (!ResolveMewjector())
         return false;
 
-    void* trampoline = nullptr;
-
     constexpr UINT_PTR GAME_LOADER_RVA = 0x9b9970;
+
+    // Exact function signature expected at the hook location.
+    static const uint8_t EXPECTED_BYTES[] = {
+        0x48, 0x8B, 0xC4, 0x48, 0x89, 0x58, 0x10, 0x48,
+        0x89, 0x48, 0x08, 0x55, 0x56, 0x57, 0x41, 0x54,
+        0x41, 0x55, 0x41, 0x56, 0x41, 0x57, 0x48, 0x8D,
+        0x6C, 0x24, 0xB0, 0x48, 0x81, 0xEC, 0x50, 0x01,
+        0x00, 0x00, 0x0F, 0x29, 0x70, 0xB8, 0x0F, 0x29,
+        0x78, 0xA8, 0x44, 0x0F, 0x29, 0x40, 0x98, 0x49,
+        0x8B, 0xD8, 0x8B, 0xFA, 0x45, 0x33, 0xED, 0x48,
+        0x8B, 0x35, 0x82, 0xB0, 0xA0, 0x00, 0x48, 0x8B
+    };
+
+    constexpr size_t EXPECTED_SIZE = sizeof(EXPECTED_BYTES);
+
+    UINT_PTR gameBase = g_MJ_GetGameBase();
+
+    if (!gameBase)
+        return false;
+
+    const uint8_t* hookAddress =
+        reinterpret_cast<const uint8_t*>(gameBase + GAME_LOADER_RVA);
+
+    // -------------------------------------------------------------------------
+    // Safety check
+    // -------------------------------------------------------------------------
+
+    for (size_t i = 0; i < EXPECTED_SIZE; ++i)
+    {
+        if (hookAddress[i] != EXPECTED_BYTES[i])
+        {
+            // We found a different game version.
+            //
+            // Do NOT install the hook and, consequently, do NOT load
+            // CatsTable.dll.
+
+            // If you have CLog available in the bridge, this is preferable:
+            //
+            // CLog(
+            //     "[CatsTableBridge] SAFETY CHECK FAILED at RVA 0x%llX: "
+            //     "offset +0x%zX expected %02X, found %02X",
+            //     (unsigned long long)GAME_LOADER_RVA,
+            //     i,
+            //     EXPECTED_BYTES[i],
+            //     hookAddress[i]
+            // );
+
+            return false;
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Signature matches -- safe to install hook.
+    // -------------------------------------------------------------------------
+
+    void* trampoline = nullptr;
 
     int result = g_MJ_InstallHook(
         GAME_LOADER_RVA,
