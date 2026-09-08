@@ -41,7 +41,7 @@ public partial class CatsTableMod
             var renderer = rowRenderers[i];
 
             var rootMovieclip = Read<nint>(renderer + 0x80);
-            var movieclip = _getChild(rootMovieclip, GameString.Create("xxx"));
+            var movieclip = _getChild(rootMovieclip, GameString.Create("hover_area"));
 
             double[] output = new double[2];
 

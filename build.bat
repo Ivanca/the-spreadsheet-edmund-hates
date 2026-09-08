@@ -121,10 +121,20 @@ copy /Y "swf\swflist.gon.append" "installer\mod\catstable\swfs\swflist.gon.appen
 if errorlevel 1 exit /B 1
 echo Copied swflist.gon.append to installer\mod\catstable\swfs\swflist.gon.append
 
+rem Copy SWF files to the installer
+copy /Y "swf\house_table_stats.swf" "E:\SteamLibrary\steamapps\common\Mewgenics\mods\catstable\swfs\house_table_stats.swf" >NUL
+if errorlevel 1 exit /B 1
+echo Copied house_table_stats.swf to E:\SteamLibrary\steamapps\common\Mewgenics\mods\catstable\swfs\house_table_stats.swf
+
+copy /Y "swf\swflist.gon.append" "E:\SteamLibrary\steamapps\common\Mewgenics\mods\catstable\swfs\swflist.gon.append" >NUL
+if errorlevel 1 exit /B 1
+echo Copied swflist.gon.append to installer\mod\catstable\swfs\swflist.gon.append
+
 "E:\SteamLibrary\steamapps\common\Mewgenics\Mewgenics.exe"
 
 rem Example save-file copies:
-copy /Y "%APPDATA%\Glaiel Games\Mewgenics\76561198041742179\saves\steamcampaign01 - Copy.sav" "%APPDATA%\Glaiel Games\Mewgenics\76561198041742179\saves\steamcampaign01.sav"
+copy /Y "%APPDATA%\Glaiel Games\Mewgenics\76561198041742179\saves\steamcampaign01 - Copy.sav" "%APPDATA%\Glaiel Games\Mewgenics\76561198041742179\saves\steamcampaign01.sav" >NUL
+if errorlevel 1 exit /B 1
 rem copy /Y "%APPDATA%\Glaiel Games\Mewgenics\76561198041742179\saves\steamcampaign02 - Copy.sav" "%APPDATA%\Glaiel Games\Mewgenics\76561198041742179\saves\steamcampaign02.sav"
 
 @REM rem Wait one second to ensure memory is freed up

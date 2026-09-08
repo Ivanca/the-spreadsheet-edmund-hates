@@ -10,10 +10,6 @@ public static class Exports
     [UnmanagedCallersOnly(EntryPoint = "MjInit")]
     public static void MjInit()
     {
-        using (var writer = new System.IO.StreamWriter("./text.txt", append: true))
-        {
-            writer.WriteLine("Catstable DllMain failed to get handle for version.dll");
-        }
         if (CatsTableMod.MewjectorApi.Resolve())
             _mod.MjInit();
     }

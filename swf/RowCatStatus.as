@@ -110,10 +110,8 @@
       
       public var topipe:MovieClip;
 	  
-	  public var bounds:MovieClip;
-	  
-	  public var clickblock:MovieClip;
-      
+	  public var hover_area:MovieClip;
+	        
       public function RowCatStatus()
       {
          super();
