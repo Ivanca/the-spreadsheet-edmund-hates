@@ -6,73 +6,23 @@ namespace CatsTableMod;
 
 public partial class CatsTableMod
 {
-    // ---------------------------------------------------------------------
-    // Game function pointers
-    // ---------------------------------------------------------------------
 
-
-    // sub_7FF6B392D180
-    //
-    //     MainCamera* sub_7FF6B392D180(Button* button)
-    //
-    unsafe static delegate* unmanaged<nint, nint> _getMouseSource;
-
-    // sub_7FF6B402EAB0
-    //
-    //     double* sub_7FF6B402EAB0(
-    //         MainCamera* controls,
-    //         double* coordinates);
-    //
-    // coordinates contains X/Y on entry and is modified in-place.
-    //
     unsafe static delegate* unmanaged<nint, double*, double*> _getMousePosition;
 
-    // sub_7FF6B4022D00
-    //
-    //     Transform a point into a MovieClip's coordinate space.
-    //
     unsafe static delegate* unmanaged<
         nint, double*, double*, nint, double, void> _transformPoint;
 
 
-
-
-
-
-    // ---------------------------------------------------------------------
-    // Initialization
-    // ---------------------------------------------------------------------
-
     internal unsafe void InitMouse()
     {
-
-
-        // -------------------------------------------------------------
-        // sub_7FF6B392D180
-        // -------------------------------------------------------------
-
-        _getMouseSource =
-            (delegate* unmanaged<nint, nint>)
-            (MewjectorApi.GameBase + (nuint)0x27dc50);
-
-
-        // -------------------------------------------------------------
-        // sub_7FF6B402EAB0
-        // -------------------------------------------------------------
 
         _getMousePosition =(delegate* unmanaged<nint, double*, double*>)(void*)MewjectorApi.InstallHook(
             0x9796d0, (void*)(delegate* unmanaged<nint, double*, double*>)&GetMousePositionHook);
 
 
-        // -------------------------------------------------------------
-        // sub_7FF6B4022D00
-        // -------------------------------------------------------------
-
         _transformPoint =
             (delegate* unmanaged<nint, double*, double*, nint, double, void>)
             (MewjectorApi.GameBase + (nuint)0x97b130);
-
-
 
     }
 
@@ -92,10 +42,6 @@ public partial class CatsTableMod
 
             var rootMovieclip = Read<nint>(renderer + 0x80);
             var movieclip = _getChild(rootMovieclip, GameString.Create("xxx"));
-            // LogStr($"[HOOK] ClickHandlerHook: a1=0x{movieclip:X} is our test button");
-
-
-                
 
             double[] output = new double[2];
 
@@ -137,9 +83,6 @@ public partial class CatsTableMod
             {
                 // LogStr($"[HOOK] ClickHandlerHook: mouse is inside bounds of renderer index {i} pointer: 0x{renderer:X}");
                 return i;
-            } else
-            {
-                // LogStr($"[HOOK] ClickHandlerHook: mouse is outside bounds");
             }
         }
         return -1;
@@ -155,6 +98,4 @@ public partial class CatsTableMod
         return _getMousePosition(mewControls, point);
     }
 
-
-   
 }

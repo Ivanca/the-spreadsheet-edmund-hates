@@ -66,7 +66,7 @@ public partial class CatsTableMod
         dateInstalled = File.GetCreationTime(dllPath);
         LogStr($"[HOOK] HookProcessCmds: ModPath={ModPath} hasModPaths={hasModPaths} args={string.Join(" ", args)} dateInstalled={dateInstalled:yyyy-MM-dd HH:mm:ss} ");
 
-        dateInstalled = DateTime.Now.AddDays(-94); // for testing purposes, set the dateInstalled
+        // dateInstalled = DateTime.Now.AddDays(-94); // for testing purposes, set the dateInstalled
 
         if (hasModPaths)
         {

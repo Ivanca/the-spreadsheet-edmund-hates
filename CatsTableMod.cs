@@ -202,7 +202,6 @@ public partial class CatsTableMod
 
     static SortDirection sortByStatDirection = SortDirection.Descending;
     static Dictionary<nint, double> averages = new();
-    static nint lastCamera = 0;
     static bool InsideSetCatData = false;
 
     [UnmanagedCallersOnly]
@@ -213,14 +212,6 @@ public partial class CatsTableMod
         var result = _setCatData(a1, a2, a3, a4);
         InsideSetCatData = false;
         return result;
-    }
-
-    [UnmanagedCallersOnly]
-    static unsafe nint GetMouseSourceHook(nint a1)
-    {
-        LogStr($"[HOOK] GetMouseSourceHook: a1=0x{a1:X}");
-        lastCamera = a1;
-        return _getMouseSource(a1);
     }
 
     [UnmanagedCallersOnly]
@@ -506,6 +497,8 @@ public partial class CatsTableMod
     [UnmanagedCallersOnly]
     static unsafe nint MutationTooltipHook(nint a1, nint a2)
     {
+        // MutationTooltip has an issue that it wasn't build with multiple catStatsDrawers instances in mind
+        // We need to compare it with the CatStatDrawer instance we get from FindButtonHook to make it work
         CountExecution(nameof(MutationTooltipHook));
 
         if (a1 == 0)
@@ -1439,22 +1432,6 @@ public partial class CatsTableMod
         yScrollAni = null;
         xMoveAni = null;
     }
-
-
-    static bool _active;   // static — accessible from [UnmanagedCallersOnly]
-
-
-    protected void OnEnable()
-    {
-        LogStr("CatsTable enabled");
-    }
-
-    protected void OnDisable()
-    {
-        LogStr("CatsTable disabled");
-    }
-
-    static readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> _seenFns = new();
 
     static public void LogStr(string message)
     {
