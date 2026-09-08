@@ -210,6 +210,7 @@ public partial class CatsTableMod
         LogStr($"[HOOK] SetCatDataHook: a1=0x{a1:X}, a2=0x{a2:X}, a3=0x{a3:X}, a4=0x{a4:X}");
         InsideSetCatData = true;
         var result = _setCatData(a1, a2, a3, a4);
+        LogStr($"[HOOK] SetCatDataHook: result=0x{result:X}");
         InsideSetCatData = false;
         return result;
     }
@@ -252,25 +253,39 @@ public partial class CatsTableMod
             var stat = getStat(a1);
             if (stat != "")
             {
-                // LogStr($"[HOOK] SetTextHook: a1=0x{a1:X} a2=0x{a2:X} is one of our row renderers, stat={stat}, renderer={renderer:X}");
+                LogStr($"[HOOK] SetTextHook: a1=0x{a1:X} a2=0x{a2:X} is one of our row renderers, stat={stat}, renderer={renderer:X}");
                 var str = ReadUtf16CustomString(a2);
                 if (str == "")
                 {
                     str = "0";
                 }
-                catStats[renderer][stat] = int.Parse(str);
-                noop = Read<byte>((nint)MewjectorApi.GameBase + 0x60);
+                catStats[renderer][stat] = int.Parse(new string(str.Where(char.IsDigit).ToArray()));
+                // noop = Read<byte>((nint)MewjectorApi.GameBase + 0x60);
 
                 LogStr($"[HOOK] SetTextHook: updated catStats for renderer 0x{renderer:X}, stat={stat}, value={catStats[renderer][stat]}");
                 var index = Array.IndexOf(rowRenderers, renderer);
-                double average = catStats[renderer].Where(kv => kv.Key != "bdc" && kv.Key != "muc").Average(kv => kv.Value);
-                // force it to have 1 single decimal place:
-                average = Math.Round(average, 1);
-                averages[renderer] = (double)average;
-                averagesDirty = true;
+                LogStr("2");
+                var preaverage = catStats[renderer]
+                    .Where(kv => kv.Key != "bdc" && kv.Key != "muc" && kv.Key != "lev" && kv.Key != "age");
+                LogStr("preaverage is: " + string.Join(", ", preaverage.Select(kv => $"{kv.Key}={kv.Value}")));
+                // if preaverage is empty, set average to 0
+                if (preaverage.Any())
+                {
+                    LogStr("3");
+                    var average = preaverage.Average(kv => kv.Value);
+                    LogStr("4");
+                    average = Math.Round(average, 1);
+                    LogStr("5");
+                    averages[renderer] = (double)average;
+                    LogStr("6");
+                    averagesDirty = true;
+                }
                 // LogStr($"[HOOK] SetTextHook: average={average} for renderer 0x{renderer:X} at index {index}");
             }
             // LogStr($"[HOOK] SetTextHook: a1=0x{a1:X} is one of our row renderers, text={str}, renderer={renderer:X}");
+            LogStr($"[HOOK] SetTextHook: finished processing a1=0x{a1:X} a2=0x{a2:X}");
+            noop = Read<byte>((nint)MewjectorApi.GameBase + 0x60);
+
         }
         return _setText(a1, a2);
     }
@@ -301,7 +316,7 @@ public partial class CatsTableMod
                         sortByStat = subname;
                         sortByStatDirection = SortDirection.Descending;
                     }
-                    SortCats();
+                    SortRows();
                     LogStr($"[HOOK] ClickHandlerHook: sorting by {sortByStat} {sortByStatDirection}");
                 }
                 return 0;
@@ -321,15 +336,16 @@ public partial class CatsTableMod
     }
 
 
-    static unsafe void SortCats()
+    static unsafe void SortRows()
     {
-        CountExecution(nameof(SortCats));
+        CountExecution(nameof(SortRows));
         positionDirty = true;
+        forcedCatStatsUpdatePending = rowRenderers.Length;
         if (sortByStat == "")
         {
             sortedCats = catStats.Select(e => e.Key).ToArray();
             // print the full SortedCats array
-            LogStr($"[HOOK] SortCats: sortByStat is empty, sortedCats = {string.Join(", ", sortedCats.Select(e => e.ToString("X")))}");
+            LogStr($"[HOOK] SortRows: sortByStat is empty, sortedCats = {string.Join(", ", sortedCats.Select(e => e.ToString("X")))}");
             return;
         }
 
@@ -341,7 +357,7 @@ public partial class CatsTableMod
         {
             sortedCats = sortedCats.Reverse().ToArray();
         }
-        LogStr($"[HOOK] SortCats: sortByStat={sortByStat} sortByStatDirection={sortByStatDirection}, sortedCats = {string.Join(", ", sortedCats.Select(e => e.ToString("X")))}");
+        LogStr($"[HOOK] SortRows: sortByStat={sortByStat} sortByStatDirection={sortByStatDirection}, sortedCats = {string.Join(", ", sortedCats.Select(e => e.ToString("X")))}");
     }
 
     static nint currentlyDrawerWithOpenIconsPanel = 0;
@@ -741,7 +757,7 @@ public partial class CatsTableMod
                     break;
             }
 
-            SortCats();
+            SortRows();
         }
         finally
         {
@@ -879,8 +895,9 @@ public partial class CatsTableMod
         return result;
     }
 
-    static string[] buttonList = ["spd_btn", "cha_btn", "int_btn", "str_btn", "lck_btn", "con_btn", "dex_btn", "avg_btn", "bdc_btn", "muc_btn"];
-    static string[] stats = ["spd", "cha", "int", "str", "lck", "con", "dex", "bdc", "muc"];
+    static string[] buttonList =
+        ["spd_btn", "cha_btn", "int_btn", "str_btn", "lck_btn", "con_btn", "dex_btn", "avg_btn", "bdc_btn", "muc_btn", "lev_btn", "age_btn"];
+    static string[] stats = ["spd", "cha", "int", "str", "lck", "con", "dex", "bdc", "muc", "lev", "age"];
     static bool allStatsAlreadyFound = false;
     
     static Dictionary<nint, Dictionary<string, int>> catStats = new();
@@ -904,6 +921,14 @@ public partial class CatsTableMod
         {
             LogStr($"[HOOK] getStat: mutationcount found for dynamicTextBox=0x{dynamicTextBox:X}");
             return "muc";
+        }
+        if (name == "age")
+        {
+            return "age";
+        }
+        if (name == "level")
+        {
+            return "lev";
         }
         if (name == "total")
         {
