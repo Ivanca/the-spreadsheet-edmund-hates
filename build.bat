@@ -4,42 +4,43 @@ setlocal
 rem Run from the directory containing this .bat file
 cd /d "%~dp0"
 
-rem Force kill any processes of Mewgenics.exe if there are any
-tasklist /FI "IMAGENAME eq Mewgenics.exe" 2>NUL | %windir%\System32\find.exe /I "Mewgenics.exe" >NUL
-if %ERRORLEVEL% EQU 0 (
-    echo Killing Mewgenics.exe processes...
-    taskkill /IM Mewgenics.exe /F >NUL 2>&1
-) else (
-    echo No Mewgenics.exe processes found.
-)
-
-@REM wait one second:
-%windir%\System32\timeout.exe /T 1 /NOBREAK >NUL
-
-@REM If mewgenics still open try to kill x64dbg.exe if there are any:
-tasklist /FI "IMAGENAME eq Mewgenics.exe" 2>NUL | %windir%\System32\find.exe /I "Mewgenics.exe" >NUL
-if %ERRORLEVEL% EQU 0 (
-    echo Mewgenics.exe is still running.
-    tasklist /FI "IMAGENAME eq x64dbg.exe" 2>NUL | %windir%\System32\find.exe /I "x64dbg.exe" >NUL
+if "%1"=="--debugging" (
+    rem Force kill any processes of Mewgenics.exe if there are any
+    tasklist /FI "IMAGENAME eq Mewgenics.exe" 2>NUL | %windir%\System32\find.exe /I "Mewgenics.exe" >NUL
     if %ERRORLEVEL% EQU 0 (
-        echo Killing x64dbg.exe processes...
-        taskkill /IM x64dbg.exe /F >NUL 2>&1
+        echo Killing Mewgenics.exe processes...
+        taskkill /IM Mewgenics.exe /F >NUL 2>&1
     ) else (
-        echo No x64dbg.exe processes found.
+        echo No Mewgenics.exe processes found.
     )
-    %windir%\System32\timeout.exe /T 1 /NOBREAK >NUL
-) else (
-    echo Mewgenics.exe is not running.
-)
 
+    @REM wait one second:
+    %windir%\System32\timeout.exe /T 1 /NOBREAK >NUL
+
+    @REM If mewgenics still open try to kill x64dbg.exe if there are any:
+    tasklist /FI "IMAGENAME eq Mewgenics.exe" 2>NUL | %windir%\System32\find.exe /I "Mewgenics.exe" >NUL
+    if %ERRORLEVEL% EQU 0 (
+        echo Mewgenics.exe is still running.
+        tasklist /FI "IMAGENAME eq x64dbg.exe" 2>NUL | %windir%\System32\find.exe /I "x64dbg.exe" >NUL
+        if %ERRORLEVEL% EQU 0 (
+            echo Killing x64dbg.exe processes...
+            taskkill /IM x64dbg.exe /F >NUL 2>&1
+        ) else (
+            echo No x64dbg.exe processes found.
+        )
+        %windir%\System32\timeout.exe /T 1 /NOBREAK >NUL
+    ) else (
+        echo Mewgenics.exe is not running.
+    )
+)
 
 rem python exclude.py
 rem python find_dangerous_hooks.py
 rem python gen_hooks.py
 
 rem Remove obj and bin folders
-@REM if exist "obj" rmdir /S /Q "obj"
-@REM if exist "bin" rmdir /S /Q "bin"
+if exist "obj" rmdir /S /Q "obj"
+if exist "bin" rmdir /S /Q "bin"
 
 if "%1"=="--include-installer" (
     rem Create installer/mod if missing
