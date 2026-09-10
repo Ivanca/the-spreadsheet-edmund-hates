@@ -121,30 +121,29 @@ copy /Y "swf\swflist.gon.append" "installer\mod\the_spreadsheet_edmund_hates\swf
 if errorlevel 1 exit /B 1
 echo Copied swflist.gon.append to installer\mod\the_spreadsheet_edmund_hates\swfs\swflist.gon.append
 
-rem Copy the .NET mod to the live Mewgenics installation while live debugging
-copy /Y "bin\x64\Release\net8.0-windows\win-x64\publish\the_spreadsheet_edmund_hates.dll" "E:\SteamLibrary\steamapps\common\Mewgenics\mods\the_spreadsheet_edmund_hates\the_spreadsheet_edmund_hates.dll" >NUL
-@REM if errorlevel 1 exit /B 1
+if "%1"=="--debugging" (
+    rem Copy the .NET mod to the live Mewgenics installation while live debugging
+    copy /Y "bin\x64\Release\net8.0-windows\win-x64\publish\the_spreadsheet_edmund_hates.dll" "E:\SteamLibrary\steamapps\common\Mewgenics\mods\the_spreadsheet_edmund_hates\the_spreadsheet_edmund_hates.dll" >NUL
+    if errorlevel 1 exit /B 1
 
-rem Copy SWF files to the live install
-copy /Y "swf\house_table_stats.swf" "E:\SteamLibrary\steamapps\common\Mewgenics\mods\the_spreadsheet_edmund_hates\swfs\house_table_stats.swf" >NUL
-if errorlevel 1 exit /B 1
-@REM echo Copied house_table_stats.swf to E:\SteamLibrary\steamapps\common\Mewgenics\mods\the_spreadsheet_edmund_hates\swfs\house_table_stats.swf
+    rem Copy SWF files to the live install
+    copy /Y "swf\house_table_stats.swf" "E:\SteamLibrary\steamapps\common\Mewgenics\mods\the_spreadsheet_edmund_hates\swfs\house_table_stats.swf" >NUL
+    if errorlevel 1 exit /B 1
+    echo Copied house_table_stats.swf to E:\SteamLibrary\steamapps\common\Mewgenics\mods\the_spreadsheet_edmund_hates\swfs\house_table_stats.swf
 
-copy /Y "swf\swflist.gon.append" "E:\SteamLibrary\steamapps\common\Mewgenics\mods\the_spreadsheet_edmund_hates\swfs\swflist.gon.append" >NUL
-if errorlevel 1 exit /B 1
-@REM echo Copied swflist.gon.append to E:\SteamLibrary\steamapps\common\Mewgenics\mods\the_spreadsheet_edmund_hates\swfs\swflist.gon.append
+    copy /Y "swf\swflist.gon.append" "E:\SteamLibrary\steamapps\common\Mewgenics\mods\the_spreadsheet_edmund_hates\swfs\swflist.gon.append" >NUL
+    if errorlevel 1 exit /B 1
+    echo Copied swflist.gon.append to E:\SteamLibrary\steamapps\common\Mewgenics\mods\the_spreadsheet_edmund_hates\swfs\swflist.gon.append
 
-rem Example save-file copies:
-copy /Y "%APPDATA%\Glaiel Games\Mewgenics\76561198041742179\saves\steamcampaign01 - Copy.sav" "%APPDATA%\Glaiel Games\Mewgenics\76561198041742179\saves\steamcampaign01.sav" >NUL
-if errorlevel 1 exit /B 1
-rem copy /Y "%APPDATA%\Glaiel Games\Mewgenics\76561198041742179\saves\steamcampaign02 - Copy.sav" "%APPDATA%\Glaiel Games\Mewgenics\76561198041742179\saves\steamcampaign02.sav"
+    rem Example save-file copies:
+    copy /Y "%APPDATA%\Glaiel Games\Mewgenics\76561198041742179\saves\steamcampaign01 - Copy.sav" "%APPDATA%\Glaiel Games\Mewgenics\76561198041742179\saves\steamcampaign01.sav" >NUL
+    if errorlevel 1 exit /B 1
+    rem copy /Y "%APPDATA%\Glaiel Games\Mewgenics\76561198041742179\saves\steamcampaign02 - Copy.sav" "%APPDATA%\Glaiel Games\Mewgenics\76561198041742179\saves\steamcampaign02.sav"
 
-@REM rem Wait one second to ensure memory is freed up
-@REM C:\Windows\System32\timeout.exe /T 1 /NOBREAK >NUL
-
-
-"E:\SteamLibrary\steamapps\common\Mewgenics\Mewgenics.exe"
-
+    @REM rem Wait one second to ensure memory is freed up
+    @REM C:\Windows\System32\timeout.exe /T 1 /NOBREAK >NUL
+    "E:\SteamLibrary\steamapps\common\Mewgenics\Mewgenics.exe"
+)
 
 echo.
 echo Build completed successfully.
