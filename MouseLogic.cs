@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
-namespace CatsTableMod;
+namespace TheSpredsheetEdmundHates;
 
-public partial class CatsTableMod
+public partial class TheSpredsheetEdmundHates
 {
 
     unsafe static delegate* unmanaged<nint, double*, double*> _getMousePosition;

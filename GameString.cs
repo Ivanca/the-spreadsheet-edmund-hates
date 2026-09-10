@@ -26,8 +26,8 @@ unsafe struct GameString
         s->Length = (ulong)text.Length;
         s->Capacity = 15;
         
-        // CatsTableMod.LogStr(sizeof(GameString).ToString());
-        // CatsTableMod.LogStr(((nuint)s).ToString("X"));
+        // TheSpredsheetEdmundHates.LogStr(sizeof(GameString).ToString());
+        // TheSpredsheetEdmundHates.LogStr(((nuint)s).ToString("X"));
         return (nint)s;
     }
     
@@ -49,7 +49,7 @@ unsafe struct GameString
 
         fixed (char* p = text)
         {
-            CatsTableMod.CatsTableMod.assignString(str, p, (nuint)text.Length);
+            TheSpredsheetEdmundHates.TheSpredsheetEdmundHates.assignString(str, p, (nuint)text.Length);
         }
 
 

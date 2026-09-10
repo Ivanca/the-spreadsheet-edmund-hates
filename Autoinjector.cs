@@ -5,9 +5,9 @@ using System.Runtime.InteropServices;
 using System.IO;
 using System.Text;
 
-namespace CatsTableMod;
+namespace TheSpredsheetEdmundHates;
 
-public partial class CatsTableMod
+public partial class TheSpredsheetEdmundHates
 {
 
     unsafe static delegate* unmanaged<nint, nint, nint, nint> _hookProcessCmds;
@@ -17,7 +17,6 @@ public partial class CatsTableMod
     {
         _hookProcessCmds = (delegate* unmanaged<nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0x9b8bb0, (void*)(delegate* unmanaged<nint, nint, nint, nint>)&HookProcessCmds);
-
     }
     
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
@@ -59,22 +58,22 @@ public partial class CatsTableMod
             return _hookProcessCmds(application, argc, argv);
         }
 
-        string ModPath = Path.GetDirectoryName(buffer.ToString())! + "/mods/catstable";
+        string ModPath = Path.GetDirectoryName(buffer.ToString())! + "/mods/the_spreadsheet_edmund_hates";
 
         // get the dateCreated time of the dll file
-        string dllPath = Path.Combine(ModPath, "catstable.dll");
+        string dllPath = Path.Combine(ModPath, "the_spreadsheet_edmund_hates.dll");
         dateInstalled = File.GetCreationTime(dllPath);
         LogStr($"[HOOK] HookProcessCmds: ModPath={ModPath} hasModPaths={hasModPaths} args={string.Join(" ", args)} dateInstalled={dateInstalled:yyyy-MM-dd HH:mm:ss} ");
 
-        // dateInstalled = DateTime.Now.AddDays(-94); // for testing purposes, set the dateInstalled
+        dateInstalled = DateTime.Now.AddDays(-94); // for testing purposes, set the dateInstalled
 
         if (hasModPaths)
         {
-            // check if "catstable" is already present in the -modpaths
+            // check if "the_spreadsheet_edmund_hates" is already present in the -modpaths
             bool hasCatStable = false;
             foreach (string arg in args)
             {
-                if (arg.Contains("catstable"))
+                if (arg.Contains("the_spreadsheet_edmund_hates"))
                 {
                     hasCatStable = true;
                     break;

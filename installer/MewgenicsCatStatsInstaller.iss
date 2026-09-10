@@ -1,4 +1,4 @@
-#define MyAppName "Mewgenics Cat Stats Mod"
+#define MyAppName "The Spreadsheet Edmund Hates"
 #define MyAppVersion "1.0.0"
 
 [Setup]
@@ -10,7 +10,7 @@ DefaultDirName={code:GetDefaultGameDir}
 DisableProgramGroupPage=yes
 DirExistsWarning=no
 Uninstallable=no
-OutputBaseFilename=MewgenicsCatStatsInstaller
+OutputBaseFilename=TheSpreadsheetEdmundHates
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
@@ -22,10 +22,10 @@ CloseApplications=no
 
 [Files]
 ; Your mod files:
-;   mod\catstable\catstable.dll
-;   mod\catstable\CatsTableBridge.dll
-;   mod\catstable\swfs\swflist.gon.append
-Source: "mod\catstable\*"; DestDir: "{app}\mods\catstable"; Flags: recursesubdirs createallsubdirs ignoreversion
+;   mod\the_spreadsheet_edmund_hates\the_spreadsheet_edmund_hates.dll
+;   mod\the_spreadsheet_edmund_hates\MewjectorBridge.dll
+;   mod\the_spreadsheet_edmund_hates\swfs\swflist.gon.append
+Source: "mod\the_spreadsheet_edmund_hates\*"; DestDir: "{app}\mods\the_spreadsheet_edmund_hates"; Flags: recursesubdirs createallsubdirs ignoreversion
 
 ; Vendor archives.
 ; Mewjector: Release-218-3-3-1778034265.zip\release\...
@@ -334,12 +334,12 @@ begin
     SetArrayLength(Lines, 0);
 
   for I := 0 to GetArrayLength(Lines) - 1 do
-    if SameText(Trim(Lines[I]), 'catstable') then
+    if SameText(Trim(Lines[I]), 'the_spreadsheet_edmund_hates') then
       Exit;
 
   N := GetArrayLength(Lines);
   SetArrayLength(Lines, N + 1);
-  Lines[N] := 'catstable';
+  Lines[N] := 'the_spreadsheet_edmund_hates';
 
   if not SaveStringsToUTF8FileWithoutBOM(ModList, Lines, False) then
     RaiseException('Could not update ' + ModList);
@@ -376,8 +376,8 @@ begin
 
   Manifest := PathCombine(ModDir, 'mewtator_dll_manifest.txt');
   DllPath := PathCombine(
-    PathCombine(ModDir, 'catstable'),
-    'CatsTableBridge.dll');
+    PathCombine(ModDir, 'the_spreadsheet_edmund_hates'),
+    'MewjectorBridge.dll');
 
   Normalized := DllPath;
   StringChangeEx(Normalized, '\', '/', False);
@@ -471,7 +471,7 @@ begin
   InstallMewjector(GameDir);
   InstallMewtator;
 
-  { The [Files] section has already installed the catstable folder. }
+  { The [Files] section has already installed the the_spreadsheet_edmund_hates folder. }
   UpdateModList(GameDir);
   UpdateManifest(GameDir);
   ConfigureMewtator(GameDir, ModDir);

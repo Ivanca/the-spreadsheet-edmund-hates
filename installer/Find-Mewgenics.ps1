@@ -1,7 +1,7 @@
 $ErrorActionPreference = "SilentlyContinue"
 
-$ExeSize  = [int64]21981184
-$GpakSize = [int64]5034503564
+$ExeSize  = [int64]22019072
+$GpakSize = [int64]5134616316
 
 function Find-ResourcesGpak {
     param(

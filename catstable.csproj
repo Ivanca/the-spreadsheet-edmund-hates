@@ -9,6 +9,7 @@
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
+    <AssemblyName>the_spreadsheet_edmund_hates</AssemblyName> 
   </PropertyGroup>
   <ItemGroup>
       <IgnoresAccessChecksTo Include="MewgenicsModSdk" />

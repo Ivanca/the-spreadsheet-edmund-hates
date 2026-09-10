@@ -44,13 +44,9 @@ rem Remove obj and bin folders
 if "%1"=="--include-installer" (
     rem Create installer/mod if missing
     if not exist "installer\mod" mkdir "installer\mod"
-    if not exist "installer\mod\catstable" mkdir "installer\mod\catstable"
-    if not exist "installer\mod\catstable\swfs" mkdir "installer\mod\catstable\swfs"
-    echo Compiling installer...
-    "C:\Program Files\Inno Setup 7\ISCC.exe" "installer\MewgenicsCatStatsInstaller.iss"
-    if errorlevel 1 exit /B 1
+    if not exist "installer\mod\the_spreadsheet_edmund_hates" mkdir "installer\mod\the_spreadsheet_edmund_hates"
+    if not exist "installer\mod\the_spreadsheet_edmund_hates\swfs" mkdir "installer\mod\the_spreadsheet_edmund_hates\swfs"
 )
-
 
 rem Find the latest Visual Studio installation containing the x64 C++ tools
 set "VSWHERE=C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
@@ -81,58 +77,62 @@ if not exist "%VCVARS%" (
 rem Load the Visual Studio x64 build environment and compile the DLL
 call "%VCVARS%" || exit /B 1
 
-cl /LD /O2 /EHsc "CatsTableBridge.cpp" /Fe:"CatsTableBridge.dll"
+cl /LD /O2 /EHsc "MewjectorBridge.cpp" /Fe:"MewjectorBridge.dll"
 if errorlevel 1 exit /B 1
 
 rem Remove intermediate compiler files
-if exist "CatsTableBridge.exp" del /Q "CatsTableBridge.exp"
-if exist "CatsTableBridge.lib" del /Q "CatsTableBridge.lib"
-if exist "CatsTableBridge.obj" del /Q "CatsTableBridge.obj"
+if exist "MewjectorBridge.exp" del /Q "MewjectorBridge.exp"
+if exist "MewjectorBridge.lib" del /Q "MewjectorBridge.lib"
+if exist "MewjectorBridge.obj" del /Q "MewjectorBridge.obj"
 
-rem Copy CatsTableBridge.dll to the installer
-copy /Y "CatsTableBridge.dll" "installer\mod\catstable\CatsTableBridge.dll" >NUL
+rem Copy MewjectorBridge.dll to the installer
+copy /Y "MewjectorBridge.dll" "installer\mod\the_spreadsheet_edmund_hates\MewjectorBridge.dll" >NUL
 if errorlevel 1 exit /B 1
-echo Copied CatsTableBridge.dll to installer\mod\catstable\CatsTableBridge.dll
+echo Copied MewjectorBridge.dll to installer\mod\the_spreadsheet_edmund_hates\MewjectorBridge.dll
 
 @REM wait 1 second or we get "The process cannot access the file because it is being used by another process"
 %windir%\System32\timeout.exe /T 1 /NOBREAK >NUL
 
-rem Copy CatsTableBridge.dll to the live Mewgenics installation
-copy /Y "CatsTableBridge.dll" "E:\SteamLibrary\steamapps\common\Mewgenics\mods\catstable\CatsTableBridge.dll" >NUL
-if errorlevel 1 exit /B 1
+if "%1"=="--include-installer" (
+    echo Compiling installer...
+    "C:\Program Files\Inno Setup 7\ISCC.exe" "installer\MewgenicsCatStatsInstaller.iss"
+    if errorlevel 1 exit /B 1
+)
+
+rem Copy MewjectorBridge.dll to the live Mewgenics installation
+copy /Y "MewjectorBridge.dll" "E:\SteamLibrary\steamapps\common\Mewgenics\mods\the_spreadsheet_edmund_hates\MewjectorBridge.dll" >NUL
+@REM if errorlevel 1 exit /B 1
 
 rem Publish the .NET mod
 dotnet publish -c Release -r win-x64 --self-contained
 if errorlevel 1 exit /B 1
 
 rem Copy the .NET mod to the installer
-copy /Y "bin\x64\Release\net8.0-windows\win-x64\publish\catstable.dll" "installer\mod\catstable\catstable.dll" >NUL
+copy /Y "bin\x64\Release\net8.0-windows\win-x64\publish\the_spreadsheet_edmund_hates.dll" "installer\mod\the_spreadsheet_edmund_hates\the_spreadsheet_edmund_hates.dll" >NUL
 if errorlevel 1 exit /B 1
-echo Copied catstable.dll to installer\mod\catstable\catstable.dll
+echo Copied the_spreadsheet_edmund_hates.dll to installer\mod\the_spreadsheet_edmund_hates\the_spreadsheet_edmund_hates.dll
+
+rem Copy SWF files to the installer
+copy /Y "swf\house_table_stats.swf" "installer\mod\the_spreadsheet_edmund_hates\swfs\house_table_stats.swf" >NUL
+if errorlevel 1 exit /B 1
+echo Copied house_table_stats.swf to installer\mod\the_spreadsheet_edmund_hates\swfs\house_table_stats.swf
+
+copy /Y "swf\swflist.gon.append" "installer\mod\the_spreadsheet_edmund_hates\swfs\swflist.gon.append" >NUL
+if errorlevel 1 exit /B 1
+echo Copied swflist.gon.append to installer\mod\the_spreadsheet_edmund_hates\swfs\swflist.gon.append
 
 rem Copy the .NET mod to the live Mewgenics installation while live debugging
-copy /Y "bin\x64\Release\net8.0-windows\win-x64\publish\catstable.dll" "E:\SteamLibrary\steamapps\common\Mewgenics\mods\catstable\catstable.dll" >NUL
-if errorlevel 1 exit /B 1
+copy /Y "bin\x64\Release\net8.0-windows\win-x64\publish\the_spreadsheet_edmund_hates.dll" "E:\SteamLibrary\steamapps\common\Mewgenics\mods\the_spreadsheet_edmund_hates\the_spreadsheet_edmund_hates.dll" >NUL
+@REM if errorlevel 1 exit /B 1
 
-rem Copy SWF files to the installer
-copy /Y "swf\house_table_stats.swf" "installer\mod\catstable\swfs\house_table_stats.swf" >NUL
+rem Copy SWF files to the live install
+copy /Y "swf\house_table_stats.swf" "E:\SteamLibrary\steamapps\common\Mewgenics\mods\the_spreadsheet_edmund_hates\swfs\house_table_stats.swf" >NUL
 if errorlevel 1 exit /B 1
-echo Copied house_table_stats.swf to installer\mod\catstable\swfs\house_table_stats.swf
+@REM echo Copied house_table_stats.swf to E:\SteamLibrary\steamapps\common\Mewgenics\mods\the_spreadsheet_edmund_hates\swfs\house_table_stats.swf
 
-copy /Y "swf\swflist.gon.append" "installer\mod\catstable\swfs\swflist.gon.append" >NUL
+copy /Y "swf\swflist.gon.append" "E:\SteamLibrary\steamapps\common\Mewgenics\mods\the_spreadsheet_edmund_hates\swfs\swflist.gon.append" >NUL
 if errorlevel 1 exit /B 1
-echo Copied swflist.gon.append to installer\mod\catstable\swfs\swflist.gon.append
-
-rem Copy SWF files to the installer
-copy /Y "swf\house_table_stats.swf" "E:\SteamLibrary\steamapps\common\Mewgenics\mods\catstable\swfs\house_table_stats.swf" >NUL
-if errorlevel 1 exit /B 1
-echo Copied house_table_stats.swf to E:\SteamLibrary\steamapps\common\Mewgenics\mods\catstable\swfs\house_table_stats.swf
-
-copy /Y "swf\swflist.gon.append" "E:\SteamLibrary\steamapps\common\Mewgenics\mods\catstable\swfs\swflist.gon.append" >NUL
-if errorlevel 1 exit /B 1
-echo Copied swflist.gon.append to installer\mod\catstable\swfs\swflist.gon.append
-
-"E:\SteamLibrary\steamapps\common\Mewgenics\Mewgenics.exe"
+@REM echo Copied swflist.gon.append to E:\SteamLibrary\steamapps\common\Mewgenics\mods\the_spreadsheet_edmund_hates\swfs\swflist.gon.append
 
 rem Example save-file copies:
 copy /Y "%APPDATA%\Glaiel Games\Mewgenics\76561198041742179\saves\steamcampaign01 - Copy.sav" "%APPDATA%\Glaiel Games\Mewgenics\76561198041742179\saves\steamcampaign01.sav" >NUL
@@ -141,6 +141,10 @@ rem copy /Y "%APPDATA%\Glaiel Games\Mewgenics\76561198041742179\saves\steamcampa
 
 @REM rem Wait one second to ensure memory is freed up
 @REM C:\Windows\System32\timeout.exe /T 1 /NOBREAK >NUL
+
+
+"E:\SteamLibrary\steamapps\common\Mewgenics\Mewgenics.exe"
+
 
 echo.
 echo Build completed successfully.

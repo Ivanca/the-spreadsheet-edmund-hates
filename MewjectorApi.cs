@@ -2,7 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace CatsTableMod;
+namespace TheSpredsheetEdmundHates;
 
 /// <summary>
 /// C# binding for the Mewjector chainloader API (version.dll).
@@ -17,7 +17,7 @@ namespace CatsTableMod;
 internal static unsafe class MewjectorApi
 {
     private const int    MJ_API_VERSION = 3;
-    private const string MOD_NAME       = "catstable";
+    private const string MOD_NAME       = "the_spreadsheet_edmund_hates";
 
     // ── Win32 ────────────────────────────────────────────────────────────────
 

@@ -325,7 +325,7 @@ def find_rvas(files: list[Path]) -> list[int]:
 def generate_csharp(data: dict[int, bytes]) -> str:
     lines = [
         "using System.Collections.Generic;",
-        "namespace CatsTableMod;",
+        "namespace TheSpredsheetEdmundHates;",
         "public static class BinaryLiterals",
         "{",
         "    // The dictionary stores the lightweight wrapper struct containing the data inline",
