@@ -162,8 +162,7 @@ public partial class CatsTableMod
         _mutationToolTip = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0xE5500, (void*)(delegate* unmanaged<nint, nint, nint>)&MutationTooltipHook); 
 
-        _setText = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
-            0x98E8A0, (void*)(delegate* unmanaged<nint, nint, nint>)&SetTextHook);
+        
 
         // EndDayHook and GoToMainMenuHook are the only places where mod state is reset
 
@@ -190,6 +189,8 @@ public partial class CatsTableMod
         assignString = (delegate* unmanaged<nint,char*,nuint,nint>)(MewjectorApi.GameBase + 0x5b150);
         _getChild = (delegate* unmanaged<nint,nint,nint>)(MewjectorApi.GameBase + 0x99a0e0);
         _getChildByPath = (delegate* unmanaged<nint, nint, nint>)(MewjectorApi.GameBase + 0x99a1b0);
+        // dont try to hook setText and add logic there, its just creates [img:x] glyphs race conditions
+        _setText = (delegate* unmanaged<nint,nint,nint>)(MewjectorApi.GameBase + 0x98E8A0);
         // _getChild = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
         //     0x99a0e0, (void*)(delegate* unmanaged<nint, nint, nint>)&GetChildHook); // useful for debugging
         _trackMovieclipChildParentOffset = (delegate* unmanaged<nint, nint, nint, void>)(MewjectorApi.GameBase + (nuint)0x204a80);
@@ -280,66 +281,6 @@ public partial class CatsTableMod
         return _endDay(a1);
     }
 
-    int[] fixedArray = new int[500];
-
-    [UnmanagedCallersOnly]
-    static unsafe nint SetTextHook (nint a1, nint a2)
-    {
-        if (!InsideSetCatData || !IsMemReadable(a1 + 0x48, 8))
-        {
-            return _setText(a1, a2);
-        }
-        CountExecution(nameof(SetTextHook));
-        
-
-        // var renderer = GetRenderer(a1);
-        // var stat = getStat(a1);
-        // if (rowRenderers.Length > 0 && stat != "" && rowRenderers.Contains(GetRenderer(a1)))
-        // {
-        //     noop = Read<byte>((nint)MewjectorApi.GameBase + 0x60);
-            
-        //     // if (!cachedPointers.Contains(a1)) {
-        //     //     cachedPointers.Add(a1);
-        //     // } else {
-        //     //     // LogStr($"[HOOK] SetTextHook: a1=0x{a1:X} is already cached, skipping");
-        //     //     return _setText(a1, a2);
-        //     // }
-        //     if (stat != "")
-        //     {
-        //         var renderer = GetRenderer(a1);
-        //         // LogStr($"[HOOK] SetTextHook: a1=0x{a1:X} a2=0x{a2:X} is one of our row renderers, stat={stat}, renderer={renderer:X}");
-        //         var str = ReadUtf16CustomString(a2);
-        //         LogStr($"[HOOK] After reading str str={str}");
-        //         if (str == "")
-        //         {
-        //             str = "0";
-        //         }
-        //         if (str.Contains("Age"))
-        //         {
-        //             // noop = Read<byte>((nint)MewjectorApi.GameBase + 0x60);
-        //         }
-        //         catStats[renderer][stat] = int.Parse(new string(str.Where(char.IsDigit).ToArray()));
-        //         // noop = Read<byte>((nint)MewjectorApi.GameBase + 0x60);
-
-        //         LogStr($"[HOOK] SetTextHook: updated catStats for renderer 0x{renderer:X}, stat={stat}, value={catStats[renderer][stat]}");
-        //         var index = Array.IndexOf(rowRenderers, renderer);
-        //         var preaverage = catStats[renderer]
-        //             .Where(kv => kv.Key != "bdc" && kv.Key != "muc" && kv.Key != "lev" && kv.Key != "age");
-        //         if (preaverage.Any())
-        //         {
-        //             var average = preaverage.Average(kv => kv.Value);
-        //             average = Math.Round(average, 1);
-        //             averages[renderer] = (double)average;
-        //             averagesDirty = true;
-        //         }
-        //     }
-        //     // LogStr($"[HOOK] SetTextHook: a1=0x{a1:X} is one of our row renderers, text={str}, renderer={renderer:X}");
-        //     LogStr($"[HOOK] SetTextHook: finished processing a1=0x{a1:X} a2=0x{a2:X}");
-
-        // }
-        return _setText(a1, a2);
-    }
-
     [UnmanagedCallersOnly]
     static unsafe nint ClickHandlerHook(nint a1, nint a2)
     {
@@ -348,7 +289,21 @@ public partial class CatsTableMod
         if (a1 != 0 && IsMemReadable(a1 + 0x48, 8))
         {
             if (OurHeaderbuttons.ContainsValue(a1))
-            {            
+            {   
+                // if (catStats.Count > 0 && catStats.FirstOrDefault().Value.Count > 0)
+                // {
+                //     var ren = catStats.FirstOrDefault().Key;
+                //     LogStr($"[HOOK] ClickHandlerHook: ren=0x{ren:X}");
+                //     noop = Read<byte>((nint)MewjectorApi.GameBase + 0x60);
+
+                //     var mucMc = GameString.Create("mutations.mutationcount");
+                //     var bdcMc = GameString.Create("mutations.birthdefectcount");
+                //     var muc = ReadNumberOrZero(_getChildByPath(Read<nint>(ren + 0x80), mucMc));
+                //     var bdc =ReadNumberOrZero(_getChildByPath(Read<nint>(ren + 0x80), bdcMc));
+                //     var muts = _getChild(ren + 0x80, GameString.Create("mutations"));
+                //     LogStr($"[HOOK] ClickHandlerHook: 1st mutations.mutationcount={muc}, mutations.birthdefectcount={bdc} mucMc={mucMc}, bdcMc={bdcMc} muts=0x{muts:X}");
+                // }
+
                 LogStr($"[HOOK] ClickHandlerHook: a1=0x{a1:X} is one of our header buttons, ignoring click");
                 var movieclip = Read<nint>(a1 + 0x48);
                 var movieclipname = TryReadCString(Read<nint>(movieclip + 0x48));
@@ -402,6 +357,7 @@ public partial class CatsTableMod
         var sorted = sortByStat == "avg"
             ? catStats.OrderBy(e => averages.ContainsKey(e.Key) ? averages[e.Key] : 0)
             : catStats.OrderBy(e => e.Value.ContainsKey(sortByStat) ? e.Value[sortByStat] : 0);
+        LogStr($"[HOOK] SortRows: sorted (before filtering by visibleRenderers) = {string.Join(", ", sorted.Select(e => e.Key.ToString("X")))}");
         sortedCats = sorted.Select(e => e.Key).Where(e => visibleRenderers.Contains(e)).ToArray();
         if (sortByStatDirection == SortDirection.Descending)
         {
@@ -1122,21 +1078,21 @@ public partial class CatsTableMod
                 {
                     if (!panelsWithData.Contains(ren))
                     {
-                        
-                        catStats[ren]["dex"] = ReadNumberOrZero(_getChildByPath(Read<nint>(ren + 0x80), GameString.Create("dexfancy.total")));
-                        catStats[ren]["spd"] = ReadNumberOrZero(_getChildByPath(Read<nint>(ren + 0x80), GameString.Create("spdfancy.total")));
-                        catStats[ren]["cha"] = ReadNumberOrZero(_getChildByPath(Read<nint>(ren + 0x80), GameString.Create("chafancy.total")));
-                        catStats[ren]["str"] = ReadNumberOrZero(_getChildByPath(Read<nint>(ren + 0x80), GameString.Create("strfancy.total")));
-                        catStats[ren]["int"] = ReadNumberOrZero(_getChildByPath(Read<nint>(ren + 0x80), GameString.Create("intfancy.total")));
-                        catStats[ren]["lck"] = ReadNumberOrZero(_getChildByPath(Read<nint>(ren + 0x80), GameString.Create("lckfancy.total")));
-                        catStats[ren]["con"] = ReadNumberOrZero(_getChildByPath(Read<nint>(ren + 0x80), GameString.Create("confancy.total")));
+                        var movieclip = Read<nint>(ren + 0x80);
+                        catStats[ren]["dex"] = ReadNumberOrZero(_getChildByPath(movieclip, GameString.Create("dexfancy.total")));
+                        catStats[ren]["spd"] = ReadNumberOrZero(_getChildByPath(movieclip, GameString.Create("spdfancy.total")));
+                        catStats[ren]["cha"] = ReadNumberOrZero(_getChildByPath(movieclip, GameString.Create("chafancy.total")));
+                        catStats[ren]["str"] = ReadNumberOrZero(_getChildByPath(movieclip, GameString.Create("strfancy.total")));
+                        catStats[ren]["int"] = ReadNumberOrZero(_getChildByPath(movieclip, GameString.Create("intfancy.total")));
+                        catStats[ren]["lck"] = ReadNumberOrZero(_getChildByPath(movieclip, GameString.Create("lckfancy.total")));
+                        catStats[ren]["con"] = ReadNumberOrZero(_getChildByPath(movieclip, GameString.Create("confancy.total")));
                         averages[ren] = (double)Math.Round(catStats[ren].Average(kv => kv.Value), 1);
-                        catStats[ren]["muc"] = ReadNumberOrZero(_getChildByPath(Read<nint>(ren + 0x80), GameString.Create("mutations.mutationcount")));
-                        catStats[ren]["bdc"] = ReadNumberOrZero(_getChildByPath(Read<nint>(ren + 0x80), GameString.Create("mutations.birthdefectcount")));
-                        catStats[ren]["age"] = ReadNumberOrZero(_getChildByPath(Read<nint>(ren + 0x80), GameString.Create("age")));
-                        catStats[ren]["lev"] = ReadNumberOrZero(_getChildByPath(Read<nint>(ren + 0x80), GameString.Create("level")));
+                        var mutations = _getChild(movieclip, GameString.Create("mutations"));
+                        catStats[ren]["muc"] = ReadNumberOrZero(_getChild(mutations, GameString.Create("mutationcount")));
+                        catStats[ren]["bdc"] = ReadNumberOrZero(_getChild(mutations, GameString.Create("birthdefectcount")));
+                        catStats[ren]["age"] = ReadNumberOrZero(_getChildByPath(movieclip, GameString.Create("age")));
+                        catStats[ren]["lev"] = ReadNumberOrZero(_getChildByPath(movieclip, GameString.Create("level")));
                         
-                        var movieclip = Marshal.ReadIntPtr(ren + 0x80);
                         var avgTextbox = _getChild(movieclip, GameString.Create("average"));
                         _setText(avgTextbox, GameString.CreateUTF16GameString($"{averages[ren]}"));
 
