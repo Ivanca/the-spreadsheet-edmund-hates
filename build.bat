@@ -4,7 +4,7 @@ setlocal
 rem Run from the directory containing this .bat file
 cd /d "%~dp0"
 
-if "%1"=="--debugging" (
+if "%1"=="--dev" (
     rem Force kill any processes of Mewgenics.exe if there are any
     tasklist /FI "IMAGENAME eq Mewgenics.exe" 2>NUL | %windir%\System32\find.exe /I "Mewgenics.exe" >NUL
     if %ERRORLEVEL% EQU 0 (
@@ -122,7 +122,7 @@ copy /Y "swf\swflist.gon.append" "installer\mod\the_spreadsheet_edmund_hates\swf
 if errorlevel 1 exit /B 1
 echo Copied swflist.gon.append to installer\mod\the_spreadsheet_edmund_hates\swfs\swflist.gon.append
 
-if "%1"=="--debugging" (
+if "%1"=="--dev" (
     rem Copy the .NET mod to the live Mewgenics installation while live debugging
     copy /Y "bin\x64\Release\net8.0-windows\win-x64\publish\the_spreadsheet_edmund_hates.dll" "E:\SteamLibrary\steamapps\common\Mewgenics\mods\the_spreadsheet_edmund_hates\the_spreadsheet_edmund_hates.dll" >NUL
     if errorlevel 1 exit /B 1

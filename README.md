@@ -1,12 +1,18 @@
+# Installation
+
+Just go to [releases](https://github.com/Ivanca/the-spreadsheet-edmund-hates/releases/) and download the latest exe there, the wizard will guide you through.
+
+If you want to build it yourself just follow the guide down below.
+
 # Catstable Build Guide
 
-This repository builds a Windows mod for Mewgenics. The project is driven by `build.bat`, which does the full build flow: it kills any running Mewgenics processes, compiles the native bridge DLL, publishes the .NET mod, copies the generated files into the game install and installer folders, and then launches the game.
+This repository builds a Windows mod for Mewgenics. The project is driven by `build.bat`, which does the full build flow: Compiles the native bridge DLL, publishes the .NET mod, copies the generated files into the game install and installer folders, and then launches the game.
 
 ## What the build does
 
 The script performs these steps in order:
 
-1. Stops any running `Mewgenics.exe` and `x64dbg.exe` processes if needed.
+1. If the `--dev` flag is given it stops any running `Mewgenics.exe` and `x64dbg.exe` processes if running.
 2. Locates the latest installed Visual Studio build environment that includes the x64 C++ toolchain.
 3. Runs `vcvars64.bat` to set up the MSVC environment.
 4. Compiles the native C++ bridge:
@@ -16,8 +22,7 @@ The script performs these steps in order:
 7. Copies the native DLL and the mod assets to the live Mewgenics installation under the Steam path.
 8. Publishes the .NET mod with:
    - `dotnet publish -c Release -r win-x64 --self-contained`
-9. Copies the published `.dll` and `swf` files into both the installer folder and the live game mod folder.
-10. Starts `Mewgenics.exe`.
+9. If the `--dev` flag is given it copies the published `.dll` and `swf` files into both the installer folder and the live game mod folder and starts `Mewgenics.exe`.
 
 ## Requirements
 
@@ -106,13 +111,14 @@ If you passed `--include-installer`, ensure Inno Setup 7 is installed at:
 C:\Program Files\Inno Setup 7\ISCC.exe
 ```
 
-### Mewgenics installation not found
+To make things easier Mewtator and Mewjector are installed automatically when using the installer if they aren't found already, the installer copies Mewtator from `installer\vendor\Mewtator-1-0-5-1-1775012446.zip` and Mewjector from `installer\vendor\Release-218-3-3-1778034265.zip`, they are the exact same files found on nexus (e.g. you can check their checksum to confirm), to update to new versions of either just replace them from there and build again with the flag `--include-installer`.
 
-The script expects the mod folder under the Steam install path. If your game is elsewhere, update the copy targets in `build.bat`.
+### Dev mode
+
+To speed up development when using `--dev` flag the build files are  automatically copied to the Mewgenics folder after the build succeeds, update the location of your Mewgenics binary if you intend to use this flag.
 
 ## Notes
 
-- The script is intentionally a development build script, not a universal cross-platform build pipeline.
 - This project is built for Windows and targets the `win-x64` runtime.
 - The build starts the game automatically after a successful compilation, which is useful for rapid live debugging.
 
@@ -122,10 +128,12 @@ The script expects the mod folder under the Steam install path. If your game is 
 build.bat
 ```
 
-or
-
 ```bat
 build.bat --include-installer
 ```
 
-These commands build the native bridge, publish the .NET mod, copy it into the game folder, and launch Mewgenics for testing.
+```bat
+build.bat --dev
+```
+
+
