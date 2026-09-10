@@ -5,27 +5,29 @@ rem Run from the directory containing this .bat file
 cd /d "%~dp0"
 
 rem Force kill any processes of Mewgenics.exe if there are any
-tasklist /FI "IMAGENAME eq Mewgenics.exe" 2>NUL | find /I "Mewgenics.exe" >NUL
+tasklist /FI "IMAGENAME eq Mewgenics.exe" 2>NUL | %windir%\System32\find.exe /I "Mewgenics.exe" >NUL
 if %ERRORLEVEL% EQU 0 (
     echo Killing Mewgenics.exe processes...
     taskkill /IM Mewgenics.exe /F >NUL 2>&1
 ) else (
     echo No Mewgenics.exe processes found.
 )
+
 @REM wait one second:
-timeout /T 1 /NOBREAK >NUL
+%windir%\System32\timeout.exe /T 1 /NOBREAK >NUL
+
 @REM If mewgenics still open try to kill x64dbg.exe if there are any:
-tasklist /FI "IMAGENAME eq Mewgenics.exe" 2>NUL | find /I "Mewgenics.exe" >NUL
+tasklist /FI "IMAGENAME eq Mewgenics.exe" 2>NUL | %windir%\System32\find.exe /I "Mewgenics.exe" >NUL
 if %ERRORLEVEL% EQU 0 (
     echo Mewgenics.exe is still running.
-    tasklist /FI "IMAGENAME eq x64dbg.exe" 2>NUL | find /I "x64dbg.exe" >NUL
+    tasklist /FI "IMAGENAME eq x64dbg.exe" 2>NUL | %windir%\System32\find.exe /I "x64dbg.exe" >NUL
     if %ERRORLEVEL% EQU 0 (
         echo Killing x64dbg.exe processes...
         taskkill /IM x64dbg.exe /F >NUL 2>&1
     ) else (
         echo No x64dbg.exe processes found.
     )
-    timeout /T 1 /NOBREAK >NUL
+    %windir%\System32\timeout.exe /T 1 /NOBREAK >NUL
 ) else (
     echo Mewgenics.exe is not running.
 )
@@ -36,8 +38,8 @@ rem python find_dangerous_hooks.py
 rem python gen_hooks.py
 
 rem Remove obj and bin folders
-if exist "obj" rmdir /S /Q "obj"
-if exist "bin" rmdir /S /Q "bin"
+@REM if exist "obj" rmdir /S /Q "obj"
+@REM if exist "bin" rmdir /S /Q "bin"
 
 if "%1"=="--include-installer" (
     rem Create installer/mod if missing
@@ -93,7 +95,7 @@ if errorlevel 1 exit /B 1
 echo Copied CatsTableBridge.dll to installer\mod\catstable\CatsTableBridge.dll
 
 @REM wait 1 second or we get "The process cannot access the file because it is being used by another process"
-timeout /T 1 /NOBREAK >NUL
+%windir%\System32\timeout.exe /T 1 /NOBREAK >NUL
 
 rem Copy CatsTableBridge.dll to the live Mewgenics installation
 copy /Y "CatsTableBridge.dll" "E:\SteamLibrary\steamapps\common\Mewgenics\mods\catstable\CatsTableBridge.dll" >NUL

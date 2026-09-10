@@ -42,7 +42,9 @@ public partial class CatsTableMod
     unsafe static delegate* unmanaged<nint, nint> _endDay;
     unsafe static delegate* unmanaged<nint, nint> _goToMainMenu;
     unsafe static delegate* unmanaged<nint, nint, nint, nint, nint> _setCatData;
+    unsafe static delegate* unmanaged<nint, nint, nint, nint, nint> _fetchTranslation;
     unsafe static delegate* unmanaged<nint, nint, nint> _getChild;
+    unsafe static delegate* unmanaged<nint, nint, nint> _getChildByPath;
     unsafe static delegate* unmanaged<nint, nint, nint, void> _trackMovieclipChildParentOffset;
 
     unsafe static delegate* unmanaged<nint, nint, uint, void> _attachChild;
@@ -179,12 +181,17 @@ public partial class CatsTableMod
         
         _catStatsDrawerUpdate = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
             0xeb170, (void*)(delegate* unmanaged<nint, nint>)&CatStatsDrawerUpdateHook);
-        
+
+        _fetchTranslation = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+            0x4C340, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&FetchTranslationHook);
 
         LogStr($"Gamebase at {MewjectorApi.GameBase:X}...");
 
         assignString = (delegate* unmanaged<nint,char*,nuint,nint>)(MewjectorApi.GameBase + 0x5b150);
-        _getChild = (delegate* unmanaged<nint,nint,nint>)(MewjectorApi.GameBase +0x99a0e0);
+        _getChild = (delegate* unmanaged<nint,nint,nint>)(MewjectorApi.GameBase + 0x99a0e0);
+        _getChildByPath = (delegate* unmanaged<nint, nint, nint>)(MewjectorApi.GameBase + 0x99a1b0);
+        // _getChild = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+        //     0x99a0e0, (void*)(delegate* unmanaged<nint, nint, nint>)&GetChildHook); // useful for debugging
         _trackMovieclipChildParentOffset = (delegate* unmanaged<nint, nint, nint, void>)(MewjectorApi.GameBase + (nuint)0x204a80);
         _attachChild = (delegate* unmanaged<nint, nint, uint, void>)(MewjectorApi.GameBase + (nuint)0x999e40);
         _createCatStatsDrawer =  (delegate* unmanaged<nint, nint, nint>)(MewjectorApi.GameBase + (nuint)0x1ace50);
@@ -203,6 +210,47 @@ public partial class CatsTableMod
     static SortDirection sortByStatDirection = SortDirection.Descending;
     static Dictionary<nint, double> averages = new();
     static bool InsideSetCatData = false;
+    
+    static nint ageTranslated = 0;
+    static nint lvTranslated = 0;
+
+    [UnmanagedCallersOnly]
+    static unsafe nint FetchTranslationHook(nint a1, nint a2, nint a3, nint a4)
+    {
+        // return result;
+        if (!IsLikelyPointer(a3) || headersRenderer == 0)
+        {
+            return _fetchTranslation(a1, a2, a3, a4);
+        }
+        if (lvTranslated != 0 && ageTranslated != 0)
+        {
+            return _fetchTranslation(a1, a2, a3, a4);
+        }
+        var key = TryReadCString(Read<nint>(a3));
+        var target = key == "HOUSE_CAT_INFO_LEVEL" ? "level" : key == "HOUSE_CAT_INFO_AGE" ? "age" : "";
+        var result = _fetchTranslation(a1, a2, a3, a4);
+        if (target != "")
+        {            
+            var text = ReadUtf16CustomString(Read<nint>(result + 0x8) + 0x30);
+            if (target == "level")
+            {
+                lvTranslated = GameString.CreateUTF16GameString(text);
+            } else
+            {
+                ageTranslated = GameString.CreateUTF16GameString(text.Replace("{age}", "").Replace(": ", ""));
+            }
+        }
+        return result;
+    }
+
+
+    // [UnmanagedCallersOnly]
+    // static unsafe nint GetChildHook(nint a1, nint a2)
+    // {
+    //     // var name = Try
+    //     var needle = TryReadCString(a2);
+    //     return _getChild(a1, a2);
+    // }
 
     [UnmanagedCallersOnly]
     static unsafe nint SetCatDataHook(nint a1, nint a2, nint a3, nint a4)
@@ -232,61 +280,63 @@ public partial class CatsTableMod
         return _endDay(a1);
     }
 
+    int[] fixedArray = new int[500];
+
     [UnmanagedCallersOnly]
     static unsafe nint SetTextHook (nint a1, nint a2)
     {
-        if (!InsideSetCatData)
+        if (!InsideSetCatData || !IsMemReadable(a1 + 0x48, 8))
         {
             return _setText(a1, a2);
         }
         CountExecution(nameof(SetTextHook));
+        
 
-        var renderer = GetRenderer(a1);
-        if (rowRenderers.Length > 0 && rowRenderers.Contains(renderer))
-        {
-            if (!cachedPointers.Contains(a1)) {
-                cachedPointers.Add(a1);
-            } else {
-                // LogStr($"[HOOK] SetTextHook: a1=0x{a1:X} is already cached, skipping");
-                return _setText(a1, a2);
-            }
-            var stat = getStat(a1);
-            if (stat != "")
-            {
-                LogStr($"[HOOK] SetTextHook: a1=0x{a1:X} a2=0x{a2:X} is one of our row renderers, stat={stat}, renderer={renderer:X}");
-                var str = ReadUtf16CustomString(a2);
-                if (str == "")
-                {
-                    str = "0";
-                }
-                catStats[renderer][stat] = int.Parse(new string(str.Where(char.IsDigit).ToArray()));
-                // noop = Read<byte>((nint)MewjectorApi.GameBase + 0x60);
+        // var renderer = GetRenderer(a1);
+        // var stat = getStat(a1);
+        // if (rowRenderers.Length > 0 && stat != "" && rowRenderers.Contains(GetRenderer(a1)))
+        // {
+        //     noop = Read<byte>((nint)MewjectorApi.GameBase + 0x60);
+            
+        //     // if (!cachedPointers.Contains(a1)) {
+        //     //     cachedPointers.Add(a1);
+        //     // } else {
+        //     //     // LogStr($"[HOOK] SetTextHook: a1=0x{a1:X} is already cached, skipping");
+        //     //     return _setText(a1, a2);
+        //     // }
+        //     if (stat != "")
+        //     {
+        //         var renderer = GetRenderer(a1);
+        //         // LogStr($"[HOOK] SetTextHook: a1=0x{a1:X} a2=0x{a2:X} is one of our row renderers, stat={stat}, renderer={renderer:X}");
+        //         var str = ReadUtf16CustomString(a2);
+        //         LogStr($"[HOOK] After reading str str={str}");
+        //         if (str == "")
+        //         {
+        //             str = "0";
+        //         }
+        //         if (str.Contains("Age"))
+        //         {
+        //             // noop = Read<byte>((nint)MewjectorApi.GameBase + 0x60);
+        //         }
+        //         catStats[renderer][stat] = int.Parse(new string(str.Where(char.IsDigit).ToArray()));
+        //         // noop = Read<byte>((nint)MewjectorApi.GameBase + 0x60);
 
-                LogStr($"[HOOK] SetTextHook: updated catStats for renderer 0x{renderer:X}, stat={stat}, value={catStats[renderer][stat]}");
-                var index = Array.IndexOf(rowRenderers, renderer);
-                LogStr("2");
-                var preaverage = catStats[renderer]
-                    .Where(kv => kv.Key != "bdc" && kv.Key != "muc" && kv.Key != "lev" && kv.Key != "age");
-                LogStr("preaverage is: " + string.Join(", ", preaverage.Select(kv => $"{kv.Key}={kv.Value}")));
-                // if preaverage is empty, set average to 0
-                if (preaverage.Any())
-                {
-                    LogStr("3");
-                    var average = preaverage.Average(kv => kv.Value);
-                    LogStr("4");
-                    average = Math.Round(average, 1);
-                    LogStr("5");
-                    averages[renderer] = (double)average;
-                    LogStr("6");
-                    averagesDirty = true;
-                }
-                // LogStr($"[HOOK] SetTextHook: average={average} for renderer 0x{renderer:X} at index {index}");
-            }
-            // LogStr($"[HOOK] SetTextHook: a1=0x{a1:X} is one of our row renderers, text={str}, renderer={renderer:X}");
-            LogStr($"[HOOK] SetTextHook: finished processing a1=0x{a1:X} a2=0x{a2:X}");
-            noop = Read<byte>((nint)MewjectorApi.GameBase + 0x60);
+        //         LogStr($"[HOOK] SetTextHook: updated catStats for renderer 0x{renderer:X}, stat={stat}, value={catStats[renderer][stat]}");
+        //         var index = Array.IndexOf(rowRenderers, renderer);
+        //         var preaverage = catStats[renderer]
+        //             .Where(kv => kv.Key != "bdc" && kv.Key != "muc" && kv.Key != "lev" && kv.Key != "age");
+        //         if (preaverage.Any())
+        //         {
+        //             var average = preaverage.Average(kv => kv.Value);
+        //             average = Math.Round(average, 1);
+        //             averages[renderer] = (double)average;
+        //             averagesDirty = true;
+        //         }
+        //     }
+        //     // LogStr($"[HOOK] SetTextHook: a1=0x{a1:X} is one of our row renderers, text={str}, renderer={renderer:X}");
+        //     LogStr($"[HOOK] SetTextHook: finished processing a1=0x{a1:X} a2=0x{a2:X}");
 
-        }
+        // }
         return _setText(a1, a2);
     }
 
@@ -816,24 +866,30 @@ public partial class CatsTableMod
     unsafe static string ReadUtf16CustomString(nint address)
     {
         CountExecution(nameof(ReadUtf16CustomString));
+
         byte* obj = (byte*)address;
 
         ulong length = *(ulong*)(obj + 0x10);
+        ulong capacity = *(ulong*)(obj + 0x18);
 
         if (length == 0)
             return string.Empty;
 
-        if (length <= 8)
+        if (length > int.MaxValue)
+            throw new OverflowException("String length is too large.");
+
+        if (capacity <= 7)
         {
-            // Inline UTF-16 data begins at +0x00.
+            // Small-string optimization:
+            // UTF-16 characters are stored directly at +0x00.
             return new string(
                 (char*)(obj + 0x00),
                 0,
-                checked((int)length)
+                (int)length
             );
         }
 
-        // Long string: +0x00 contains the pointer.
+        // Heap-allocated string.
         char* str = *(char**)obj;
 
         if (str == null)
@@ -842,7 +898,7 @@ public partial class CatsTableMod
         return new string(
             str,
             0,
-            checked((int)length)
+            (int)length
         );
     }
     static nint openCloseBtn = 0;
@@ -949,9 +1005,24 @@ public partial class CatsTableMod
         }
         return Marshal.ReadIntPtr(movieClip + 0x40); // renderer
     }
+
+    static unsafe int ReadNumberOrZero(nint dynamicTextBox)
+    {
+        if (dynamicTextBox == 0)
+        {
+            return 0;
+        }
+        var str = ReadUtf16CustomString(dynamicTextBox + 0xB8);
+        if (str == "")
+        {
+            return 0;
+        }
+        return int.Parse(new string(str.Where(char.IsDigit).ToArray()));
+    }
    
     static bool averagesDirty = false;
     static bool positionDirty = false;
+    static List<nint> panelsWithData = new();
     [UnmanagedCallersOnly]
     static unsafe nint GameTickHook(nint a1)
     {
@@ -961,26 +1032,7 @@ public partial class CatsTableMod
 
         // 00007FF646AD4C40
         // [[[rcx+0x18]+0x28]] or [[[rcx+0x18]+0x28]+10]
-        if (averagesDirty)
-        {
-            // LogStr($"[HOOK] GameTickHook: updating averages for {averages.Count} renderers");
-            foreach (var renderer in averages.Keys)
-            {
-                var average = averages[renderer];
-                var movieclip = Marshal.ReadIntPtr(renderer + 0x80);
-                var avgTextbox = _getChild(movieclip, GameString.Create("average"));
-                if (avgTextbox == 0)
-                {
-                    LogStr($"[HOOK] GameTickHook: WARNING! avgTextbox is 0 for renderer 0x{renderer:X}");
-                    return 0;
-                }
-                _setText(avgTextbox, GameString.CreateUTF16GameString($"{average}"));
-                // LogStr($"[HOOK] GameTickHook: average={average} for renderer 0x{renderer:X}");
-            }
-            averagesDirty = false;
-            
-            // LogStr($"[HOOK] GameTickHook: average={average} total={total} count={count}");
-        }
+      
 
 
         if (originalDrawer != 0 && totalCatsCount == -1) {
@@ -1063,6 +1115,48 @@ public partial class CatsTableMod
             {
                 currentlyHoveredDrawer = 0;
             }
+
+            if (panelsWithData.Count != totalCatsCount)
+            {
+                foreach (var ren in visibleRenderers)
+                {
+                    if (!panelsWithData.Contains(ren))
+                    {
+                        
+                        catStats[ren]["dex"] = ReadNumberOrZero(_getChildByPath(Read<nint>(ren + 0x80), GameString.Create("dexfancy.total")));
+                        catStats[ren]["spd"] = ReadNumberOrZero(_getChildByPath(Read<nint>(ren + 0x80), GameString.Create("spdfancy.total")));
+                        catStats[ren]["cha"] = ReadNumberOrZero(_getChildByPath(Read<nint>(ren + 0x80), GameString.Create("chafancy.total")));
+                        catStats[ren]["str"] = ReadNumberOrZero(_getChildByPath(Read<nint>(ren + 0x80), GameString.Create("strfancy.total")));
+                        catStats[ren]["int"] = ReadNumberOrZero(_getChildByPath(Read<nint>(ren + 0x80), GameString.Create("intfancy.total")));
+                        catStats[ren]["lck"] = ReadNumberOrZero(_getChildByPath(Read<nint>(ren + 0x80), GameString.Create("lckfancy.total")));
+                        catStats[ren]["con"] = ReadNumberOrZero(_getChildByPath(Read<nint>(ren + 0x80), GameString.Create("confancy.total")));
+                        averages[ren] = (double)Math.Round(catStats[ren].Average(kv => kv.Value), 1);
+                        catStats[ren]["muc"] = ReadNumberOrZero(_getChildByPath(Read<nint>(ren + 0x80), GameString.Create("mutations.mutationcount")));
+                        catStats[ren]["bdc"] = ReadNumberOrZero(_getChildByPath(Read<nint>(ren + 0x80), GameString.Create("mutations.birthdefectcount")));
+                        catStats[ren]["age"] = ReadNumberOrZero(_getChildByPath(Read<nint>(ren + 0x80), GameString.Create("age")));
+                        catStats[ren]["lev"] = ReadNumberOrZero(_getChildByPath(Read<nint>(ren + 0x80), GameString.Create("level")));
+                        
+                        var movieclip = Marshal.ReadIntPtr(ren + 0x80);
+                        var avgTextbox = _getChild(movieclip, GameString.Create("average"));
+                        _setText(avgTextbox, GameString.CreateUTF16GameString($"{averages[ren]}"));
+
+                        LogStr($"[HOOK] GameTickHook: dex={catStats[ren]["dex"]} spd={catStats[ren]["spd"]} cha={catStats[ren]["cha"]} str={catStats[ren]["str"]} int={catStats[ren]["int"]} lck={catStats[ren]["lck"]} con={catStats[ren]["con"]} muc={catStats[ren]["muc"]} bdc={catStats[ren]["bdc"]} for ren 0x{ren:X}");
+                        panelsWithData.Add(ren);
+                    }
+                }
+            }
+
+            if (lvTranslated > 0 && ageTranslated > 0)
+            {
+                var rootMovieclip = Read<nint>(headersRenderer + 0x80);
+                var textbox = _getChild(rootMovieclip, GameString.Create("level_header"));
+                _setText(textbox, lvTranslated);
+                textbox = _getChild(rootMovieclip, GameString.Create("age_header"));
+                _setText(textbox, ageTranslated);
+                lvTranslated = -1;
+                ageTranslated = -1;
+            }
+
         }
 
         return result;
@@ -1249,6 +1343,7 @@ public partial class CatsTableMod
             rendererFound = _getRenderer(rowEntity);
             insideOurCatInstantiation = true;
             attachRendererIteration = 0;
+            // sleep for 0.1 seconds
             var rowDrawer = _createCatStatsDrawer(
                 scenePtr,
                 rowEntity);
@@ -1268,7 +1363,7 @@ public partial class CatsTableMod
             Dictionary<string, int> dict = new();
             catStats[rowRenderer] = dict;
 
-            Write(rowRenderer + 0x51, (byte)0);
+            // Write(rowRenderer + 0x51, (byte)0);
             LogStr($"Initialized catStats dictionary for renderer {rowRenderer:X}");
 
             // var menuPanel = Marshal.ReadIntPtr(rowDrawer + 0x60);
@@ -1293,6 +1388,7 @@ public partial class CatsTableMod
             // Write(testbutton + 0x50, 0x000003EA);
 
         }
+        forcedCatStatsUpdatePending = rowRenderers.Length;
 
         Write(originalHousePanel + 0x118, originalDrawer);
         
@@ -1437,6 +1533,8 @@ public partial class CatsTableMod
         rowTransforms = Array.Empty<nint>();
         rowDrawers = Array.Empty<nint>();
         rowRenderers = Array.Empty<nint>();
+        lvTranslated = 0;
+        ageTranslated = 0;
         totalCatsCount = -1;
         headersRenderer = 0;
         footerRenderer = 0;
