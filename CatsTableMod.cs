@@ -13,7 +13,7 @@ namespace TheSpredsheetEdmundHates;
 
 public partial class TheSpredsheetEdmundHates
 {
-    static bool _debugLogging = true;
+    static bool _debugLogging = false;
 
     static unsafe delegate* unmanaged<nint, nint> _updatePanelLayout;
 
