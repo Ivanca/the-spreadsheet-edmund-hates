@@ -25,7 +25,9 @@ public partial class TheSpredsheetEdmundHates
             (MewjectorApi.GameBase + (nuint)0x97b130);
 
     }
-
+    static nint[] hoveredAreasCache = new nint[0];
+    static double[] prevMouse = new double[2];
+    static int lastReturnedRenderer = -1;
     unsafe static int GetRendererIndexWhereMouseIsHitting()
     {
         if (MainCamera == 0)
@@ -36,12 +38,29 @@ public partial class TheSpredsheetEdmundHates
         {
             _getMousePosition(MainCamera, mousePtr);
         }
+        if (prevMouse[0] == mouse[0] && prevMouse[1] == mouse[1])
+        {
+            return lastReturnedRenderer;
+        }
+        prevMouse[0] = mouse[0];
+        prevMouse[1] = mouse[1];
+        if (hoveredAreasCache.Length != rowRenderers.Length)
+        {
+            hoveredAreasCache = new nint[rowRenderers.Length];
+        }
         for (int i = 0; i < rowRenderers.Length; i++)
         {
             var renderer = rowRenderers[i];
-
-            var rootMovieclip = Read<nint>(renderer + 0x80);
-            var movieclip = _getChild(rootMovieclip, GameString.Create("hover_area"));
+            nint movieclip = 0;
+            if (hoveredAreasCache[i] != 0)
+            {
+                movieclip = hoveredAreasCache[i];
+            } else
+            {
+                var rootMovieclip = Read<nint>(renderer + 0x80);
+                movieclip = _getChild(rootMovieclip, GameString.Create("hover_area"));
+                hoveredAreasCache[i] = movieclip;
+            }
 
             double[] output = new double[2];
 
@@ -82,9 +101,11 @@ public partial class TheSpredsheetEdmundHates
             if (inside)
             {
                 // LogStr($"[HOOK] ClickHandlerHook: mouse is inside bounds of renderer index {i} pointer: 0x{renderer:X}");
+                lastReturnedRenderer = i;
                 return i;
             }
         }
+        lastReturnedRenderer = -1;
         return -1;
     }
 

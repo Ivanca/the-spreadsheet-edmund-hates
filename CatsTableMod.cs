@@ -279,7 +279,7 @@ public partial class TheSpredsheetEdmundHates
     [UnmanagedCallersOnly]
     static unsafe nint EndDayHook(nint a1)
     {
-        // CountExecution(nameof(EndDayHook));
+        CountExecution(nameof(EndDayHook));
         LogStr($"[HOOK] EndDayHook: a1=0x{a1:X}");
         ClearState();
         return _endDay(a1);
@@ -376,6 +376,7 @@ public partial class TheSpredsheetEdmundHates
     static nint currentlyDrawerWithOpenIconsPanel = 0;
     static nint currentlyHoveredDrawer = 0;
     static nint forcedCatStatsUpdatePending = 0;
+
     [UnmanagedCallersOnly]
     static unsafe nint CatStatsDrawerUpdateHook(nint a1)
     {
@@ -479,14 +480,7 @@ public partial class TheSpredsheetEdmundHates
             changed = true;
             panelAnimationInProgress = true;
             waitingForPanelStatus = PanelStateOpen;
-            if (rowRenderers.Length >= cachedVisibleCats.Length)
-            {
-                for (int i = 0; i < cachedVisibleCats.Length; i++)
-                {
-                    var rowRenderer = rowRenderers[i];
-                    Write(rowRenderer + 0x51, (byte)1);
-                }
-            }
+
         } else
         {
             // LogStr($"[HOOK] Panel state unchanged, panel={panel:X}, state={state:X} originalHousePanel={originalHousePanel:X} ourPanelIsOpen={ourPanelIsOpen}");
@@ -502,6 +496,7 @@ public partial class TheSpredsheetEdmundHates
 
 
     static nint _lastButtonCSD = 0;
+    static nint _lastButtonReturned = 0;
     [UnmanagedCallersOnly]
     static unsafe nint FindButtonHook(nint a1, nint a2, nint a3)
     {
@@ -513,12 +508,17 @@ public partial class TheSpredsheetEdmundHates
         CountExecution(nameof(FindButtonHook));
         if (result != 0)
         {
+            if (_lastButtonReturned != result)
+            {
+                _lastButtonCSD = Read<nint>(Read<nint>(Read<nint>(Read<nint>(result + 0x38) + 0x18) + 0x28) + 0x10);
+                _lastButtonReturned = result;
+            }
             // LogStr($"[HOOK] result!=0 {result:X} x={x:X}");
-            _lastButtonCSD = Read<nint>(Read<nint>(Read<nint>(Read<nint>(result + 0x38) + 0x18) + 0x28) + 0x10);
         } else
         {
             // LogStr($"[HOOK] EMPTY! _lastButtonCSD = 0");
             _lastButtonCSD = 0;
+            _lastButtonReturned = 0;
         }
         return result;
     }
@@ -1052,9 +1052,13 @@ public partial class TheSpredsheetEdmundHates
         {
             handlePositionOfOurPanel();
         }
-        if (originalDrawer != 0 && framesSinceInitialCatStatsDrawer < 10000)
+        if (originalDrawer != 0)
         {
             framesSinceInitialCatStatsDrawer++;
+            if (framesSinceInitialCatStatsDrawer >= 100000)
+            {
+                framesSinceInitialCatStatsDrawer = 0;
+            }
         }
 
         if (ourPanelIsOpen)
@@ -1344,6 +1348,8 @@ public partial class TheSpredsheetEdmundHates
     [UnmanagedCallersOnly]
     static unsafe Renderer* CreateUiRendererHook(nint a1, nint entity, nint namePtr)
     {
+        // if (scenePtr == 0)
+        // {    
         CountExecution(nameof(CreateUiRendererHook));
         var name = TryReadCString(namePtr);
         if (name == "HouseCatStatus")
@@ -1351,6 +1357,7 @@ public partial class TheSpredsheetEdmundHates
             LogStr($"[HOOK] CreateUiRendererHook: a1=0x{a1:X}, entity=0x{entity:X}, name=\"{name}\"");
             scenePtr = a1;
         }
+        // }
 
         return _createUiRenderer(a1, entity, namePtr);
     }
@@ -1361,6 +1368,10 @@ public partial class TheSpredsheetEdmundHates
     private const int PanelStateOpen = 37;
     static int waitingForPanelStatus = 0;
     static nint catMenuPanel = 0;
+
+    static nint dirtyPanelLayout = 0;
+
+    static nint lastFrameWhenItRan = 0;
 
     [UnmanagedCallersOnly]
     static unsafe nint UpdatePanelLayoutHook(nint a1)
@@ -1386,8 +1397,6 @@ public partial class TheSpredsheetEdmundHates
         }
 
         var result = _updatePanelLayout(a1);
-        updateRowTransforms();
-
 
         var rendererState = Marshal.ReadInt32(renderer + 0x54);
         if (rendererState == waitingForPanelStatus)
@@ -1412,18 +1421,31 @@ public partial class TheSpredsheetEdmundHates
                 LogStr($"[HOOK] 2- Pane is closed and animation finished: xOffset {xOffset} xOffsetTarget {xOffsetTarget}");
             }
         }
+
+        if (!ourPanelIsOpen && !panelAnimationInProgress)
+        {
+            // hide our renderers:
+            foreach (var rendererToHide in rowRenderers)
+            {
+                Write(rendererToHide + 0x51, (byte)0);
+            }
+        } else
+        {
+            updateRowTransforms();
+        }
         return result;
     }
 
     static unsafe void ClearState()
     {
-        // CountExecution(nameof(RemoveMovieClip));
         LogStr($"ClearState called");
         // LogStr($"[HOOK] RemoveMovieClip called on mod container 0x{a1:X}");
         sortedPositions = new Dictionary<nint, int>();
+        scenePtr = 0;
         catMenuPanel = 0;
         originalHousePanel = 0;
         originalDrawer = 0;
+        hoveredAreasCache = Array.Empty<nint>();
         rowTransforms = Array.Empty<nint>();
         rowDrawers = Array.Empty<nint>();
         rowRenderers = Array.Empty<nint>();
