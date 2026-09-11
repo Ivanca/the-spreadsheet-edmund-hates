@@ -4,6 +4,10 @@ Just go to [releases](https://github.com/Ivanca/the-spreadsheet-edmund-hates/rel
 
 If you want to build it yourself just follow the guide down below.
 
+# Manual Installation with Mewtator
+
+If you already have Mewtator installed and want to install this mod without using the wizard, first download this project as a zip (click the green button, then "Download zip"), unpack that zip file, then copy the folder called `the_spreadsheet_edmund_hates` that you will find `catstable\installer\mod` into the folder where Mewtator looks for the mods, usually at `Mewtator\mods\` or similar.
+
 # Catstable Build Guide
 
 This repository builds a Windows mod for Mewgenics. The project is driven by `build.bat`, which does the full build flow: Compiles the native bridge DLL, publishes the .NET mod, copies the generated files into the game install and installer folders, and then launches the game.
