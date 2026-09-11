@@ -6,7 +6,7 @@ If you want to build it yourself just follow the guide down below.
 
 # Manual Installation with Mewtator
 
-If you already have Mewtator installed and want to install this mod without using the wizard, first download this project as a zip (click the green button, then "Download zip"), unpack that zip file, then copy the folder called `the_spreadsheet_edmund_hates` that you will find `catstable\installer\mod` into the folder where Mewtator looks for the mods, usually at `Mewtator\mods\` or similar.
+If you already have Mewtator installed and want to install this mod without using the wizard, first download this project as a zip (click the green button, then "Download zip"), unpack that zip file, then copy the folder called `the_spreadsheet_edmund_hates` that you will find at `catstable\installer\mod` into the folder where Mewtator looks for mods, usually at `Mewtator\mods\` or a similar location.
 
 # Catstable Build Guide
 
