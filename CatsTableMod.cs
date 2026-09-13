@@ -29,7 +29,7 @@ public partial class TheSpredsheetEdmundHates
     static unsafe delegate* unmanaged<nint, nint> _initCatStatsClickCallback;
     static unsafe delegate* unmanaged<nint, nint> _toggleHouseDrawer;
     static unsafe delegate* unmanaged<nint, nint, nint> _clickHandler;
-    static unsafe delegate* unmanaged<nint, nint, nint> _mutationToolTip;
+    static unsafe delegate* unmanaged<nint, nint, nint> _mutationTooltip;
     static unsafe delegate* unmanaged<nint, nint, nint, nint> _createMenuPanel;
 
     unsafe static delegate* unmanaged<nint, nint, nint> _mouseEventHandler;
@@ -101,12 +101,12 @@ public partial class TheSpredsheetEdmundHates
 
     internal unsafe void MjInit()
     {
-        // var tenSecondsAfterNow = DateTime.Now.AddSeconds(15);
-        // LogStr($"Waiting for 15 seconds to connect using x64dbg...");
-        // while (DateTime.Now < tenSecondsAfterNow)
-        // {
-        //     Thread.Sleep(1);
-        // }
+        var tenSecondsAfterNow = DateTime.Now.AddSeconds(15);
+        LogStr($"Waiting for 15 seconds to connect using x64dbg...");
+        while (DateTime.Now < tenSecondsAfterNow)
+        {
+            Thread.Sleep(1);
+        }
 
         var buffer = new StringBuilder(32768);
         uint length = GetModuleFileName(IntPtr.Zero, buffer, buffer.Capacity);
@@ -118,6 +118,9 @@ public partial class TheSpredsheetEdmundHates
         {
             LogStr("Binary validation failed.");
             return;
+        } else
+        {
+            LogStr("Binary validation succeeded.");
         }
 
         Autoinjector();
@@ -137,7 +140,7 @@ public partial class TheSpredsheetEdmundHates
             0xef570, (void*)(delegate* unmanaged<nint, nint, nint, nint>)&CreatePanelHook);
 
         _registerButton = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
-            0x97C070, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&RegisterCallbackHook);
+            0x97c070, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&RegisterCallbackHook);
 
         _statsCreator = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
             0xE9AC0, (void*)(delegate* unmanaged<nint, nint>)&CreateCatStatsDrawerHook);
@@ -163,7 +166,7 @@ public partial class TheSpredsheetEdmundHates
         _catIterator = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0xED220, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&CatIteratorHook);
 
-        _mutationToolTip = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+        _mutationTooltip = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0xE5500, (void*)(delegate* unmanaged<nint, nint, nint>)&MutationTooltipHook); 
 
         
@@ -222,6 +225,7 @@ public partial class TheSpredsheetEdmundHates
     [UnmanagedCallersOnly]
     static unsafe nint FetchTranslationHook(nint a1, nint a2, nint a3, nint a4)
     {
+        // return _fetchTranslation(a1, a2, a3, a4);
         // return result;
         if (!IsLikelyPointer(a3) || (nint)headersRenderer == 0)
         {
@@ -252,6 +256,7 @@ public partial class TheSpredsheetEdmundHates
     // [UnmanagedCallersOnly]
     // static unsafe nint GetChildHook(nint a1, nint a2)
     // {
+    // return _getChild(a1, a2);
     //     // var name = Try
     //     var needle = TryReadCString(a2);
     //     return _getChild(a1, a2);
@@ -260,6 +265,7 @@ public partial class TheSpredsheetEdmundHates
     [UnmanagedCallersOnly]
     static unsafe nint SetCatDataHook(nint a1, nint a2, nint a3, nint a4)
     {
+        // return _setCatData(a1, a2, a3, a4);
         LogStr($"[HOOK] SetCatDataHook: a1=0x{a1:X}, a2=0x{a2:X}, a3=0x{a3:X}, a4=0x{a4:X}");
         InsideSetCatData = true;
         var result = _setCatData(a1, a2, a3, a4);
@@ -271,6 +277,7 @@ public partial class TheSpredsheetEdmundHates
     [UnmanagedCallersOnly]
     static unsafe nint GoToMainMenuHook(nint a1)
     {
+        // return _goToMainMenu(a1);
         LogStr($"[HOOK] GoToMainMenuHook: a1=0x{a1:X}");
         ClearState();
         return _goToMainMenu(a1);
@@ -279,6 +286,7 @@ public partial class TheSpredsheetEdmundHates
     [UnmanagedCallersOnly]
     static unsafe nint EndDayHook(nint a1)
     {
+        // return _endDay(a1);
         CountExecution(nameof(EndDayHook));
         LogStr($"[HOOK] EndDayHook: a1=0x{a1:X}");
         ClearState();
@@ -288,6 +296,7 @@ public partial class TheSpredsheetEdmundHates
     [UnmanagedCallersOnly]
     static unsafe nint ClickHandlerHook(nint a1, nint a2)
     {
+        // return _clickHandler(a1, a2);
         CountExecution(nameof(ClickHandlerHook));
 
         if (a1 != 0 && IsMemReadable(a1 + 0x48, 8))
@@ -374,12 +383,13 @@ public partial class TheSpredsheetEdmundHates
     }
 
     static nint currentlyDrawerWithOpenIconsPanel = 0;
-    static nint currentlyHoveredDrawer = 0;
+    static nint currentlyHoveredIndex = -1;
     static nint forcedCatStatsUpdatePending = 0;
 
     [UnmanagedCallersOnly]
     static unsafe nint CatStatsDrawerUpdateHook(nint a1)
     {
+        // return _catStatsDrawerUpdate(a1);
         if (forcedCatStatsUpdatePending > 0)
         {
             forcedCatStatsUpdatePending--;
@@ -387,7 +397,7 @@ public partial class TheSpredsheetEdmundHates
         {
             if (currentlyDrawerWithOpenIconsPanel == 0)
             {
-                if (currentlyHoveredDrawer != a1)
+                if (currentlyHoveredIndex == -1 || rowDrawers[currentlyHoveredIndex] != a1)
                 {
                     return 0;
                 }
@@ -422,18 +432,59 @@ public partial class TheSpredsheetEdmundHates
     [UnmanagedCallersOnly]
     static unsafe nint CatIteratorHook (nint a1, nint a2, nint a3, nint a4)
     {
+        if (cachedVisibleCats.Length > 0)
+        {
+            // we already have cached visible cats, the first one is the important
+            LogStr($"[HOOK] Skipping CatIteratorHook: a1={a1:X} a2={a2:X} a3={a3} a4={a4:X}");
+            for (int i = 0; i < a3; i++) {
+                if (IsMemReadable(a1 + i * 8, 8))
+                {   
+                    LogStr($"[HOOK] Skipping CatIteratorHook: Marshal.ReadIntPtr(a1 + i * 8, 8) = {Marshal.ReadIntPtr(a1 + i * 8):X}");
+                }
+            }
+            return _catIterator(a1, a2, a3, a4);
+        }
+        // return _catIterator (a1, a2, a3, a4);
         CountExecution(nameof(CatIteratorHook));
 
         cachedVisibleCats = new nint[a3];
         LogStr($"[HOOK] CatIteratorHook: a1={a1:X} a2={a2:X} a3={a3} a4={a4:X}");
 
+        var j = 0;
         for (int i = 0; i < a3; i++) {
-            cachedVisibleCats[i] = Marshal.ReadIntPtr(a1 + i * 8);
-            LogStr($"[HOOK] CatIteratorHook: cachedVisibleCats[{i}] = {cachedVisibleCats[i]:X}");
+            // if (a1 + j * 8 == a2)
+            // {
+            //     j = j - (int)a3 ;
+            // }
+            cachedVisibleCats[j] = Marshal.ReadIntPtr(a1 + j * 8);
+            LogStr($"[HOOK] CatIteratorHook: cachedVisibleCats[{j}] = {cachedVisibleCats[j]:X}");
+            j++;
         }
             
         var result = _catIterator(a1, a2, a3, a4);
         return result;
+    }
+
+    static void setActiveAllOurButtons(bool active, nint? specificRenderer = null)
+    {
+        var indexOnly = -1;
+        if (specificRenderer.HasValue)
+        {
+            indexOnly = Array.IndexOf(rowRenderers, specificRenderer.Value);
+        }
+        for (var i = 0; i < buttonsInsideOurDrawers.Count; i++)
+        {
+            if (indexOnly != -1 && i != indexOnly)
+            {
+                continue;
+            }
+            var buttonContainer = buttonsInsideOurDrawers[i];
+            foreach (var button in buttonContainer)
+            {
+                Write(button + 0x10, (byte)(active ? 1 : 0)); // set button active state
+                LogStr($"[HOOK] Setting button at {button:X} to {(active ? "active" : "inactive")}");
+            }
+        }
     }
 
 
@@ -442,6 +493,7 @@ public partial class TheSpredsheetEdmundHates
     [UnmanagedCallersOnly]
     static unsafe nint ToggleHouseDrawerHook(nint a1)
     {
+        // return _toggleHouseDrawer(a1);
         if (originalHousePanel == 0)
         {
             return _toggleHouseDrawer(a1);
@@ -459,6 +511,25 @@ public partial class TheSpredsheetEdmundHates
             changed = true;
             panelAnimationInProgress = true;
             waitingForPanelStatus = PanelStateClosed;
+            setActiveAllOurButtons(false);
+            foreach (var catPart in catPartsInsideOurDrawers)
+            {
+                if (catPart != 0)
+                {
+                    LogStr($"[HOOK] Disabling cat part at {catPart:X}");
+                    Write(catPart + 0x10, (byte)0); // disable cat part
+                }
+            }
+            foreach (var transform in rowTransforms)
+            {
+                if (transform != 0)
+                {
+                    LogStr($"[HOOK] Disabling row transform at {transform:X}");
+                    Write(transform + 0x10, (byte)0); // disable row transform
+                    Write(transform + 0xF, (byte)1); // enable pause state on row transform
+                }
+            }
+
         }
         else if (panel == originalHousePanel && !ourPanelIsOpen && state == 1)
         {
@@ -500,6 +571,7 @@ public partial class TheSpredsheetEdmundHates
     [UnmanagedCallersOnly]
     static unsafe nint FindButtonHook(nint a1, nint a2, nint a3)
     {
+        // return _findButton(a1, a2, a3);
         var result = _findButton(a1, a2, a3);
         if (!ourPanelIsOpen)
         {
@@ -526,6 +598,7 @@ public partial class TheSpredsheetEdmundHates
     [UnmanagedCallersOnly]
     static unsafe nint MutationTooltipHook(nint a1, nint a2)
     {
+        // return _mutationTooltip(a1, a2);
         // MutationTooltip has an issue that it wasn't build with multiple catStatsDrawers instances in mind
         // We need to compare it with the CatStatDrawer instance we get from FindButtonHook to make it work
         CountExecution(nameof(MutationTooltipHook));
@@ -542,7 +615,7 @@ public partial class TheSpredsheetEdmundHates
             if (opt1 == _lastButtonCSD || opt2 == _lastButtonCSD)
             {
                 // LogStr($"[HOOK] MATCH!");
-                return _mutationToolTip(a1, a2);
+                return _mutationTooltip(a1, a2);
             }
             else
             {
@@ -551,7 +624,7 @@ public partial class TheSpredsheetEdmundHates
             }
         }
         // LogStr($"[HOOK] _lastButtonCSD == 0");
-        return _mutationToolTip(a1, a2);
+        return _mutationTooltip(a1, a2);
     }
 
     
@@ -566,7 +639,7 @@ public partial class TheSpredsheetEdmundHates
             return;
 
         initializedButtons = true;
-
+        LogStr("Initializing buttons..., headers renderer = " + (nint)headersRenderer);
         nint headersEntity = Marshal.ReadIntPtr((nint)headersRenderer + 0x18);
         nint callbackVtable = Marshal.AllocHGlobal(0x30);
 
@@ -590,10 +663,12 @@ public partial class TheSpredsheetEdmundHates
         // Create a MenuPanel for the RowHeaders renderer/entity.
         // ------------------------------------------------------------
         // var menuEntity = _createEntity(headersEntity);
+        LogStr("Creating headerMenuPanel...");
         var _createMenuPanel =
             (delegate* unmanaged<nint, nint, nint>)
             (MewjectorApi.GameBase + 0xe9340);;
 
+        LogStr("Calling _createMenuPanel for headerMenuPanel...");
         nint headerMenuPanel = _createMenuPanel(
             headersEntity,
             GameString.Create("row_headers")
@@ -650,6 +725,7 @@ public partial class TheSpredsheetEdmundHates
     [UnmanagedCallersOnly]
     static nint TestButtonCallback(nint callbackObject)
     {
+        // return _callbackObject);
         // This is never executed, don't know why, doesn't matter because
         // we just intercept our buttons at ClickHandlerHook
         return 0;
@@ -665,9 +741,10 @@ public partial class TheSpredsheetEdmundHates
     [UnmanagedCallersOnly]
     static unsafe nint MouseWheelHook(nint a1, nint a2)
     {
+        // return _mouseEventHandler(a1, a2);
         if(ourPanelIsOpen && IsLikelyPointer(a2))
         {   
-            var somethingCoveringOurPanel = Read<bool>(Read<nint>(originalDrawer + 0x20) + 0x4DA);
+            var somethingCoveringOurPanel = Read<bool>(originalDrawerParent + 0x4DA);
 
             var a2Val = Marshal.ReadInt32(a2);
             if (a2Val == 1027 && !somethingCoveringOurPanel)
@@ -709,33 +786,34 @@ public partial class TheSpredsheetEdmundHates
 
     unsafe static bool _insideHouseCatByOffset = false;
     unsafe static int totalCatsCount = -1;
-    unsafe static bool _refreshPending = false;
 
     [UnmanagedCallersOnly]
     static unsafe nint GetHouseCatByOffsetHook(nint a1, nint a2)
     {
+        // return _getHouseCatByOffset(a1, a2);
         CountExecution(nameof(GetHouseCatByOffsetHook));
 
         _insideHouseCatByOffset = true;
         nint result;
         if (isIteratingOurDrawers)
         {
-            // LogStr($"[HOOK] GetHouseCatByOffsetHook: returning cached cat at index {_catIndex}");
+            LogStr($"[HOOK] GetHouseCatByOffsetHook: returning cached cat at index {_catIndex}");
             if ((uint)_catIndex >= (uint)cachedVisibleCats.Length)
             {
+                LogStr($"[HOOK] GetHouseCatByOffsetHook: _catIndex {_catIndex} is out of range for cachedVisibleCats.Length {cachedVisibleCats.Length}");
                 _insideHouseCatByOffset = false;
                 return 0;
             }
 
             result = cachedVisibleCats[_catIndex];
-            // LogStr($"[HOOK] GetHouseCatByOffsetHook: cachedVisibleCats result={result:X}");
+            LogStr($"[HOOK] GetHouseCatByOffsetHook: cachedVisibleCats result={result:X}");
         } else
         {
-            // LogStr($"Getting cat at {a1:X} {a2:X}");
+            LogStr($"Getting cat at {a1:X} {a2:X}");
             result = _getHouseCatByOffset(a1, a2);
         }
         _insideHouseCatByOffset = false;
-        // LogStr($"[HOOK] GetHouseCatByOffsetHook: result={result:X}");
+        LogStr($"[HOOK] GetHouseCatByOffsetHook: result={result:X}");
         return result;
     }
 
@@ -743,27 +821,52 @@ public partial class TheSpredsheetEdmundHates
     unsafe static int _catIndex = 0;
     unsafe static bool isIteratingOurDrawers = false;
     unsafe static List<nint> visibleRenderers = new();
+    static int disableButtonsInTicks = -1;
     [UnmanagedCallersOnly]
     static unsafe nint InitCatStatsCallbackHook(nint a1)
     {   
+        // return _initCatStatsClickCallback(a1);
         CountExecution(nameof(InitCatStatsCallbackHook));
 
         LogStr($"[HOOK] InitCatStatsCallbackHook called: a1=0x{a1:X}");
         Write(a1 + 0x8, originalDrawer);
+        cachedVisibleCats = new nint[0];
         var result = _initCatStatsClickCallback(a1);
 
         // nint result = 0;
         isIteratingOurDrawers = true;
         _catIndex = 0;
         visibleRenderers = new();
-
+        catPartsInsideOurDrawers = new nint[rowDrawers.Length * 3];
+        setActiveAllOurButtons(true);
+        
         try
         {
-            foreach (var drawer in rowDrawers)
+            for (int i = 0; i < rowDrawers.Length; i++)
             {
+                var drawer = rowDrawers[i];
+                Write(drawer + 0x10, (byte)1); // enable drawer
                 Write(a1 + 0x8, drawer);
+                LogStr($"[HOOK] InitCatStatsCallbackHook: iterating drawer {i} at address {drawer:X}");
                 result = _initCatStatsClickCallback(a1);
-                visibleRenderers.Add(Marshal.ReadIntPtr(drawer + 0x40));
+                LogStr($"[HOOK] InitCatStatsCallbackHook: after iterating drawer {i} at address {drawer:X}");
+                var catParts1 = Read<nint>(drawer + 0x48);
+                var catParts2 = Read<nint>(drawer + 0x50);
+                var catParts3 = Read<nint>(drawer + 0x58);
+                LogStr($"[HOOK] InitCatStatsCallbackHook: after read cat parts for drawer {i} at address {drawer:X} catParts1={catParts1:X} catParts2={catParts2:X} catParts3={catParts3:X}");
+                catPartsInsideOurDrawers[i * 3] = catParts1;
+                catPartsInsideOurDrawers[i * 3 + 1] = catParts2;
+                catPartsInsideOurDrawers[i * 3 + 2] = catParts3;
+                var renderer = Marshal.ReadIntPtr(drawer + 0x40);
+                var transform = Marshal.ReadIntPtr(renderer + 0x40);
+                Write(transform + 0x10, (byte)1); // enable transform
+                Write(transform + 0xF, (byte)0); // enable row transform
+                visibleRenderers.Add(renderer);
+                Write(renderer + 0x51, (byte)1); // show renderer
+                Write(renderer + 0x10, (byte)1); // enable renderer
+                Write(catParts1 + 0x10, (byte)1); // enable cat part 1
+                Write(catParts2 + 0x10, (byte)1); // enable cat part 2
+                Write(catParts3 + 0x10, (byte)1); // enable cat part 3
                 _catIndex++;
 
                 if (_catIndex == cachedVisibleCats.Length)
@@ -776,6 +879,17 @@ public partial class TheSpredsheetEdmundHates
         {
             isIteratingOurDrawers = false;
         }
+
+        foreach (var transform in rowTransforms)
+        {
+            if (transform != 0)
+            {
+                LogStr($"[HOOK] Disabling row transform at {transform:X}");
+                Write(transform + 0x10, (byte)1); // enable transform
+                Write(transform + 0xF, (byte)0); // disable pause on row transform
+            }
+        }
+        disableButtonsInTicks = 10;
         Write(a1 + 0x8, originalDrawer);
 
         return result;
@@ -785,6 +899,7 @@ public partial class TheSpredsheetEdmundHates
     [UnmanagedCallersOnly]
     static unsafe nint CreatePanelHook(nint a1, nint a2, nint a3)
     {
+        // return _createCatsDrawerHousePanel(a1, a2, a3);
         CountExecution(nameof(CreatePanelHook));
 
         if (originalHousePanel != 0 && insideOurCatInstantiation)
@@ -806,10 +921,12 @@ public partial class TheSpredsheetEdmundHates
     unsafe static delegate* unmanaged<nint, void>  _buttonCallbackResolverPtr = null;
     static bool isInsideCreateCatStatsDrawerHook = false;
     static nint originalDrawer = 0;
+    static nint originalDrawerParent = 0;
     static nint framesSinceInitialCatStatsDrawer = 0;
     [UnmanagedCallersOnly]
     static unsafe nint CreateCatStatsDrawerHook(nint a1)
     {
+        // return _statsCreator(a1);
         CountExecution(nameof(CreateCatStatsDrawerHook));
         LogStr($"[HOOK] CreateCatStatsDrawerHook called: a1=0x{a1:X}");
         isInsideCreateCatStatsDrawerHook = true;
@@ -820,6 +937,7 @@ public partial class TheSpredsheetEdmundHates
         {
             framesSinceInitialCatStatsDrawer = 0;
             originalDrawer = a1;
+            originalDrawerParent = Read<nint>(a1 + 0x20);
         } 
 
         LogStr($"[HOOK] CreateCatStatsDrawerHookkkk: a1=0x{a1:X}, result=0x{result:X}");
@@ -866,12 +984,32 @@ public partial class TheSpredsheetEdmundHates
     }
 
     static nint openCloseBtn = 0;
+    static List<List<nint>> buttonsInsideOurDrawers = new List<List<nint>>();
+    static nint[] catPartsInsideOurDrawers = new nint[0];
     [UnmanagedCallersOnly]
     static unsafe nint RegisterCallbackHook(nint menuPanel, nint a2, nint a3, nint a4)
     {
+        // return _registerButton(menuPanel, a2, a3, a4);
         var result = _registerButton(menuPanel, a2, a3, a4);
         var entityAddr = menuPanel + 0x18;
         var rendererAddr = menuPanel + 0x38;
+        if (!IsMemReadable(rendererAddr, 8) || !IsMemReadable(entityAddr, 8))
+        {
+            return result;
+        }
+        var renderer = (Renderer*)Read(rendererAddr);
+        if (isIteratingOurDrawers || insideOurCatInstantiation)
+        {
+            var index = Array.IndexOf(rowRenderers, (nint)renderer);
+            if (index != -1)
+            {
+                LogStr($"[HOOK] RegisterCallbackHook: isIteratingOurDrawers is {isIteratingOurDrawers}, index={index}, menuPanel=0x{menuPanel:X}, a2=0x{a2:X}, a3=0x{a3:X}, a4=0x{a4:X}, result=0x{result:X}");
+                buttonsInsideOurDrawers[index].Add(result);
+            } else
+            {
+                LogStr($"[HOOK] RegisterCallbackHook: isIteratingOurDrawers is {isIteratingOurDrawers}, index not found, menuPanel=0x{menuPanel:X}, a2=0x{a2:X}, a3=0x{a3:X}, a4=0x{a4:X}, result=0x{result:X}");
+            }
+        }
         if (!isInsideCreateCatStatsDrawerHook || !IsMemReadable(rendererAddr, 8) || !IsMemReadable(entityAddr, 8))
         {
             // LogStr($"[HOOK] RegisterCallbackHook: menuPanel=0x{menuPanel:X}, a2=0x{a2:X}, a3=0x{a3:X}, a4=0x{a4:X}, result=0x{result:X}");
@@ -879,11 +1017,12 @@ public partial class TheSpredsheetEdmundHates
         }
         CountExecution(nameof(RegisterCallbackHook));
         var btnName = TryReadCString(a2);
-        var renderer = (Renderer*)Read(rendererAddr);
         var rendererName = renderer->Name;
         // LogStr($"[HOOK] RegisterCallbackHook inside CatStats: a1=0x{menuPanel:X}, a2=0x{a2:X}, a3=0x{a3:X}, a4=0x{a4:X}, result=0x{result:X}, btnName=\"{btnName}\", renderer=0x{renderer:X}, rendererName={rendererName}");
         if (rendererName != "CatMenu")
         {
+            
+            LogStr($"[HOOK] RegisterCallbackHook: rendererName is not CatMenu, rendererName={rendererName} menuPanel=0x{menuPanel:X} a2=0x{a2:X} a3=0x{a3:X} a4=0x{a4:X} result=0x{result:X}");
             return result;
         }
         var entity = Marshal.ReadIntPtr(entityAddr);
@@ -979,9 +1118,32 @@ public partial class TheSpredsheetEdmundHates
     [UnmanagedCallersOnly]
     static unsafe nint GameTickHook(nint a1)
     {
+        // return _gameTick(a1);
         // call mewgenics.7FF647368A30
         // [[[rax+0x38]+18]+58] 
         var result = _gameTick(a1);
+        if (disableButtonsInTicks != -1)
+        {
+            disableButtonsInTicks--;
+            if (disableButtonsInTicks == 0)
+            {
+                LogStr("[HOOK] Disabling all our buttons after countdown reached zero");
+                setActiveAllOurButtons(false);
+                disableButtonsInTicks = -1;
+            }
+        }
+        if (originalDrawer != 0)
+        {
+            framesSinceInitialCatStatsDrawer++;
+            // if (framesSinceInitialCatStatsDrawer % 1000 != 0)
+            // {
+            //     return result;
+            // }
+            if (framesSinceInitialCatStatsDrawer >= 100000)
+            {
+                framesSinceInitialCatStatsDrawer = 0;
+            }
+        }
 
         // 00007FF646AD4C40
         // [[[rcx+0x18]+0x28]] or [[[rcx+0x18]+0x28]+10]
@@ -1052,25 +1214,36 @@ public partial class TheSpredsheetEdmundHates
         {
             handlePositionOfOurPanel();
         }
-        if (originalDrawer != 0)
-        {
-            framesSinceInitialCatStatsDrawer++;
-            if (framesSinceInitialCatStatsDrawer >= 100000)
-            {
-                framesSinceInitialCatStatsDrawer = 0;
-            }
-        }
+
 
         if (ourPanelIsOpen)
         {
+            // LogStr($"ourPanelIsOpen: {ourPanelIsOpen}");
             var index = GetRendererIndexWhereMouseIsHitting();
+            // LogStr($"index under mouse: {index}");
+            if (currentlyHoveredIndex != index)
+            {
+                // Handle logic for when the hovered drawer changes
+                // LogStr($"Hovered drawer changed from {currentlyHoveredIndex} to {index}");
+                if (currentlyHoveredIndex != -1)
+                {
+                    LogStr($"Deactivating buttons for previously hovered index: {currentlyHoveredIndex}");
+                    setActiveAllOurButtons(false, rowRenderers[currentlyHoveredIndex]);
+                }
+                if (index != -1)
+                {
+                    LogStr($"Activating buttons for newly hovered index: {index}");
+                    setActiveAllOurButtons(true, rowRenderers[index]);
+                }
+            }
             if (index != -1)
             {
+                // LogStr($"catStatDrawer: {rowDrawers[index]}");
                 var catStatDrawer = rowDrawers[index];
-                currentlyHoveredDrawer = catStatDrawer;
+                currentlyHoveredIndex = index;
             } else
             {
-                currentlyHoveredDrawer = 0;
+                currentlyHoveredIndex = -1;
             }
 
             if (panelsWithData.Count != totalCatsCount)
@@ -1138,13 +1311,16 @@ public partial class TheSpredsheetEdmundHates
         double yPos = -1.0 + yOffset;
         double xPos = xOffset;
         double headerXpos = cachedVisibleCats.Length > 0 ? xPos - 10.0 : -300.0;
+        LogStr($"headerXpos {headerXpos}");
         var _findButton = (delegate* unmanaged<nint, nint, nint, nint>)(MewjectorApi.GameBase + (nuint)0x97c4f0);
+        LogStr($"_findButton = 0x{(nint)_findButton:X}");
         if (headersRenderer != null)
         {
             var headerTransform = headersRenderer->Transform;
             Write(headerTransform + 0x80, headerXpos);
             if (!panelAnimationInProgress)
             {
+                LogStr($"Tracking movieclip child parent offset for originalHousePanel=0x{(nint)originalHousePanel:X} headerTransform=0x{(nint)headerTransform:X}");
                 _trackMovieclipChildParentOffset(originalHousePanel, headerTransform, 1);
             }
         }
@@ -1155,9 +1331,11 @@ public partial class TheSpredsheetEdmundHates
             Write(footerTransform + 0x88,  -1.0 + yOffset - (1.8 * visibleRenderers.Count));
             if (!panelAnimationInProgress)
             {
+                LogStr($"Tracking movieclip child parent offset for originalHousePanel=0x{(nint)originalHousePanel:X} footerTransform=0x{(nint)footerTransform:X}");
                 _trackMovieclipChildParentOffset(originalHousePanel, footerTransform, 1);
             }
         }
+        LogStr($"sortedPositions count = {sortedPositions.Count}");
         sortedPositions = new Dictionary<nint, int>(sortedCats.Length);
         for (var i = 0; i < sortedCats.Length; i++)
             sortedPositions[sortedCats[i]] = i;
@@ -1267,8 +1445,10 @@ public partial class TheSpredsheetEdmundHates
         rowRenderers = new nint[totalCatsCount];
         rowTransforms = new nint[totalCatsCount];
         rowDrawers = new nint[totalCatsCount];
+        buttonsInsideOurDrawers = new List<List<nint>>(totalCatsCount);
         for (int i = 0; i < totalCatsCount; i++)
         {
+            buttonsInsideOurDrawers.Add(new List<nint>());
             LogStr($"Creating row {i + 1}/{totalCatsCount}");
             nint rowEntity = _createEntity(scenePtr);
 
@@ -1287,6 +1467,9 @@ public partial class TheSpredsheetEdmundHates
             Marshal.FreeHGlobal(name);
             LogStr($"Creating CatStatsDrawer {i + 1}/{totalCatsCount}: Renderer {(nint)rowRenderer:X} {rowEntity:X} {scenePtr:X}");
             rendererFound = _getRenderer(rowEntity);
+            rowRenderers[i] = (nint)rowRenderer;
+            var transform = Marshal.ReadIntPtr((nint)rowRenderer + 0x40);
+            rowTransforms[i] = transform;
             insideOurCatInstantiation = true;
             attachRendererIteration = 0;
             // sleep for 0.1 seconds
@@ -1299,17 +1482,15 @@ public partial class TheSpredsheetEdmundHates
 
             // var iconsPanel = Marshal.ReadIntPtr(rowDrawer + 0x68);
             // var panelB = Marshal.ReadIntPtr(rowDrawer + 0x68);
-            var transform = Marshal.ReadIntPtr((nint)rowRenderer + 0x40);
             LogStr($"Created new CallStatsDrawer: Renderer {(nint)rowRenderer:X} Drawer:{rowDrawer:X} Entity: {rowEntity:X} {scenePtr:X} transform: {transform:X}");
             // rowIconPanels.Add(iconsPanel);
             rowDrawers[i] = rowDrawer;
-            rowRenderers[i] = (nint)rowRenderer;
-            rowTransforms[i] = transform;
 
             Dictionary<string, int> dict = new();
             catStats[(nint)rowRenderer] = dict;
 
-            // Write(rowRenderer + 0x51, (byte)0);
+            Write((nint)rowRenderer + 0x51, (byte)0);
+            Write((nint)rowRenderer + 0x10, (byte)0);
             LogStr($"Initialized catStats dictionary for renderer {(nint)rowRenderer:X}");
 
             // var menuPanel = Marshal.ReadIntPtr(rowDrawer + 0x60);
@@ -1337,6 +1518,7 @@ public partial class TheSpredsheetEdmundHates
         forcedCatStatsUpdatePending = rowRenderers.Length;
 
         Write(originalHousePanel + 0x118, originalDrawer);
+        setActiveAllOurButtons(false);
         
     }
     // static nint testbutton = 0;
@@ -1348,6 +1530,7 @@ public partial class TheSpredsheetEdmundHates
     [UnmanagedCallersOnly]
     static unsafe Renderer* CreateUiRendererHook(nint a1, nint entity, nint namePtr)
     {
+        //  return _createUiRenderer(a1, entity, namePtr);
         // if (scenePtr == 0)
         // {    
         CountExecution(nameof(CreateUiRendererHook));
@@ -1369,13 +1552,10 @@ public partial class TheSpredsheetEdmundHates
     static int waitingForPanelStatus = 0;
     static nint catMenuPanel = 0;
 
-    static nint dirtyPanelLayout = 0;
-
-    static nint lastFrameWhenItRan = 0;
-
     [UnmanagedCallersOnly]
     static unsafe nint UpdatePanelLayoutHook(nint a1)
     {
+        // return _updatePanelLayout(a1);
         if (originalDrawer == 0 ||(catMenuPanel != 0 && catMenuPanel != a1))
         {
             return _updatePanelLayout(a1);
@@ -1406,6 +1586,7 @@ public partial class TheSpredsheetEdmundHates
                 waitingForPanelStatus = 0;
                 panelAnimationInProgress = false;
                 positionDirty = true;
+                setActiveAllOurButtons(true);
                 LogStr($"[HOOK] 1- Panel is open and animation finished: xOffset {xOffset} xOffsetTarget {xOffsetTarget}");
             }
             else if (waitingForPanelStatus == PanelStateClosed)
@@ -1415,21 +1596,19 @@ public partial class TheSpredsheetEdmundHates
                 for (int i = 0; i < rowDrawers.Length; i++)
                 {
                     var drawer = rowDrawers[i];
-                    Write(drawer + 0x78, (nint)0); // setting HouseCat reference to zero
+                    // Write(drawer + 0x78, (nint)0); // setting HouseCat reference to zero
+                }
+                foreach (var rendererToHide in rowRenderers)
+                {
+                    Write(rendererToHide + 0x51, (byte)0);
+                    Write(rendererToHide + 0x10, (byte)0); // disable renderer
                 }
                 positionDirty = true;
                 LogStr($"[HOOK] 2- Pane is closed and animation finished: xOffset {xOffset} xOffsetTarget {xOffsetTarget}");
             }
         }
 
-        if (!ourPanelIsOpen && !panelAnimationInProgress)
-        {
-            // hide our renderers:
-            foreach (var rendererToHide in rowRenderers)
-            {
-                Write(rendererToHide + 0x51, (byte)0);
-            }
-        } else
+        if (ourPanelIsOpen || panelAnimationInProgress)
         {
             updateRowTransforms();
         }
@@ -1440,6 +1619,8 @@ public partial class TheSpredsheetEdmundHates
     {
         LogStr($"ClearState called");
         // LogStr($"[HOOK] RemoveMovieClip called on mod container 0x{a1:X}");
+        buttonsInsideOurDrawers.Clear();
+        catPartsInsideOurDrawers = Array.Empty<nint>();
         sortedPositions = new Dictionary<nint, int>();
         scenePtr = 0;
         catMenuPanel = 0;
