@@ -37,6 +37,19 @@ public partial class TheSpredsheetEdmundHates
     static int lastReturnedRenderer = -1;
     static nint[] renderersInsideRenderArea = new nint[0];
 
+    unsafe static bool FindHoverAreaAndCacheIt(int index)
+    {
+        if (hoveredAreasCache[index] != 0)
+        {
+            return true;
+        }
+        var renderer = rowRenderers[index];
+        var rootMovieclip = Read<nint>(renderer + 0x80);
+        var movieclip = _getChild(rootMovieclip, GameString.Create("hover_area"));
+        hoveredAreasCache[index] = movieclip;
+        return movieclip != 0;
+    }
+
     unsafe static int GetRendererIndexWhereMouseIsHitting()
     {
         if (MainCamera == 0)
@@ -60,16 +73,12 @@ public partial class TheSpredsheetEdmundHates
         for (int i = 0; i < rowRenderers.Length; i++)
         {
             var renderer = rowRenderers[i];
+
             nint movieclip = 0;
-            if (hoveredAreasCache[i] != 0)
-            {
-                movieclip = hoveredAreasCache[i];
-            } else
-            {
-                var rootMovieclip = Read<nint>(renderer + 0x80);
-                movieclip = _getChild(rootMovieclip, GameString.Create("hover_area"));
-                hoveredAreasCache[i] = movieclip;
-            }
+            FindHoverAreaAndCacheIt(i);
+            movieclip = hoveredAreasCache[i];
+            if (!activeRowsRenderers.Contains(renderer))
+                continue;
 
             double[] output = new double[2];
 
@@ -127,38 +136,54 @@ public partial class TheSpredsheetEdmundHates
         return -1;
     }
 
-    public static unsafe void updateRenderersInsideRenderArea()
+    public static unsafe void markFirst13AsInsideRenderArea()
+    {
+        renderersInsideRenderArea = rowRenderers.Take(13).ToArray();
+        Array.Resize(ref renderersInsideRenderArea, rowRenderers.Length);
+    }
+
+    public static unsafe void updateRenderersInsideScreenArea(bool forceShowFirst13 = false)
     {
         if (renderersInsideRenderArea.Length == 0)
         {
-            renderersInsideRenderArea = new nint[hoveredAreasCache.Length];
+            LogStr($"[HOOK] updateRenderersInsideScreenArea: initializing renderersInsideRenderArea array");
+            renderersInsideRenderArea = new nint[rowRenderers.Length];
         }
-        if (!ourPanelIsOpen && !panelAnimationInProgress)
+        if (forceShowFirst13)
         {
+            markFirst13AsInsideRenderArea();
+        } else if (!ourPanelIsOpen)
+        {
+            LogStr($"[HOOK] updateRenderersInsideScreenArea: panel is not open and no animation in progress, clearing renderersInsideRenderArea");
             Array.Clear(renderersInsideRenderArea, 0, renderersInsideRenderArea.Length);
         } else if (hoveredAreasCache.Length > 0)
         {
+            LogStr($"[HOOK] updateRenderersInsideScreenArea: panel is open or animation in progress, updating renderersInsideRenderArea");
             Array.Clear(renderersInsideRenderArea, 0, renderersInsideRenderArea.Length);
             var lastVisibleOne = -1;
             var firstVisibleOne = -1;
             for (int i = 0; i < hoveredAreasCache.Length; i++)
             {
+                FindHoverAreaAndCacheIt(i);
                 if (!IsHoverAreaOutsideRenderArea(rowRenderers[i], hoveredAreasCache[i]))
                 {
-                    LogStr($"[HOOK] updateRenderersInsideRenderArea: renderer {i} is inside render area");
+                    LogStr($"[HOOK] updateRenderersInsideScreenArea: renderer {i} is inside render area");
                     var renderer = rowRenderers[i];
-                    LogStr($"[HOOK] updateRenderersInsideRenderArea: renderer value = 0x{renderer:X} renderersInsideRenderArea size is {renderersInsideRenderArea.Length} and i = {i}");
+                    LogStr($"[HOOK] updateRenderersInsideScreenArea: renderer value = 0x{renderer:X} renderersInsideRenderArea size is {renderersInsideRenderArea.Length} and i = {i}");
                     renderersInsideRenderArea[i] = renderer;
                     lastVisibleOne = i;
                     if (firstVisibleOne == -1)
                     {
                         firstVisibleOne = i;
                     }
+                } else
+                {
+                    // LogStr($"[HOOK] updateRenderersInsideScreenArea: renderer value = 0x{rowRenderers[i]:X} is outside render area");
                 }
             }
             if (lastVisibleOne != -1 && lastVisibleOne < hoveredAreasCache.Length - 1)
             {
-                LogStr($"[HOOK] updateRenderersInsideRenderArea: lastVisibleOne = {lastVisibleOne}");
+                // LogStr($"[HOOK] updateRenderersInsideScreenArea: lastVisibleOne = {lastVisibleOne}");
                 // add one extra as scroll buffer
                 renderersInsideRenderArea[lastVisibleOne + 1] = rowRenderers[lastVisibleOne + 1];
                 if (lastVisibleOne < hoveredAreasCache.Length - 2)
@@ -169,7 +194,7 @@ public partial class TheSpredsheetEdmundHates
             }
             if (firstVisibleOne > 0)
             {
-                LogStr($"[HOOK] updateRenderersInsideRenderArea: firstVisibleOne = {firstVisibleOne}");
+                // LogStr($"[HOOK] updateRenderersInsideScreenArea: firstVisibleOne = {firstVisibleOne}");
                 // add one extra before the first visible one as scroll buffer
                 renderersInsideRenderArea[firstVisibleOne - 1] = rowRenderers[firstVisibleOne - 1];
                 if (firstVisibleOne > 1)
@@ -178,13 +203,12 @@ public partial class TheSpredsheetEdmundHates
                     renderersInsideRenderArea[firstVisibleOne - 2] = rowRenderers[firstVisibleOne - 2];
                 }
             }
-            LogStr($"[HOOK] updateRenderersInsideRenderArea: renderersInsideRenderArea Count = {renderersInsideRenderArea.Length}");
+            LogStr($"[HOOK] updateRenderersInsideScreenArea: renderersInsideRenderArea Count = {renderersInsideRenderArea.Length}");
         } else
         {
             // copy array from rowRenderers (just first 13 or less)
-            LogStr($"[HOOK] updateRenderersInsideRenderArea: using fallback for renderersInsideRenderArea, Count = {renderersInsideRenderArea.Length}");
-            renderersInsideRenderArea = rowRenderers.Take(13).ToArray();
-            Array.Resize(ref renderersInsideRenderArea, hoveredAreasCache.Length);
+            LogStr($"[HOOK] updateRenderersInsideScreenArea: using fallback for renderersInsideRenderArea, Count = {renderersInsideRenderArea.Length}");
+            markFirst13AsInsideRenderArea();
         }
 
         foreach (var renderer in rowRenderers)
@@ -193,14 +217,25 @@ public partial class TheSpredsheetEdmundHates
             var catParts1 = Read<nint>(drawer + 0x48);
             var catParts2 = Read<nint>(drawer + 0x50);
             var catParts3 = Read<nint>(drawer + 0x58);
-            var isVisible = renderersInsideRenderArea.Contains(renderer);
+            var isVisible = activeRowsRenderers.Contains(renderer) && renderersInsideRenderArea.Contains(renderer);
+            if (isVisible)
+            {
+                LogStr($"[HOOK] updateRenderersInsideScreenArea: renderer {renderer:X} is visible");
+            } else
+            {
+                // LogStr($"[HOOK] updateRenderersInsideScreenArea: renderer {renderer:X} is not activeRowsRenderers.Contains(renderer)={activeRowsRenderers.Contains(renderer)} && renderersInsideRenderArea.Contains(renderer)={renderersInsideRenderArea.Contains(renderer)}");
+                // LogStr($"[HOOK] updateRenderersInsideScreenArea: renderersInsideRenderArea is {string.Join(", ", renderersInsideRenderArea.Select(r => r.ToString("X")))}");
+            }
             // Write(rendererStruct->Transform + 0x10, isVisible ? (byte)1 : (byte)0); // enable transform
             // Write(rendererStruct->Transform + 0xF, isVisible? (byte)0 : (byte)1); // enable row transform
             Write(renderer + 0x51, isVisible? (byte)1 : (byte)0); // show renderer
             Write(renderer + 0x10, isVisible? (byte)1 : (byte)0); // enable renderer
-            Write(catParts1 + 0x10, isVisible? (byte)1 : (byte)0); // enable cat part 1
-            Write(catParts2 + 0x10, isVisible? (byte)1 : (byte)0); // enable cat part 2
-            Write(catParts3 + 0x10, isVisible? (byte)1 : (byte)0); // enable cat part 3
+            if (catParts1 != 0 && catParts2 != 0 && catParts3 != 0)
+            {
+                Write(catParts1 + 0x10, isVisible? (byte)1 : (byte)0); // enable cat part 1
+                Write(catParts2 + 0x10, isVisible? (byte)1 : (byte)0); // enable cat part 2
+                Write(catParts3 + 0x10, isVisible? (byte)1 : (byte)0); // enable cat part 3
+            }
         }
 }
 
@@ -295,13 +330,13 @@ delegate* unmanaged<nint, float*, float*> GetBounds =
         maxY <= hoverTop ||
         minY >= hoverBottom;
 
-    LogStr(
-        $"hover_area: " +
-        $"viewport local X={minX}..{maxX}, " +
-        $"Y={minY}..{maxY}, " +
-        $"bounds X={hoverLeft}..{hoverRight}, " +
-        $"Y={hoverTop}..{hoverBottom}, " +
-        $"outside={outside}");
+    // LogStr(
+    //     $"hover_area: " +
+    //     $"viewport local X={minX}..{maxX}, " +
+    //     $"Y={minY}..{maxY}, " +
+    //     $"bounds X={hoverLeft}..{hoverRight}, " +
+    //     $"Y={hoverTop}..{hoverBottom}, " +
+    //     $"outside={outside}");
 
     return outside;
 }

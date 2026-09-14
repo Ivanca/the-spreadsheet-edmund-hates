@@ -29,7 +29,7 @@ public class FloatAnimator
 
         t = Math.Min(elapsedSeconds / _durationSeconds, 1.0f);
 
-        return LerpWithEaseInAndOut(_startValue, this.targetValue, t);
+        return MathF.Round(LerpWithEaseInAndOut(_startValue, this.targetValue, t), 2);
     }
 
     /// <summary>
