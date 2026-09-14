@@ -7,6 +7,7 @@ public class FloatAnimator
 
     private readonly float _startValue;
     public readonly float targetValue;
+    public float t;
     private readonly float _durationSeconds;
     private readonly long _startTicks;
 
@@ -26,7 +27,7 @@ public class FloatAnimator
         float elapsedSeconds =
             (float)(_stopwatch.ElapsedTicks - _startTicks) / Stopwatch.Frequency;
 
-        float t = Math.Min(elapsedSeconds / _durationSeconds, 1.0f);
+        t = Math.Min(elapsedSeconds / _durationSeconds, 1.0f);
 
         return LerpWithEaseInAndOut(_startValue, this.targetValue, t);
     }

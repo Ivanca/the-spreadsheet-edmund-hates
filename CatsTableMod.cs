@@ -13,7 +13,7 @@ namespace TheSpredsheetEdmundHates;
 
 public partial class TheSpredsheetEdmundHates
 {
-    static bool _debugLogging = false;
+    static bool _debugLogging = true;
 
     static unsafe delegate* unmanaged<nint, nint> _updatePanelLayout;
 
@@ -360,7 +360,6 @@ public partial class TheSpredsheetEdmundHates
     static unsafe void SortRows()
     {
         CountExecution(nameof(SortRows));
-        positionDirty = true;
         forcedCatStatsUpdatePending = rowRenderers.Length;
         if (sortByStat == "")
         {
@@ -379,6 +378,7 @@ public partial class TheSpredsheetEdmundHates
         {
             sortedCats = sortedCats.Reverse().ToArray();
         }
+        positionDirty = true;
         LogStr($"[HOOK] SortRows: sortByStat={sortByStat} sortByStatDirection={sortByStatDirection}, sortedCats = {string.Join(", ", sortedCats.Select(e => e.ToString("X")))}");
     }
 
@@ -518,15 +518,6 @@ public partial class TheSpredsheetEdmundHates
                 {
                     LogStr($"[HOOK] Disabling cat part at {catPart:X}");
                     Write(catPart + 0x10, (byte)0); // disable cat part
-                }
-            }
-            foreach (var transform in rowTransforms)
-            {
-                if (transform != 0)
-                {
-                    LogStr($"[HOOK] Disabling row transform at {transform:X}");
-                    Write(transform + 0x10, (byte)0); // disable row transform
-                    Write(transform + 0xF, (byte)1); // enable pause state on row transform
                 }
             }
 
@@ -859,14 +850,8 @@ public partial class TheSpredsheetEdmundHates
                 catPartsInsideOurDrawers[i * 3 + 2] = catParts3;
                 var renderer = Marshal.ReadIntPtr(drawer + 0x40);
                 var transform = Marshal.ReadIntPtr(renderer + 0x40);
-                Write(transform + 0x10, (byte)1); // enable transform
-                Write(transform + 0xF, (byte)0); // enable row transform
                 visibleRenderers.Add(renderer);
-                Write(renderer + 0x51, (byte)1); // show renderer
-                Write(renderer + 0x10, (byte)1); // enable renderer
-                Write(catParts1 + 0x10, (byte)1); // enable cat part 1
-                Write(catParts2 + 0x10, (byte)1); // enable cat part 2
-                Write(catParts3 + 0x10, (byte)1); // enable cat part 3
+
                 _catIndex++;
 
                 if (_catIndex == cachedVisibleCats.Length)
@@ -880,15 +865,7 @@ public partial class TheSpredsheetEdmundHates
             isIteratingOurDrawers = false;
         }
 
-        foreach (var transform in rowTransforms)
-        {
-            if (transform != 0)
-            {
-                LogStr($"[HOOK] Disabling row transform at {transform:X}");
-                Write(transform + 0x10, (byte)1); // enable transform
-                Write(transform + 0xF, (byte)0); // disable pause on row transform
-            }
-        }
+
         disableButtonsInTicks = 10;
         Write(a1 + 0x8, originalDrawer);
 
@@ -1216,7 +1193,7 @@ public partial class TheSpredsheetEdmundHates
         }
 
 
-        if (ourPanelIsOpen)
+        if (ourPanelIsOpen && framesSinceInitialCatStatsDrawer % 10 == 0 && !panelAnimationInProgress)
         {
             // LogStr($"ourPanelIsOpen: {ourPanelIsOpen}");
             var index = GetRendererIndexWhereMouseIsHitting();
@@ -1234,6 +1211,11 @@ public partial class TheSpredsheetEdmundHates
                 {
                     LogStr($"Activating buttons for newly hovered index: {index}");
                     setActiveAllOurButtons(true, rowRenderers[index]);
+                    // log prev state
+                    LogStr($"Previous transformed mouse: ({prevTransformedMouse[0]}, {prevTransformedMouse[1]})");
+                    LogStr($"Previous bounds: (left: {prevBounds[0]}, top: {prevBounds[1]}, right: {prevBounds[2]}, bottom: {prevBounds[3]})");
+                    LogStr($"Current mouse position: ({prevMouse[0]}, {prevMouse[1]})");
+
                 }
             }
             if (index != -1)
@@ -1303,7 +1285,6 @@ public partial class TheSpredsheetEdmundHates
         {
             return;
         }
-        positionDirty = false;
         CountExecution(nameof(handlePositionOfOurPanel));
         yOffset = newYOffset;
         xOffset = newXOffset;
@@ -1335,10 +1316,17 @@ public partial class TheSpredsheetEdmundHates
                 _trackMovieclipChildParentOffset(originalHousePanel, footerTransform, 1);
             }
         }
+        if (positionDirty || (yScrollAni != null && (newYOffset == yScrollAni.targetValue)))
+        {
+            updateRenderersInsideRenderArea();
+        }
+
         LogStr($"sortedPositions count = {sortedPositions.Count}");
         sortedPositions = new Dictionary<nint, int>(sortedCats.Length);
         for (var i = 0; i < sortedCats.Length; i++)
             sortedPositions[sortedCats[i]] = i;
+
+        positionDirty = false;
        
     }
 
@@ -1588,6 +1576,7 @@ public partial class TheSpredsheetEdmundHates
                 positionDirty = true;
                 setActiveAllOurButtons(true);
                 LogStr($"[HOOK] 1- Panel is open and animation finished: xOffset {xOffset} xOffsetTarget {xOffsetTarget}");
+                updateRenderersInsideRenderArea();
             }
             else if (waitingForPanelStatus == PanelStateClosed)
             {
@@ -1605,6 +1594,7 @@ public partial class TheSpredsheetEdmundHates
                 }
                 positionDirty = true;
                 LogStr($"[HOOK] 2- Pane is closed and animation finished: xOffset {xOffset} xOffsetTarget {xOffsetTarget}");
+                updateRenderersInsideRenderArea();
             }
         }
 
