@@ -211,16 +211,17 @@ public partial class TheSpredsheetEdmundHates
             markFirst13AsInsideRenderArea();
         }
 
-        foreach (var renderer in rowRenderers)
+        foreach (var rendererPtr in rowRenderers)
         {
-            var drawer = rowDrawers[Array.IndexOf(rowRenderers, renderer)];
-            var catParts1 = Read<nint>(drawer + 0x48);
-            var catParts2 = Read<nint>(drawer + 0x50);
-            var catParts3 = Read<nint>(drawer + 0x58);
-            var isVisible = activeRowsRenderers.Contains(renderer) && renderersInsideRenderArea.Contains(renderer);
+            var renderer = (Renderer*)rendererPtr;
+            var drawer = rowDrawers[Array.IndexOf(rowRenderers, rendererPtr)];
+            var catParts1 = (CatPart*)Read<nint>(drawer + 0x48);
+            var catParts2 = (CatPart*)Read<nint>(drawer + 0x50);
+            var catParts3 = (CatPart*)Read<nint>(drawer + 0x58);
+            var isVisible = activeRowsRenderers.Contains(rendererPtr) && renderersInsideRenderArea.Contains(rendererPtr);
             if (isVisible)
             {
-                LogStr($"[HOOK] updateRenderersInsideScreenArea: renderer {renderer:X} is visible");
+                LogStr($"[HOOK] updateRenderersInsideScreenArea: renderer {rendererPtr:X} is visible");
             } else
             {
                 // LogStr($"[HOOK] updateRenderersInsideScreenArea: renderer {renderer:X} is not activeRowsRenderers.Contains(renderer)={activeRowsRenderers.Contains(renderer)} && renderersInsideRenderArea.Contains(renderer)={renderersInsideRenderArea.Contains(renderer)}");
@@ -228,13 +229,16 @@ public partial class TheSpredsheetEdmundHates
             }
             // Write(rendererStruct->Transform + 0x10, isVisible ? (byte)1 : (byte)0); // enable transform
             // Write(rendererStruct->Transform + 0xF, isVisible? (byte)0 : (byte)1); // enable row transform
-            Write(renderer + 0x51, isVisible? (byte)1 : (byte)0); // show renderer
-            Write(renderer + 0x10, isVisible? (byte)1 : (byte)0); // enable renderer
-            if (catParts1 != 0 && catParts2 != 0 && catParts3 != 0)
+            // Write(renderer + 0x51, isVisible? (byte)1 : (byte)0); // show renderer
+            renderer->Visible = isVisible ? (byte)1 : (byte)0;
+            // Write(renderer + 0x10, isVisible? (byte)1 : (byte)0); // enable renderer
+            renderer->enabled = isVisible ? (byte)1 : (byte)0;
+            if (catParts1 != null && catParts2 != null && catParts3 != null)
             {
-                Write(catParts1 + 0x10, isVisible? (byte)1 : (byte)0); // enable cat part 1
-                Write(catParts2 + 0x10, isVisible? (byte)1 : (byte)0); // enable cat part 2
-                Write(catParts3 + 0x10, isVisible? (byte)1 : (byte)0); // enable cat part 3
+                // Write(catParts1 + 0x10, isVisible? (byte)1 : (byte)0); // enable cat part 1
+                catParts1->Enabled = isVisible ? (byte)1 : (byte)0;
+                catParts2->Enabled = isVisible ? (byte)1 : (byte)0;
+                catParts3->Enabled = isVisible ? (byte)1 : (byte)0;
             }
         }
 }
