@@ -1,4 +1,6 @@
-﻿// using MewgenicsModSdk;
+﻿global using static Utils;
+
+// using MewgenicsModSdk;
 // using MewgenicsModSdk.Game;
 using System.Collections.Generic;
 using System;
@@ -8,21 +10,54 @@ using System.Diagnostics;
 using System.Text;
 using System.Linq;
 
-namespace TheSpredsheetEdmundHates;
-
 
 public partial class TheSpredsheetEdmundHates
 {
-    static bool _debugLogging = true;
+    static bool _debugLogging = false;
+
+    public static DateTime? logging5MinutesStartTime;
 
     static unsafe delegate* unmanaged<nint, nint> _updatePanelLayout;
 
     static unsafe delegate* unmanaged<nint, nint, nint, Renderer*> _createUiRenderer;
     static unsafe delegate* unmanaged<nint, nint, nint, nint> _createCatsDrawerHousePanel;
-    static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _registerButton;
+    public static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _registerButton;
     static unsafe delegate* unmanaged<nint, nint> _statsCreator;
     static unsafe delegate* unmanaged<nint, nint, nint> _getHouseCatByOffset;
     static unsafe delegate* unmanaged<nint, nint> _gameTick;
+    /*
+        This function iterates all the following 
+class glaiel::GameBase <class glaiel::GameBase> 
+class glaiel::FurnitureBuildingUI <class glaiel::FurnitureBuildingUI> 
+class glaiel::FurnitureClickHandler <class glaiel::FurnitureClickHandler> 
+class glaiel::ButchBox <class glaiel::ButchBox> 
+class glaiel::CatStatsDrawer <class glaiel::CatStatsDrawer> 
+class glaiel::FurnitureGrid <class glaiel::FurnitureGrid> 
+class glaiel::FurniturePiece <class glaiel::FurniturePiece> 
+class glaiel::House <class glaiel::House> 
+class glaiel::HouseCat <class glaiel::HouseCat> 
+class glaiel::HouseCatClickManager <class glaiel::HouseCatClickManager> 
+class glaiel::HouseCatPhysics <class glaiel::HouseCatPhysics> 
+class glaiel::HouseDrawerUI <class glaiel::HouseDrawerUI> 
+class glaiel::HousePipe <class glaiel::HousePipe> 
+class glaiel::HouseTutorialDriver <class glaiel::HouseTutorialDriver> 
+class glaiel::InventoryTrashDrawers <class glaiel::InventoryTrashDrawers> 
+class glaiel::NPCMapDrawer <class glaiel::NPCMapDrawer> 
+class glaiel::SingingCat <class glaiel::SingingCat> 
+class glaiel::Button <class glaiel::Button> 
+class glaiel::AbilityTooltip <class glaiel::AbilityTooltip> 
+class glaiel::DialogController <class glaiel::DialogController> 
+class glaiel::Tutorial <class glaiel::Tutorial> 
+class glaiel::DebugDisplay <class glaiel::DebugDisplay> 
+class glaiel::MewControls <class glaiel::MewControls> 
+class glaiel::SimpleMusicPlayer <class glaiel::SimpleMusicPlayer> 
+class glaiel::GlobalProgressionData <class glaiel::GlobalProgressionData> 
+class glaiel::MewDirector <class glaiel::MewDirector> 
+class glaiel::MewsicController <class glaiel::MewsicController> 
+class glaiel::SpawnDatabase <class glaiel::SpawnDatabase> 
+
+    */
+
     static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _catIterator;
 
     static unsafe delegate* unmanaged<nint, nint, nint, nint> _findButton;
@@ -30,25 +65,27 @@ public partial class TheSpredsheetEdmundHates
     static unsafe delegate* unmanaged<nint, nint> _toggleHouseDrawer;
     static unsafe delegate* unmanaged<nint, nint, nint> _clickHandler;
     static unsafe delegate* unmanaged<nint, nint, nint> _mutationTooltip;
-    static unsafe delegate* unmanaged<nint, nint, nint, nint> _createMenuPanel;
 
     unsafe static delegate* unmanaged<nint, nint, nint> _mouseEventHandler;
 
     public unsafe static delegate* unmanaged<nint, char*, nuint, nint> assignString;
 
-    static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _globalResourceManagerLookup;
+    // static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _globalResourceManagerLookup;
     
     unsafe static delegate* unmanaged<nint, nint, nint> _setText;
     unsafe static delegate* unmanaged<nint, nint> _endDay;
     unsafe static delegate* unmanaged<nint, nint> _goToMainMenu;
     unsafe static delegate* unmanaged<nint, nint, nint, nint, nint> _setCatData;
     unsafe static delegate* unmanaged<nint, nint, nint, nint, nint> _fetchTranslation;
+    unsafe static delegate* unmanaged<nint, nint, nint, nint> _furnitureGridCreator;
     unsafe static delegate* unmanaged<nint, nint, nint> _getChild;
     unsafe static delegate* unmanaged<nint, nint, nint> _getChildByPath;
     unsafe static delegate* unmanaged<nint, nint, nint, void> _trackMovieclipChildParentOffset;
 
     unsafe static delegate* unmanaged<nint, nint, uint, void> _attachChild;
     unsafe static delegate* unmanaged<nint, nint, nint> _createCatStatsDrawer;
+    unsafe static delegate* unmanaged<nint, nint, nint> _getSpellIdFromButton;
+    unsafe static delegate* unmanaged<nint, nint, nint, nint, nint> _keyPress;
     unsafe static delegate* unmanaged<nint, nint> _catStatsDrawerUpdate;
     
     unsafe static T Read<T>(nint p) where T : unmanaged
@@ -82,8 +119,6 @@ public partial class TheSpredsheetEdmundHates
         return true;
     }
     
-    static nint _rightStr = 0;
-    static nint _leftStr = 0;
     static Dictionary<string, int> executionCounts = new();
 
     private static void CountExecution(string methodName)
@@ -96,12 +131,25 @@ public partial class TheSpredsheetEdmundHates
 
     internal unsafe void MjInit()
     {
-        var tenSecondsAfterNow = DateTime.Now.AddSeconds(15);
-        LogStr($"Waiting for 15 seconds to connect using x64dbg...");
-        while (DateTime.Now < tenSecondsAfterNow)
+
+        // var tenSecondsAfterNow = DateTime.Now.AddSeconds(20);
+        // LogStr($"Waiting for 15 seconds to connect using x64dbg...");
+        // while (DateTime.Now < tenSecondsAfterNow)
+        // {
+        //     Thread.Sleep(1);
+        // }
+
+        if (!logging5MinutesStartTime.HasValue)
         {
-            Thread.Sleep(1);
+            logging5MinutesStartTime = DateTime.Now;
+            // LogStr($"Initializing 5-minute logging at {logging5MinutesStartTime}");
+            // TestHook.address = (long)(MewjectorApi.GameBase + 0x96AE3F);
+            // LogStr($"[HOOK] Initializing 5-minute logging at {logging5MinutesStartTime} with target address {TestHook.address}");
+            // sleep(1000); // Sleep for 1 second before installing the hook
+            // Thread.Sleep(1000); // Sleep for 1 second before installing the hook
+            // TestHook.Install();
         }
+
 
         var buffer = new StringBuilder(32768);
         uint length = GetModuleFileName(IntPtr.Zero, buffer, buffer.Capacity);
@@ -164,6 +212,8 @@ public partial class TheSpredsheetEdmundHates
         _mutationTooltip = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0xE5500, (void*)(delegate* unmanaged<nint, nint, nint>)&MutationTooltipHook); 
 
+        
+
 
         // // EndDayHook and GoToMainMenuHook are the only places where mod state is reset
 
@@ -185,6 +235,11 @@ public partial class TheSpredsheetEdmundHates
         _fetchTranslation = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0x4C340, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&FetchTranslationHook);
 
+        _furnitureGridCreator = (delegate* unmanaged<nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+            0x1f6db0, (void*)(delegate* unmanaged<nint, nint, nint, nint>)&FurnitureGridCreatorHook);
+
+        _keyPress = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+            0xc083a0, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&KeyPressHook);
         // LogStr($"Gamebase at {MewjectorApi.GameBase:X}...");
 
         assignString = (delegate* unmanaged<nint,char*,nuint,nint>)(MewjectorApi.GameBase + 0x5b150);
@@ -197,7 +252,18 @@ public partial class TheSpredsheetEdmundHates
         _trackMovieclipChildParentOffset = (delegate* unmanaged<nint, nint, nint, void>)(MewjectorApi.GameBase + (nuint)0x204a80);
         _attachChild = (delegate* unmanaged<nint, nint, uint, void>)(MewjectorApi.GameBase + (nuint)0x999e40);
         _createCatStatsDrawer =  (delegate* unmanaged<nint, nint, nint>)(MewjectorApi.GameBase + (nuint)0x1ace50);
+        _getSpellIdFromButton = (delegate* unmanaged<nint, nint, nint>)(MewjectorApi.GameBase + (nuint)0x60e30);
 
+    }
+
+    unsafe static List<nint> rooms = new List<nint>();
+
+    [UnmanagedCallersOnly]
+    static unsafe nint FurnitureGridCreatorHook(nint a1, nint a2, nint a3)
+    {
+        var result = _furnitureGridCreator(a1, a2, a3);
+        rooms.Add(result);
+        return result;
     }
 
     static List<nint> cachedPointers = new();
@@ -211,10 +277,42 @@ public partial class TheSpredsheetEdmundHates
 
     static SortDirection sortByStatDirection = SortDirection.Descending;
     static Dictionary<nint, double> averages = new();
-    static bool InsideSetCatData = false;
+    // static bool InsideSetCatData = false;
     
     static nint ageTranslated = 0;
     static nint lvTranslated = 0;
+    static bool IsOurPanelEnabled = true;
+
+    static int lastNumKeyPressed = -1;
+    static bool ctrlPressed = false;
+
+    [UnmanagedCallersOnly]
+    static unsafe nint KeyPressHook(nint a1, nint a2, nint a3, nint a4)
+    {
+        // rcx=470A62 rdx=100 r8=37 r9=80001 #7
+        if (currentlyHoveredIndex != -1)
+        {
+            // LogStr($"[HOOK] KeyPressHook: a3=0x{a3:X}");
+            if (a2 == 0x100 && (a3 >= 0x30) && (a3 <= 0x39))
+            {
+                lastNumKeyPressed = (int)(a3 - 0x30);
+            }
+            else if (a2 == 0x101 && (a3 >= 0x30) && (a3 <= 0x39))
+            {
+                lastNumKeyPressed = -1;
+            }
+        }
+        else if (a3 == 0x11 && a2 == 0x100)
+        {
+            ctrlPressed = true;
+        }
+        else if (a3 == 0x11 && a2 == 0x101)
+        {
+            ctrlPressed = false;
+        }
+        // LogStr($"[HOOK] KeyPressHook: a1=0x{a1:X}, a2=0x{a2:X}, a3=0x{a3:X}, a4=0x{a4:X}");
+        return _keyPress(a1, a2, a3, a4);
+    }
 
     [UnmanagedCallersOnly]
     static unsafe nint FetchTranslationHook(nint a1, nint a2, nint a3, nint a4)
@@ -261,10 +359,10 @@ public partial class TheSpredsheetEdmundHates
     {
         // return _setCatData(a1, a2, a3, a4);
         LogStr($"[HOOK] SetCatDataHook: a1=0x{a1:X}, a2=0x{a2:X}, a3=0x{a3:X}, a4=0x{a4:X}");
-        InsideSetCatData = true;
+        // InsideSetCatData = true;
         var result = _setCatData(a1, a2, a3, a4);
         LogStr($"[HOOK] SetCatDataHook: result=0x{result:X}");
-        InsideSetCatData = false;
+        // InsideSetCatData = false;
         return result;
     }
 
@@ -290,68 +388,72 @@ public partial class TheSpredsheetEdmundHates
     [UnmanagedCallersOnly]
     static unsafe nint ClickHandlerHook(nint a1, nint a2)
     {
-        // return _clickHandler(a1, a2);
-        CountExecution(nameof(ClickHandlerHook));
-
-        if (a1 != 0 && IsMemReadable(a1 + 0x48, 8))
+        var handledByUs = ButtonManager.handleNativeClick(a1);
+        if (handledByUs)
         {
-            if (OurHeaderbuttons.ContainsValue(a1))
-            {   
-                // if (catStats.Count > 0 && catStats.FirstOrDefault().Value.Count > 0)
-                // {
-                //     var ren = catStats.FirstOrDefault().Key;
-                //     LogStr($"[HOOK] ClickHandlerHook: ren=0x{ren:X}");
-                //     noop = Read<byte>((nint)MewjectorApi.GameBase + 0x60);
-
-                //     var mucMc = GameString.Create("mutations.mutationcount");
-                //     var bdcMc = GameString.Create("mutations.birthdefectcount");
-                //     var muc = ReadNumberOrZero(_getChildByPath(Read<nint>(ren + 0x80), mucMc));
-                //     var bdc =ReadNumberOrZero(_getChildByPath(Read<nint>(ren + 0x80), bdcMc));
-                //     var muts = _getChild(ren + 0x80, GameString.Create("mutations"));
-                //     LogStr($"[HOOK] ClickHandlerHook: 1st mutations.mutationcount={muc}, mutations.birthdefectcount={bdc} mucMc={mucMc}, bdcMc={bdcMc} muts=0x{muts:X}");
-                // }
-
-                LogStr($"[HOOK] ClickHandlerHook: a1=0x{a1:X} is one of our header buttons, ignoring click");
-                MovieClip* movieclip = (MovieClip*)Read(a1 + 0x48);
-                LogStr($"[HOOK] ClickHandlerHook: movieclip=0x{(nint)movieclip:X} movieclip->Name=0x{movieclip->Name:X}");
-                var movieclipname = TryReadCString(movieclip->Name);
-                LogStr($"[HOOK] ClickHandlerHook: movieclipname={movieclipname}");
-                // get first 3 letters
-                var subname = movieclipname.Substring(0, Math.Min(3, movieclipname.Length));
-                LogStr($"[HOOK] ClickHandlerHook: subname={subname}");
-                if (stats.Contains(subname) || subname == "avg")
-                {
-                    if (sortByStat == subname)
-                    {
-                        sortByStatDirection = sortByStatDirection == SortDirection.Ascending
-                            ? SortDirection.Descending
-                            : SortDirection.Ascending;
-                    } else
-                    {
-                        sortByStat = subname;
-                        sortByStatDirection = SortDirection.Descending;
-                    }
-                    SortRows();
-                    LogStr($"[HOOK] ClickHandlerHook: sorting by {sortByStat} {sortByStatDirection}");
-                }
-                return 0;
-            } else if (a1 == (nint)footerButton)
+            return 0;
+        }
+        if (catAbilitiesButtons.Contains(a1))
+        {
+            // return 0;
+            var text = ReadUtf16CustomString(a1 + 0x1B8) ?? "";
+            var abilityId = text;
+            LogStr($"[HOOK] ClickHandlerHook: abilityId={abilityId}");
+            PutFirstInListByAbilityId(abilityId);
+        }
+        if (a1 == openCloseBtn && !ourPanelIsOpen)
+        {
+            if (ctrlPressed)
             {
-                LogStr($"[HOOK] ClickHandlerHook: a1=0x{a1:X} is our footer button, opening kofi link");
-                Process.Start(new ProcessStartInfo
+                IsOurPanelEnabled = false;
+                if (originalHousePanel != null)
                 {
-                    FileName = showingChimplantsPromo ? "https://www.chimplants.com/" : "https://ko-fi.com/chimplants",
-                    UseShellExecute = true
-                });
-                return 0;
+                    originalHousePanel->Effects = 0x0000000000000000;
+                }
+                ctrlPressed = false;
+            } else
+            {
+                if (originalHousePanel != null)
+                {
+                    originalHousePanel->Effects = 0x0000000001000101;
+                }
+                IsOurPanelEnabled = true;
             }
         }
-        var result = _clickHandler(a1, a2);
-        return result;
+        return _clickHandler(a1, a2);
     }
 
-
-    static unsafe void SortRows()
+    static void PutFirstInListByAbilityId(string abilityId)
+    {
+        if (!string.IsNullOrEmpty(abilityId))
+        {
+            // print the whole abilities list, for debugging purposes
+            foreach (var cat in sortedCats)
+            {
+                var abilities = catAbilities[cat];
+                LogStr($"[HOOK] PutFirstInListByAbilityId: cat={cat} abilities={string.Join(", ", abilities)}");
+            }
+            
+            sortedCats = sortedCats
+                .OrderByDescending(
+                    ren => {
+                     var found = catAbilities[ren].Contains(abilityId) ? 1 : 0;
+                     LogStr($"[HOOK] PutFirstInListByAbilityId: ren={ren} found={found} looking for abilityId={abilityId}");
+                     return found;
+                    }
+                ).ToArray();
+            
+            sortedPositions = new Dictionary<nint, int>(sortedCats.Length);
+            
+            LogStr($"sortedPositions count = {sortedPositions.Count}");
+            for (var i = 0; i < sortedCats.Length; i++)
+                sortedPositions[sortedCats[i]] = i;
+            
+            LogStr($"Setting positionDirty=5 at PutFirstInListByAbilityId");
+            positionDirty = 5;
+        }
+    }
+    static void SortRows()
     {
         CountExecution(nameof(SortRows));
         forcedCatStatsUpdatePending = rowRenderers.Length;
@@ -371,12 +473,13 @@ public partial class TheSpredsheetEdmundHates
             {
                 sortedCats = sortedCats.Reverse().ToArray();
             }
-            positionDirty = true;
+            positionDirty = 10;
             LogStr($"[HOOK] SortRows: sortByStat={sortByStat} sortByStatDirection={sortByStatDirection}, sortedCats = {string.Join(", ", sortedCats.Select(e => e.ToString("X")))}");
 
-            sortedPositions = new Dictionary<nint, int>(sortedCats.Length);
-            LogStr($"sortedPositions count = {sortedPositions.Count}");
         }
+
+        sortedPositions = new Dictionary<nint, int>(sortedCats.Length);
+        LogStr($"sortedPositions count = {sortedPositions.Count}");
         for (var i = 0; i < sortedCats.Length; i++)
             sortedPositions[sortedCats[i]] = i;
         LogStr($"sortedCats = {string.Join(", ", sortedCats)}");
@@ -384,13 +487,18 @@ public partial class TheSpredsheetEdmundHates
 
     static nint currentlyDrawerWithOpenIconsPanel = 0;
     static nint currentlyHoveredIndex = -1;
+    static nint previouslyHoveredIndex = -1;
     static nint forcedCatStatsUpdatePending = 0;
 
     [UnmanagedCallersOnly]
     static unsafe nint CatStatsDrawerUpdateHook(nint a1)
     {
         // return _catStatsDrawerUpdate(a1);
-        if (forcedCatStatsUpdatePending > 0)
+        if (previouslyHoveredIndex != -1 && rowDrawers[previouslyHoveredIndex] == a1)
+        {
+            // continue with the rest of the function (once)
+            previouslyHoveredIndex = -1;
+        } else if (forcedCatStatsUpdatePending > 0)
         {
             forcedCatStatsUpdatePending--;
         } else
@@ -479,6 +587,22 @@ public partial class TheSpredsheetEdmundHates
                 // Write(button + 0x10, (byte)(active ? 1 : 0)); // set button active state
                 btn->Enabled = (byte)(active ? 1 : 0); // set button active state
                 btnCount++;
+                for (int k = 0; k < btn->Entity->ComponentsCount; k++)
+                {
+                    Component** slot = btn->Entity->ComponentsList + k;
+                    Component* component = *slot;
+                    nint vtable = Read<nint>((nint)component);
+                    nint audioSourceVtable = (nint)(MewjectorApi.GameBase + 0xED12A0);
+                    LogStr("Looking for component at " + ((nint)component).ToString("X"));
+                    if (component != null && vtable == audioSourceVtable)
+                    {
+                        // is a AudioSource component
+                        LogStr($"[HOOK] Found AudioSource component at {((nint)component):X}");
+                        var audioSource = (AudioSource*)component;
+                        audioSource->Enabled = (byte)(active ? 1 : 0); 
+                    }
+                    // Do something with the component if needed
+                }
             }
             // LogStr($"[HOOK] Setting {btnCount} buttons in container at buttonContainer[{i}] to {(active ? "active" : "inactive")}");
         }
@@ -486,12 +610,11 @@ public partial class TheSpredsheetEdmundHates
 
 
     static Dictionary<nint, byte> _visibilityBefore = new Dictionary<nint, byte>();
-    static bool buttonsInitialized = false;
     [UnmanagedCallersOnly]
     static unsafe nint ToggleHouseDrawerHook(nint a1)
     {
         // return _toggleHouseDrawer(a1);
-        if (originalHousePanel == null)
+        if (originalHousePanel == null || !IsOurPanelEnabled)
         {
             return _toggleHouseDrawer(a1);
         }
@@ -505,6 +628,7 @@ public partial class TheSpredsheetEdmundHates
         {
             LogStr($"[HOOK] Panel Close, state={state:X}");
             ourPanelIsOpen = false;
+            lastNumKeyPressed = -1;
             changed = true;
             catPanelAnimationInProgress = true;
             waitingForPanelStatus = PanelStateClosed;
@@ -531,6 +655,7 @@ public partial class TheSpredsheetEdmundHates
             yOffset = 0;
             yOffsetTarget = 0;
             ourPanelIsOpen = true;
+
             updateRenderersInsideScreenArea(true);
             cachedPointers.Clear();
             LogStr($"[HOOK] Before initializing buttons");
@@ -547,9 +672,13 @@ public partial class TheSpredsheetEdmundHates
         }
         if (changed)
         {
+            LogStr(
+                $"[HOOK] Panel changed, ourPanelIsOpen={ourPanelIsOpen}, xOffset={xOffset}, xOffsetTarget={xOffsetTarget}, xMoveAni="
+                    + (xMoveAni == null ? "null" : xMoveAni.Tick()) + " xMoveTvalue=" + (xMoveAni == null ? "null" : xMoveAni.t));
             xOffsetTarget = ourPanelIsOpen ? 10 : -92;
             xMoveAni = new FloatAnimator(xOffset, xOffsetTarget, 0.4f);
-            positionDirty = true;
+            positionDirty = 10;
+            LogStr($"Setting positionDirty=10 at ToggleHouseDrawerHook");
         }
         return _toggleHouseDrawer(a1);
     }
@@ -622,10 +751,123 @@ public partial class TheSpredsheetEdmundHates
     // static List<nint> headerButtons = new();
     static Dictionary<string, nint> OurHeaderbuttons = new Dictionary<string, nint>();
     static unsafe Button* footerButton = null;
+
+    static unsafe void handleFooterClick(nint btn, ButtonData footerData)
+    {
+        LogStr($"[HOOK] ClickHandlerHook: a1=0x{btn:X} is our footer button, opening kofi link");
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = showingChimplantsPromo ? "https://www.chimplants.com/" : "https://ko-fi.com/chimplants",
+            UseShellExecute = true
+        });
+    }
+    
+    static unsafe void handleHeaderClick(nint btn, ButtonData headerData)
+    {
+        // if (catStats.Count > 0 && catStats.FirstOrDefault().Value.Count > 0)
+        // {
+        //     var ren = catStats.FirstOrDefault().Key;
+        //     LogStr($"[HOOK] ClickHandlerHook: ren=0x{ren:X}");
+        //     noop = Read<byte>((nint)MewjectorApi.GameBase + 0x60);
+
+        //     var mucMc = GameString.Create("mutations.mutationcount");
+        //     var bdcMc = GameString.Create("mutations.birthdefectcount");
+        //     var muc = ReadNumberOrZero(_getChildByPath(Read<nint>(ren + 0x80), mucMc));
+        //     var bdc =ReadNumberOrZero(_getChildByPath(Read<nint>(ren + 0x80), bdcMc));
+        //     var muts = _getChild(ren + 0x80, GameString.Create("mutations"));
+        //     LogStr($"[HOOK] ClickHandlerHook: 1st mutations.mutationcount={muc}, mutations.birthdefectcount={bdc} mucMc={mucMc}, bdcMc={bdcMc} muts=0x{muts:X}");
+        // }
+
+        // MovieClip* movieclip = (MovieClip*)Read(btn + 0x48);
+        // LogStr($"[HOOK] ClickHandlerHook: movieclip=0x{(nint)movieclip:X} movieclip->Name=0x{movieclip->Name:X}");
+        // get first 3 letters
+        var subname = headerData.id.Replace("_btn", "");
+        if (subname == sortByStat)
+        {
+            sortByStatDirection = sortByStatDirection == SortDirection.Ascending
+                ? SortDirection.Descending
+                : SortDirection.Ascending;
+        } else
+        {
+            sortByStatDirection = SortDirection.Descending;
+        }
+        sortByStat = subname;
+        SortRows();
+        LogStr($"[HOOK] ClickHandlerHook: sorting by {sortByStat} {sortByStatDirection}");
+
+    }
+
+    class ButtonData
+    {
+        public string id;
+        // constructor:
+        public ButtonData(string id)
+        {
+            this.id = id;
+        }
+    }
+
+    static unsafe void setHoveredCatRoom(int newIndex) 
+    {
+        if (newIndex >= rooms.Count || newIndex < 0)
+        {
+            LogStr($"[HOOK] New room index out of bounds: newIndex={newIndex}");
+            return;
+        }
+        if (currentlyHoveredIndex == -1)
+        {
+            LogStr($"[HOOK] No cat is currently hovered: currentlyHoveredIndex={currentlyHoveredIndex}");
+            return;
+        }
+        var cat = ((CatStatsDrawer*)rowDrawers[currentlyHoveredIndex])->HouseCat;
+        var assingRoomFn = (delegate* unmanaged<nint, nint, void>)(MewjectorApi.GameBase + 0x2e88d0);
+        LogStr($"[HOOK] New room index: newIndex={newIndex}");
+        var room = rooms[newIndex];
+        catRooms[currentlyHoveredIndex] = room;
+        var movieclip = ((Renderer*)rowRenderers[currentlyHoveredIndex])->MovieClip;
+        var roomTextbox = _getChild((nint)movieclip, GameString.Create("room_number"));
+        var roomStr = room == -1 ? "-" : $"{rooms.IndexOf(room) + 1}";
+        _setText(roomTextbox, GameString.CreateUTF16GameString(roomStr));
+        LogStr($"[HOOK] Assigning room: room=0x{room:X} cat=0x{(nint)cat:X}");
+        assingRoomFn(room, (nint)cat);
+        // var cat = Read<nint>((nint)MewjectorApi.GameBase + 0x60);
+        // var room = Read<nint>((nint)MewjectorApi.GameBase + 0x68);
+        // LogStr($"[HOOK] Room button clicked: room=0x{room:X} cat=0x{cat:X}");
+                
+    }
     static unsafe void initializeButtons()
     {
         if (initializedButtons)
             return;
+
+        for (int i = 0; i < rowRenderers.Length; i++)
+        {
+            
+            var root = (nint)((Renderer*)rowRenderers[i])->MovieClip;
+            var menupanel = (nint)((CatStatsDrawer*)rowDrawers[i])->MenuPanel;
+
+            var roomMovieclip = _getChild(root, GameString.Create("room_btn"));
+            ButtonManager.createButton("room_btn", menupanel, (nint btn, ButtonData data)=>
+            {
+                if (currentlyHoveredIndex == -1)
+                {
+                    LogStr($"[HOOK] ClickHandlerHook: currentlyHoveredIndex is -1, weird");
+                    return;
+                }
+                var cat = ((CatStatsDrawer*)rowDrawers[currentlyHoveredIndex])->HouseCat;
+                var room = (nint)((HouseCat*)cat)->Room;
+                var newIndex = rooms.IndexOf(room) + 1;
+                if (newIndex == rooms.Count)
+                    newIndex = 0;
+                LogStr($"[HOOK] New room index: newIndex={newIndex}");
+                setHoveredCatRoom(newIndex);
+                // var cat = Read<nint>((nint)MewjectorApi.GameBase + 0x60);
+                // var room = Read<nint>((nint)MewjectorApi.GameBase + 0x68);
+                // LogStr($"[HOOK] Room button clicked: room=0x{room:X} cat=0x{cat:X}");
+                
+                LogStr($"[HOOK] Room button clicked: btn=0x{btn:X} data.id={data.id}");
+            }, new ButtonData("room_btn"));
+        }
 
         initializedButtons = true;
         LogStr($"Initializing buttons..., headers renderer = {(nint)headersRenderer:X}");
@@ -635,28 +877,7 @@ public partial class TheSpredsheetEdmundHates
             return;
         }
         nint headersEntity = Marshal.ReadIntPtr((nint)headersRenderer + 0x18);
-        nint callbackVtable = Marshal.AllocHGlobal(0x30);
 
-        Buffer.MemoryCopy(
-            (void*)(MewjectorApi.GameBase + 0xee7e50),
-            (void*)callbackVtable,
-            0x30,
-            0x30
-        );
-
-        Marshal.WriteIntPtr(
-            callbackVtable + 0x10,
-            (nint)(delegate* unmanaged<nint, nint>)&TestButtonCallback
-        );
-        nint callback = Marshal.AllocHGlobal(0x40);
-        NativeMemory.Clear((void*)callback, 0x40);
-
-        Marshal.WriteIntPtr(callback + 0x00, callbackVtable);
-        Marshal.WriteIntPtr(callback + 0x38, callback);
-        // ------------------------------------------------------------
-        // Create a MenuPanel for the RowHeaders renderer/entity.
-        // ------------------------------------------------------------
-        // var menuEntity = _createEntity(headersEntity);
         LogStr("Creating headerMenuPanel...");
         var _createMenuPanel =
             (delegate* unmanaged<nint, nint, nint>)
@@ -673,28 +894,10 @@ public partial class TheSpredsheetEdmundHates
         if (headerMenuPanel == 0)
             return;
 
-        // Empty callback storage for the experiment.
-        nint callbackStorage = Marshal.AllocHGlobal(0x20);
-        NativeMemory.Clear((void*)callbackStorage, 0x20);
-
-        Marshal.WriteIntPtr(callbackStorage + 0x00, 0);
-        Marshal.WriteIntPtr(callbackStorage + 0x08, 0);
-        Marshal.WriteIntPtr(callbackStorage + 0x10, 0);
-        Marshal.WriteIntPtr(callbackStorage + 0x18, 15);
-
         for (int i = 0; i < buttonList.Length; i++)
         {
-            var btnName = buttonList[i];
-            var newButton = (Button*)_registerButton(
-                headerMenuPanel,
-                GameString.Create(btnName),
-                callbackStorage,
-                callback
-            );
-            LogStr($"Registered {btnName} with the game's register-newButton function, result = 0x{(nint)newButton:X}");
-            // Write((nint)newButton + 0x50, 0x000003EA);
-            newButton->Flags = 0x000003EA;
-            OurHeaderbuttons[btnName] = (nint)newButton;
+            var btnName = buttonList[i] + "_btn";
+            ButtonManager.createButton(btnName, headerMenuPanel, handleHeaderClick, new ButtonData(btnName));
         }   
 
         if (footerRenderer != null)
@@ -704,15 +907,10 @@ public partial class TheSpredsheetEdmundHates
                 footerEntity,
                 GameString.Create("row_footer")
             );
-            LogStr($"Created footerMenuPanel MenuPanel = 0x{footerMenuPanel:X}");
-            footerButton = (Button*)_registerButton(
-                footerMenuPanel,
-                GameString.Create(showingChimplantsPromo ? "chimp_btn" : "kofi_btn"),
-                callbackStorage,
-                callback
-            );
-            footerButton->Flags = 0x000003EA;
-            LogStr($"Registered footer btn with the game's register-newButton function, result = 0x{(nint)footerButton:X}");
+
+            var id = showingChimplantsPromo ? "chimp_btn" : "kofi_btn";
+            ButtonManager.createButton(id, footerMenuPanel, handleFooterClick, new ButtonData(id));
+            LogStr($"Registered footer btn with the game's register-newButton function, result = 0x{footerMenuPanel:X}");
         }
 
     }
@@ -769,9 +967,6 @@ public partial class TheSpredsheetEdmundHates
                         yScrollAni = new FloatAnimator(yOffset, _yOffsetTarget, 0.1f);
                         updateRowTransforms();
                     }
-                } else
-                {
-                    yScrollAni = null;
                 }
                 return 0;
             }
@@ -780,7 +975,7 @@ public partial class TheSpredsheetEdmundHates
         return _mouseEventHandler(a1, a2);
     }
 
-    unsafe static bool _insideHouseCatByOffset = false;
+    // unsafe static bool _insideHouseCatByOffset = false;
     unsafe static int totalCatsCount = -1;
 
     [UnmanagedCallersOnly]
@@ -789,7 +984,7 @@ public partial class TheSpredsheetEdmundHates
         // return _getHouseCatByOffset(a1, a2);
         CountExecution(nameof(GetHouseCatByOffsetHook));
 
-        _insideHouseCatByOffset = true;
+        // _insideHouseCatByOffset = true;
         nint result;
         if (isIteratingOurDrawers)
         {
@@ -797,7 +992,7 @@ public partial class TheSpredsheetEdmundHates
             if ((uint)_catIndex >= (uint)cachedVisibleCats.Length)
             {
                 LogStr($"[HOOK] GetHouseCatByOffsetHook: _catIndex {_catIndex} is out of range for cachedVisibleCats.Length {cachedVisibleCats.Length}");
-                _insideHouseCatByOffset = false;
+                // _insideHouseCatByOffset = false;
                 return 0;
             }
 
@@ -808,7 +1003,7 @@ public partial class TheSpredsheetEdmundHates
             LogStr($"Getting cat at {a1:X} {a2:X}");
             result = _getHouseCatByOffset(a1, a2);
         }
-        _insideHouseCatByOffset = false;
+        // _insideHouseCatByOffset = false;
         LogStr($"[HOOK] GetHouseCatByOffsetHook: result={result:X}");
         return result;
     }
@@ -842,8 +1037,12 @@ public partial class TheSpredsheetEdmundHates
         var result = _initCatStatsClickCallback(a1);
         // if (cachedVisibleCats.Length != prevCachedVisibleCatsCount || cachedVisibleCats.Length != totalCatsCount)
         // {
-        pendingOurInitCatStats = true;
-        btnInitCatStatsCallback = a1;
+        if (IsOurPanelEnabled)
+        {
+            pendingOurInitCatStats = true;
+            btnInitCatStatsCallback = a1;
+            yScrollAni = new FloatAnimator(0f, 0f, 1f);
+        }
         // } else
         // {
         //     disableButtonsInTicks = 10;
@@ -906,44 +1105,6 @@ public partial class TheSpredsheetEdmundHates
         return result;
     }
 
-    unsafe static string ReadUtf16CustomString(nint address)
-    {
-        CountExecution(nameof(ReadUtf16CustomString));
-
-        byte* obj = (byte*)address;
-
-        ulong length = *(ulong*)(obj + 0x10);
-        ulong capacity = *(ulong*)(obj + 0x18);
-
-        if (length == 0)
-            return string.Empty;
-
-        if (length > int.MaxValue)
-            throw new OverflowException("String length is too large.");
-
-        if (capacity <= 7)
-        {
-            // Small-string optimization:
-            // UTF-16 characters are stored directly at +0x00.
-            return new string(
-                (char*)(obj + 0x00),
-                0,
-                (int)length
-            );
-        }
-
-        // Heap-allocated string.
-        char* str = *(char**)obj;
-
-        if (str == null)
-            return string.Empty;
-
-        return new string(
-            str,
-            0,
-            (int)length
-        );
-    }
 
     static nint openCloseBtn = 0;
     static List<nint> theirButtons = new List<nint>();
@@ -1020,12 +1181,12 @@ public partial class TheSpredsheetEdmundHates
         return result;
     }
 
-    static string[] buttonList =
-        ["spd_btn", "cha_btn", "int_btn", "str_btn", "lck_btn", "con_btn", "dex_btn", "avg_btn", "bdc_btn", "muc_btn", "lev_btn", "age_btn"];
-    static string[] stats = ["spd", "cha", "int", "str", "lck", "con", "dex", "bdc", "muc", "lev", "age"];
-    static bool allStatsAlreadyFound = false;
+    static string[] buttonList = ["spd", "cha", "int", "str", "lck", "con", "dex", "avg", "bdc", "muc", "lev", "age", "hou"];
     
     static Dictionary<nint, Dictionary<string, int>> catStats = new();
+    static Dictionary<nint, List<string>> catAbilities = new();
+    static List<nint> catAbilitiesButtons = new();
+    static Dictionary<nint, nint> catRooms = new();
     // static sortedCats:
     static nint[] sortedCats = Array.Empty<nint>();
     
@@ -1058,7 +1219,7 @@ public partial class TheSpredsheetEdmundHates
         if (name == "total")
         {
             var parentMovieclip = (MovieClip*)Read(dynamicTextBox + 0x38);
-            var parentName = TryReadCString(parentMovieclip->Name);
+            var parentName = TryReadCString(parentMovieclip->Name) ?? "";
             // get first 3 letters
             return parentName.Length >= 3 ? parentName[..3] : "";
         }
@@ -1113,36 +1274,129 @@ public partial class TheSpredsheetEdmundHates
                 break;
         }
 
+        
+        foreach (var ren in activeRowsRenderers)
+        {
+            LogStr($"[HOOK] Processing renderer {ren:X}");
+            var drawer = rowDrawers[Array.IndexOf(rowRenderers, ren)];
+            LogStr($"[HOOK] drawer=0x{(nint)drawer:X}");
+            var movieclip = ((Renderer*)ren)->MovieClip;
+            LogStr($"[HOOK] movieclip=0x{(nint)movieclip:X}");
+            var houseCat = ((CatStatsDrawer*)drawer)->HouseCat;
+            var catRoomPtrLong = houseCat->Room;
+            var catRoomPtr = (nint)catRoomPtrLong;
+            LogStr($"[HOOK] catRoomPtr=0x{catRoomPtr:X} houseCat=0x{(nint)houseCat:X}");
+            if (!catStats[ren].ContainsKey("hou") || catStats[ren]["hou"] != rooms.IndexOf(catRoomPtr))
+            {
+                LogStr($"[HOOK] catRoomPtr=0x{catRoomPtr:X}");
+                var catRoom = rooms.IndexOf(catRoomPtr);
+                LogStr($"[HOOK] catRoom={catRoom}");
+                var roomTextbox = _getChild((nint)movieclip, GameString.Create("room_number"));
+                var roomStr = catRoomPtr == -1 ? "-" : $"{catRoom + 1}";
+                LogStr($"[HOOK] GameTickHook: catRoomPtr=0x{catRoomPtr:X} catRoom={catRoom} drawer=0x{drawer:X} roomTextbox=0x{(nint)roomTextbox:X}");
+                _setText(roomTextbox, GameString.CreateUTF16GameString(roomStr));
+                // catRooms[ren] = catRoomPtr;
+                catStats[ren]["hou"] = catRoom;
+            }
+            var menupanel = ((CatStatsDrawer*)drawer)->MenuPanel;
+
+            LogStr($"Looking buttons in menu panel at 0x{menupanel:X}");
+            List<string> abilityIds = new List<string>();
+            nint[] abilities = [
+                (nint)FindButtonInPanel((MenuPanel*)menupanel, "attack"),
+                (nint)FindButtonInPanel((MenuPanel*)menupanel, "spell0"),
+                (nint)FindButtonInPanel((MenuPanel*)menupanel, "spell1"),
+                (nint)FindButtonInPanel((MenuPanel*)menupanel, "spell2"),
+                (nint)FindButtonInPanel((MenuPanel*)menupanel, "spell3"),
+                (nint)FindButtonInPanel((MenuPanel*)menupanel, "spell4"),
+                (nint)FindButtonInPanel((MenuPanel*)menupanel, "spell5"),
+                (nint)FindButtonInPanel((MenuPanel*)menupanel, "passive0"),
+                (nint)FindButtonInPanel((MenuPanel*)menupanel, "passive1"),
+                (nint)FindButtonInPanel((MenuPanel*)menupanel, "passive2"),
+                (nint)FindButtonInPanel((MenuPanel*)menupanel, "passive3"),
+            ];
+            catAbilities[ren] = new List<string>();
+            for (int i = 0; i < abilities.Length; i++)
+            {
+                var btn = abilities[i];
+                if (btn == 0)
+                {
+                    continue;
+                }
+                var abilityName = ReadUtf16CustomString(btn + 0x1B8) ?? "";
+                if (string.IsNullOrEmpty(abilityName))
+                {
+                    LogStr($"[HOOK] Ability name is empty for button at address 0x{btn:X} for drawer 0x{drawer:X}");
+                    continue;
+                }
+                catAbilitiesButtons.Add(btn);
+                var output = Marshal.AllocHGlobal(0x30); // Allocate 256 bytes for the output
+                NativeMemory.Clear((void*)output, 0x30);
+                LogStr($"[HOOK] Allocated output buffer at address 0x{(nint)output:X}");
+                _getSpellIdFromButton(output, btn + 0x8);
+                LogStr($"[HOOK] Retrieved spell from button at address 0x{btn:X} into output at address 0x{(nint)output:X}");
+                catAbilities[ren].Add(abilityName);
+                LogStr($"[HOOK] Ability id retrieved: {abilityName}");
+            }
+            
+        }
+                    
+
+
         SortRows();
         isIteratingOurDrawers = false;
+
+        // var mc = ((CatStatsDrawer*)rowDrawers[0])->Renderer.Value.MovieClip;
+        // LogStr($"[HOOK] InitCatStatsCallbackHook: first drawer's MovieClip at address {(nint)mc:X}");
+        // var attack = _getChild((nint)mc, GameString.Create("attack"));
+        // var menuPanel = Marshal.ReadIntPtr(rowDrawers[0] + 0x68);
+        // LogStr($"[HOOK] InitCatStatsCallbackHook: first drawer's menu panel at address {(nint)menuPanel:X}");
+        // // Empty callback storage for the experiment.
+
+        // LogStr($"[HOOK] InitCatStatsCallbackHook: first drawer's attack child at address {(nint)attack:X}");
+        // noop = Read<byte>((nint)MewjectorApi.GameBase + 0x60);
+
+        // var btn = _registerButton(menuPanel, GameString.Create("attack"), callbackStorage, callback);
+        // LogStr($"[HOOK] InitCatStatsCallbackHook: registered attack button at address {(nint)btn:X}");
         
 
         disableButtonsInTicks = 10;
         // Write(btnInitCatStatsCallback + 0x8, originalDrawer);
-        btnInitCatStatsCallback->CatStatsDrawer = (CatStatsDrawer*)originalDrawer;
+        btnInitCatStatsCallback->CatStatsDrawer = originalDrawer;
         LogStr($"[HOOK] InitCatStatsCallbackHook: set original drawer to btnInitCatStatsCallback at address {(nint)btnInitCatStatsCallback:X} and points to {(nint)btnInitCatStatsCallback->CatStatsDrawer:X}");
 
     }
    
-    static bool averagesDirty = false;
-    static bool positionDirty = false;
+    static int positionDirty = 0;
     static List<nint> panelsWithData = new();
+    static DateTime ticksStartTime;
     [UnmanagedCallersOnly]
     static unsafe nint GameTickHook(nint a1)
     {
+        
+        if (!IsOurPanelEnabled)
+        {
+            return _gameTick(a1);
+        }
         // return _gameTick(a1);
         // call mewgenics.7FF647368A30
         // [[[rax+0x38]+18]+58] 
-        if (pendingRenderersInsideScreenUpdate)
+        if (pendinUpdateRenderersInsideScreen.HasValue && pendinUpdateRenderersInsideScreen <= DateTime.Now)
+        {
+            LogStr("[HOOK] GameTickHook: Updating renderers inside screen area (pendingRenderersInsideScreen)");
+            updateRenderersInsideScreenArea();
+            pendinUpdateRenderersInsideScreen = null;
+        }
+        if (pendinUpdateTransformInTick.HasValue && pendinUpdateTransformInTick <= DateTime.Now)
         {
             LogStr("[HOOK] GameTickHook: Updating renderers inside screen area");
-            updateRowTransforms();
-            updateRenderersInsideScreenArea();
-            pendingRenderersInsideScreenUpdate = false;
+            updateRowTransforms(true);
+            pendinUpdateRenderersInsideScreen = DateTime.Now.AddMilliseconds(10);
+            pendinUpdateTransformInTick = null;
         }
         if (pendingOurInitCatStats)
         {
-            LogStr("[HOOK] GameTickHook: Initializing our cat stats");
+            LogStr("[HOOK] GameTickHook: Initializing our cat statsNames");
             InitOurCatStats();
             pendingOurInitCatStats = false;
         }
@@ -1159,15 +1413,25 @@ public partial class TheSpredsheetEdmundHates
         }
         if (originalDrawer != null)
         {
+            if (ticksStartTime == default)
+            {
+                ticksStartTime = DateTime.Now;
+            } 
+            // else if (ticksStartTime.AddSeconds(15) <= DateTime.Now)
+            // {
+            //     LogStr($"[HOOK] In 15 seconds there were number of ticks: {framesSinceInitialCatStatsDrawer} so the ~fps: {framesSinceInitialCatStatsDrawer / 15.0}");
+            //     ticksStartTime = DateTime.Now;
+            //     framesSinceInitialCatStatsDrawer = 0;
+            // }
             framesSinceInitialCatStatsDrawer++;
             // if (framesSinceInitialCatStatsDrawer % 1000 != 0)
             // {
             //     return result;
             // }
-            if (framesSinceInitialCatStatsDrawer >= 100000)
-            {
-                framesSinceInitialCatStatsDrawer = 0;
-            }
+            // if (framesSinceInitialCatStatsDrawer >= 100000)
+            // {
+            //     framesSinceInitialCatStatsDrawer = 0;
+            // }
         }
 
         // 00007FF646AD4C40
@@ -1241,8 +1505,13 @@ public partial class TheSpredsheetEdmundHates
         }
 
 
-        if (ourPanelIsOpen && framesSinceInitialCatStatsDrawer % 10 == 0 && !ourAnimationInProgress)
+        if (ourPanelIsOpen && framesSinceInitialCatStatsDrawer % 20 == 0 && !ourAnimationInProgress)
         {
+            if (lastNumKeyPressed != -1)
+            {
+                setHoveredCatRoom(lastNumKeyPressed - 1);
+            }
+
             // LogStr($"ourPanelIsOpen: {ourPanelIsOpen}");
             var index = GetRendererIndexWhereMouseIsHitting();
             // LogStr($"index under mouse: {index}");
@@ -1252,8 +1521,8 @@ public partial class TheSpredsheetEdmundHates
                 // LogStr($"Hovered drawer changed from {currentlyHoveredIndex} to {index}");
                 if (currentlyHoveredIndex != -1)
                 {
-                    LogStr($"Deactivating buttons for previously hovered index: {currentlyHoveredIndex}");
-                    setActiveAllOurButtons(false, (nint)rowRenderers[currentlyHoveredIndex]);
+                    LogStr($"Deactivate buttons for previously hovered index next CatStatsUpdate (to give time for the frame change)");
+                    previouslyHoveredIndex = currentlyHoveredIndex;
                 }
                 if (index != -1)
                 {
@@ -1289,13 +1558,15 @@ public partial class TheSpredsheetEdmundHates
                         catStats[ren]["int"] = ReadNumberOrZero(_getChildByPath((nint)movieclip, GameString.Create("intfancy.total")));
                         catStats[ren]["lck"] = ReadNumberOrZero(_getChildByPath((nint)movieclip, GameString.Create("lckfancy.total")));
                         catStats[ren]["con"] = ReadNumberOrZero(_getChildByPath((nint)movieclip, GameString.Create("confancy.total")));
-                        averages[ren] = (double)Math.Round(catStats[ren].Average(kv => kv.Value), 1);
+                        averages[ren] = (double)Math.Round(catStats[ren].Where(kv => kv.Key != "hou").Average(kv => kv.Value), 1);
                         var mutations = _getChild((nint)movieclip, GameString.Create("mutations"));
+                        
                         catStats[ren]["muc"] = ReadNumberOrZero(_getChild(mutations, GameString.Create("mutationcount")));
                         catStats[ren]["bdc"] = ReadNumberOrZero(_getChild(mutations, GameString.Create("birthdefectcount")));
                         catStats[ren]["age"] = ReadNumberOrZero(_getChildByPath((nint)movieclip, GameString.Create("age")));
                         catStats[ren]["lev"] = ReadNumberOrZero(_getChildByPath((nint)movieclip, GameString.Create("level")));
-                        
+
+
                         var avgTextbox = _getChild((nint)movieclip, GameString.Create("average"));
                         _setText(avgTextbox, GameString.CreateUTF16GameString($"{averages[ren]}"));
 
@@ -1323,39 +1594,46 @@ public partial class TheSpredsheetEdmundHates
     }
     
     static Dictionary<nint, int> sortedPositions = new Dictionary<nint, int>();
-    static bool pendingRenderersInsideScreenUpdate = false;
+    static DateTime? pendinUpdateTransformInTick = null;
+    static DateTime? pendinUpdateRenderersInsideScreen = null;
     static bool ourAnimationInProgress = false;
 
     static unsafe void handlePositionOfOurPanel()
     {
-        var newYOffset = yScrollAni == null ? yOffset : yScrollAni.Tick();
-        var newXOffset = xMoveAni == null ? xOffset : xMoveAni.Tick();
-        var yChanged = newYOffset != yOffset;
-        var xChanged = newXOffset != xOffset;
-        if (!yChanged && !xChanged && !positionDirty)
+        if (yScrollAni == null) return;
+        if (xMoveAni == null) return;
+        var newYOffset = yScrollAni.Tick();
+        var newXOffset = xMoveAni.Tick();
+        var yChanged = newYOffset != yOffset || yScrollAni.justFinished;
+        var xChanged = newXOffset != xOffset || xMoveAni.justFinished;
+        if (!yChanged && !xChanged && positionDirty == 0)
         {
             return;
         }
-        var xIsFinished = newXOffset == 10 || newXOffset == -92;
-        var yIsFinished = yScrollAni == null || newYOffset == yScrollAni.targetValue;
-        var yJustFinished = yChanged && yIsFinished;
-        var xJustFinished = xChanged && xIsFinished;
+        if (positionDirty > 0)
+        {
+            positionDirty--;
+            LogStr($"Decrementing positionDirty, new value is {positionDirty}");
+        }
+        var xIsFinished = xMoveAni == null || xMoveAni.finished;
+        var yIsFinished = yScrollAni == null || yScrollAni.finished;
         CountExecution(nameof(handlePositionOfOurPanel));
-        var ourAnimationJustEnded = false;
+        // var ourAnimationJustEnded = false;
         ourAnimationInProgress = true;
 
-        if (xJustFinished || yJustFinished)
-        {
-            LogStr($"Our animation just ended: xOffset={xOffset} yOffset={yOffset} newXOffset={newXOffset} newYOffset={newYOffset}");
-            ourAnimationJustEnded = true;
-        }
+        // if (xJustFinished || yJustFinished)
+        // {
+        //     LogStr($"Our animation just ended: xOffset={xOffset} yOffset={yOffset} newXOffset={newXOffset} newYOffset={newYOffset}");
+        //     ourAnimationJustEnded = true;
+        // }
         
         if (xIsFinished && yIsFinished)
         {
             LogStr($"Both x and y animations just finished: xOffset={xOffset} yOffset={yOffset} newXOffset={newXOffset} newYOffset={newYOffset}");
             ourAnimationInProgress = false;
         }
-
+        LogStr($"newXOffset {newXOffset} newYOffset {newYOffset}, old one xOffset={xOffset} yOffset={yOffset}, xMoveAni=" + (xMoveAni == null ? "null" : xMoveAni.Tick()) + " yOffsetTarget=" + (yScrollAni == null ? "null" : yScrollAni.targetValue)
+         + " xMoveTvalue=" + (xMoveAni == null ? "null" : xMoveAni.t));
         yOffset = newYOffset;
         xOffset = newXOffset;
         LogStr($"xOffset {xOffset} yOffset {yOffset}");
@@ -1368,12 +1646,15 @@ public partial class TheSpredsheetEdmundHates
 
         if (headersRenderer != null)
         {
-            var headerTransform = headersRenderer->Transform;
-            headerTransform->X = headerXpos;
-            if (!catPanelAnimationInProgress && (xOffset == 10 || xOffset == -92))
+            headersRenderer->Transform->X = headerXpos;
+            LogStr($"headerTransform->X set to {headerXpos} headerTransform=0x{(nint)headersRenderer->Transform:X}");
+            if (xMoveAni.justFinished)
             {
-                LogStr($"Tracking movieclip child parent offset for originalHousePanel=0x{(nint)originalHousePanel:X} headerTransform=0x{(nint)headerTransform:X}");
-                _trackMovieclipChildParentOffset((nint)originalHousePanel, (nint)headerTransform, 1);
+                LogStr($"Tracking movieclip child parent offset for originalHousePanel=0x{(nint)originalHousePanel:X} headerTransform=0x{(nint)headersRenderer->Transform:X}");
+                _trackMovieclipChildParentOffset((nint)originalHousePanel, (nint)headersRenderer->Transform, 1);
+                LogStr($"Tracked movieclip child parent offset for originalHousePanel=0x{(nint)originalHousePanel:X} headerTransform=0x{(nint)headersRenderer->Transform:X}");
+                LogStr("Setting positionDirty to 20 at handlePositionOfOurPanel (headerTransform update)");
+                positionDirty = 20;
             }
         }
         if (footerRenderer != null)
@@ -1387,17 +1668,26 @@ public partial class TheSpredsheetEdmundHates
                 _trackMovieclipChildParentOffset((nint)originalHousePanel, (nint)footerTransform, 1);
             }
         }
-        if (positionDirty || yChanged || xJustFinished)
+        if (positionDirty > 0 || yChanged || xMoveAni.justFinished)
         {
             LogStr($"Updating renderers inside screen area with yOffset={yOffset} xOffset={xOffset}");
-            pendingRenderersInsideScreenUpdate = true;
+            pendinUpdateTransformInTick = DateTime.Now.AddMilliseconds(10);
         }
-        positionDirty = false;
     }
 
-    static unsafe void updateRowTransforms()
+    static unsafe void updateRowTransforms(bool forceTrackUpdate = false)
     {
         double xPos = xOffset;
+        double headerXpos = cachedVisibleCats.Length > 0 ? xPos - 10.0 : -300.0;
+        if (headersRenderer != null)
+        {
+            headersRenderer->Transform->X = headerXpos;
+         
+        }
+        if (footerRenderer != null)
+        {
+            footerRenderer->Transform->X = headerXpos;
+        }
         // LogStr($"Updating row transforms with xPos={xPos} yOffset={yOffset}");
         for (var i = 0; i < totalCatsCount && i < rowRenderers.Length && i < rowTransforms.Length; i++)
         {
@@ -1435,7 +1725,7 @@ public partial class TheSpredsheetEdmundHates
                 continue;
             }
             var transform = renderer->Transform;
-            if (!catPanelAnimationInProgress)
+            if (!catPanelAnimationInProgress || positionDirty > 0 || forceTrackUpdate)
             {
                 _trackMovieclipChildParentOffset((nint)originalHousePanel, (nint)transform, 1);
             }
@@ -1452,11 +1742,10 @@ public partial class TheSpredsheetEdmundHates
     unsafe static Renderer* headersRenderer = null;
     unsafe static Renderer* footerRenderer = null;
     
-    static nint attachRendererIteration = 0;
     static bool insideOurCatInstantiation = false;
     static bool showingChimplantsPromo = false;
 
-    static nint noop = 0;
+    // static nint noop = 0;
 
     static unsafe void CreateRows()
     {
@@ -1546,7 +1835,6 @@ public partial class TheSpredsheetEdmundHates
             var transform = Marshal.ReadIntPtr((nint)rowRenderer + 0x40);
             rowTransforms[i] = transform;
             insideOurCatInstantiation = true;
-            attachRendererIteration = 0;
             // sleep for 0.1 seconds
             var rowDrawer = _createCatStatsDrawer(
                 scenePtr,
@@ -1573,14 +1861,6 @@ public partial class TheSpredsheetEdmundHates
             // nint callback = Marshal.AllocHGlobal(0x40);
             // NativeMemory.Clear((void*)callback, 0x40);
             
-            // nint callbackStorage = Marshal.AllocHGlobal(0x20);
-            // NativeMemory.Clear((void*)callbackStorage, 0x20);
-
-            // Marshal.WriteIntPtr(callbackStorage + 0x00, 0);
-            // Marshal.WriteIntPtr(callbackStorage + 0x08, 0);
-            // Marshal.WriteIntPtr(callbackStorage + 0x10, 0);
-            // Marshal.WriteIntPtr(callbackStorage + 0x18, 15);
-
             // testbutton = _registerButton(
             //     menuPanel,
             //     GameString.Create("xxx"),
@@ -1598,9 +1878,6 @@ public partial class TheSpredsheetEdmundHates
         
     }
     // static nint testbutton = 0;
-
-
-    static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _changeCloneText;
 
     static nint scenePtr = 0;
     [UnmanagedCallersOnly]
@@ -1661,7 +1938,8 @@ public partial class TheSpredsheetEdmundHates
             {
                 waitingForPanelStatus = 0;
                 catPanelAnimationInProgress = false;
-                positionDirty = true;
+                positionDirty = 10;
+                LogStr("Setting positionDirty=10 at UpdatePanelLayoutHook");
                 setActiveAllOurButtons(true);
                 LogStr($"[HOOK] 1- Panel is open and animation finished: xOffset {xOffset} xOffsetTarget {xOffsetTarget}");
             }
@@ -1689,14 +1967,15 @@ public partial class TheSpredsheetEdmundHates
                 //     }
                 //     Write(btn + 0x10, (byte)1); 
                 // }
-                positionDirty = true;
+                positionDirty = 10;
+                LogStr("Setting positionDirty=10 at UpdatePanelLayoutHook (2)");
                 LogStr($"[HOOK] 2- Pane is closed and animation finished: xOffset {xOffset} xOffsetTarget {xOffsetTarget}");
             }
         }
 
-        if (ourPanelIsOpen || catPanelAnimationInProgress || pendingRenderersInsideScreenUpdate)
+        if (ourPanelIsOpen || catPanelAnimationInProgress)
         {
-            // LogStr($"[HOOK] Updating row transforms: ourPanelIsOpen {ourPanelIsOpen} catPanelAnimationInProgress {catPanelAnimationInProgress} pendingRenderersInsideScreenUpdate {pendingRenderersInsideScreenUpdate}");
+            // LogStr($"[HOOK] Updating row transforms: ourPanelIsOpen {ourPanelIsOpen} catPanelAnimationInProgress {catPanelAnimationInProgress} pendinUpdateTransformInTick {pendinUpdateTransformInTick}");
             updateRowTransforms();
         }
         return result;
@@ -1706,6 +1985,7 @@ public partial class TheSpredsheetEdmundHates
     {
         LogStr($"ClearState called");
         // LogStr($"[HOOK] RemoveMovieClip called on mod container 0x{a1:X}");
+        rooms.Clear();
         buttonsInsideOurDrawers.Clear();
         alreadyInitializedRenderers.Clear();
         catPartsInsideOurDrawers = Array.Empty<nint>();
@@ -1733,8 +2013,7 @@ public partial class TheSpredsheetEdmundHates
         averages.Clear();
         xOffset = -300;
         xOffsetTarget = -300;
-        positionDirty = false;
-        averagesDirty = false;
+        positionDirty = 0;
         cachedPointers.Clear();
         catStats.Clear();
         yScrollAni = null;
@@ -1747,136 +2026,279 @@ public partial class TheSpredsheetEdmundHates
             return;
         MewjectorApi.Log(message);
     }
-
-    [StructLayout(LayoutKind.Sequential)]
-    unsafe struct StdStringSso
+    public static unsafe Button* FindButtonInPanel(
+        MenuPanel* menuPanel,
+        string name)
     {
-        public fixed byte Buffer[16];
-        public ulong Size;
-        public ulong Capacity;
-    }
-    // Scans each argument as a struct pointer, chasing every pointer-sized field
-    // within the first STRUCT_SCAN_BYTES bytes, looking for a C-string == TARGET.
-    // Reads a MSVC x64 std::string object at strObjPtr.
-    // Layout: [+0x00] char* ptr (heap) OR char buf[16] (SSO), [+0x10] size_t size, [+0x18] size_t capacity.
-    // SSO when capacity == 15: data is inline at +0x00.  Heap when capacity > 15: +0x00 is char*.
-    static unsafe bool TryGetStdStringLayout(nint strObjPtr, out ulong size, out ulong capacity, out nint dataPtr, bool debug = false)
-    {
-        size = 0;
-        capacity = 0;
-        dataPtr = 0;
+        if (menuPanel == null)
+            return null;
 
-        if (!IsLikelyPointer(strObjPtr) || !IsMemReadable(strObjPtr, 0x20)) return false;
+        ButtonMapNode* header = menuPanel->ButtonMap;
 
-        size = *(ulong*)(strObjPtr + 0x10);
-        capacity = *(ulong*)(strObjPtr + 0x18);
+        if (header == null)
+            return null;
 
-        // Keep conservative bounds to avoid interpreting random structs as strings.
-        if (size == 0 || size > 512) return false;
+        // Native:
+        //
+        // mov r14, [r13+40h]
+        // mov rbx, [r14+8]
+        //
+        ButtonMapNode* node = header->Parent;
 
-        if (capacity <= 15)
+        while (node != header)
         {
-            // MSVC SSO: payload lives inline at +0x00.
-            if (size > capacity) return false;
-            dataPtr = strObjPtr;
-            if (debug)
+            string nodeName = HexToAscii((nint)node->Key);
+
+            LogStr(
+                $"FindButtonInPanel: node 0x{(nint)node:X} " +
+                $"'{nodeName}'");
+
+            int cmp = string.CompareOrdinal(nodeName, name);
+
+            if (cmp == 0)
             {
-                LogStr($"[SSO] std::string at 0x{strObjPtr:X} size={size} capacity={capacity} inline data=0x{dataPtr:X}");
+                LogStr(
+                    $"FindButtonInPanel: FOUND '{name}' " +
+                    $"-> 0x{(nint)node->Value:X}");
+
+                return node->Value;
             }
-            return IsMemReadable(dataPtr, (int)size + 1);
+
+            if (cmp < 0)
+            {
+                LogStr(
+                    $"FindButtonInPanel: '{nodeName}' < '{name}' " +
+                    $"-> RIGHT 0x{(nint)node->Right:X}");
+
+                node = node->Right;
+            }
+            else
+            {
+                LogStr(
+                    $"FindButtonInPanel: '{nodeName}' > '{name}' " +
+                    $"-> LEFT 0x{(nint)node->Left:X}");
+
+                node = node->Left;
+            }
         }
 
-        if (capacity < size || capacity > 0x10000) return false;
-
-        // Heap string: +0x00 stores char*.
-        dataPtr = *(nint*)strObjPtr;
-        if (!IsLikelyPointer(dataPtr) || !IsMemReadable(dataPtr, (int)size + 1)) return false;
-        return true;
+        return null;
     }
+private static unsafe Button* FindButtonBranch(
+    ButtonMapNode* node,
+    nint mapAddress,
+    nint sentinelAddress,
+    string name,
+    HashSet<nint> visited)
+{
+    if (node == null)
+        return null;
 
-    static unsafe string? TryReadStdString(nint strObjPtr, bool debug = false)
+    nint address = (nint)node;
+
+    // Don't enter the container/sentinel.
+    if (address == mapAddress || address == sentinelAddress)
+        return null;
+
+    // Prevent malformed/circular structures from hanging us.
+    if (!visited.Add(address))
     {
-        if (!TryGetStdStringLayout(strObjPtr, out ulong size, out _, out nint dataPtr, debug)) return null;
-
-        byte* p = (byte*)dataPtr;
-        var sb = new System.Text.StringBuilder((int)size);
-        for (int i = 0; i < (int)size; i++)
-        {
-            byte b = p[i];
-            if (b < 0x20 || b > 0x7E) return null;
-            sb.Append((char)b);
-        }
-
-        // Require a terminator immediately after payload. This rejects many false positives.
-        if (p[(int)size] != 0) return null;
-
-        return sb.ToString();
+        LogStr($"FindButtonBranch: already visited 0x{address:X}");
+        return null;
     }
 
-    // Returns a printable ASCII string from ptr if it looks like one, otherwise null.
-    // Reads up to maxLen chars; rejects if any non-printable byte found before '\0'.
-    static unsafe string? TryReadCString(nint ptr, int maxLen = 128)
+    string nodeName = HexToAscii((nint)node->Key);
+
+    LogStr(
+        $"FindButtonBranch: " +
+        $"node=0x{address:X}, " +
+        $"name='{nodeName}', " +
+        $"L=0x{(nint)node->Left:X}, " +
+        $"R=0x{(nint)node->Right:X}");
+
+    if (string.Equals(nodeName, name, StringComparison.Ordinal))
     {
-        if (!IsLikelyPointer(ptr) || !IsMemReadable(ptr, 1)) return null;
-        byte* p = (byte*)ptr;
-        var sb = new System.Text.StringBuilder();
-        for (int i = 0; i < maxLen; i++)
-        {
-            // Check readability at every 4 KB page boundary crossing.
-            if (i > 0 && ((ulong)(ptr + i) & 0xFFFUL) == 0 && !IsMemReadable(ptr + i, 1)) return null;
-            byte b = p[i];
-            if (b == 0) return sb.Length > 0 ? sb.ToString() : null;
-            if (b < 0x20 || b > 0x7E) return null; // non-printable → not a plain string
-            sb.Append((char)b);
-        }
-        return null; // no null terminator within maxLen
+        LogStr(
+            $"FindButtonBranch: FOUND '{name}' " +
+            $"-> 0x{(nint)node->Value:X}");
+
+        return node->Value;
     }
 
-    static int _diagCallCount = 0;
-    // Key: dedup token — each unique string+path combination is logged at most once
-    static readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> _seenStrings = new();
-    static readonly System.Collections.Concurrent.ConcurrentDictionary<nint, bool> _seenGonObjects = new();
+    Button* result = FindButtonBranch(
+        node->Left,
+        mapAddress,
+        sentinelAddress,
+        name,
+        visited);
 
-    // Pointer range of the game's PE image (code, rdata, vtables — not heap objects).
-    static readonly nint IMAGE_RANGE_START = unchecked((nint)0x7FF70C3C0000L);
-    static readonly nint IMAGE_RANGE_END   = unchecked((nint)0x7FF70D900000L);
+    if (result != null)
+        return result;
 
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct MEMORY_BASIC_INFORMATION
+    return FindButtonBranch(
+        node->Right,
+        mapAddress,
+        sentinelAddress,
+        name,
+        visited);
+}
+private static unsafe Button* FindButtonInTree(
+    ButtonMapNode* node,
+    ButtonMapNode* header,
+    string targetName,
+    HashSet<nint> visited,
+    int depth)
+{
+    if (node == null)
     {
-        public nuint BaseAddress;
-        public nuint AllocationBase;
-        public uint  AllocationProtect;
-        public ushort PartitionId;
-        private ushort _pad;
-        public nuint RegionSize;
-        public uint  State;
-        public uint  Protect;
-        public uint  Type;
-        private uint _trailingPad; // native struct is 48 bytes; C# sequential omits trailing alignment pad
+        LogStr($"{new string(' ', depth * 2)}NULL NODE");
+        return null;
     }
 
-    [DllImport("kernel32.dll", SetLastError = false)]
-    static extern unsafe nint VirtualQuery(
-        nint lpAddress, MEMORY_BASIC_INFORMATION* lpBuffer, nint dwLength);
-
-    static unsafe bool IsMemReadable(nint ptr, int size)
+    if (node == header)
     {
-        MEMORY_BASIC_INFORMATION mbi;
-        if (VirtualQuery(ptr, &mbi, (nint)sizeof(MEMORY_BASIC_INFORMATION)) == 0) return false;
-        if (mbi.State != 0x1000 /* MEM_COMMIT */) return false;
-        const uint PAGE_NOACCESS = 0x01, PAGE_GUARD = 0x100;
-        if ((mbi.Protect & (PAGE_NOACCESS | PAGE_GUARD)) != 0) return false;
-        return (ulong)ptr + (ulong)size <= (ulong)mbi.BaseAddress + (ulong)mbi.RegionSize;
+        LogStr(
+            $"{new string(' ', depth * 2)}" +
+            $"NODE == HEADER (sentinel), stopping branch");
+
+        return null;
     }
 
-    // Filters out small integers and kernel-space values; passes user-mode pointers.
-    static bool IsLikelyPointer(nint val)
+    nint address = (nint)node;
+
+    string indent = new string(' ', depth * 2);
+
+    LogStr($"{indent}--- NODE 0x{address:X} ---");
+
+    // Cycle detection BEFORE doing anything else.
+    if (!visited.Add(address))
     {
-        ulong v = (ulong)(nuint)val;
-        return v >= 0x10000 && v <= 0x0000_7FFF_FFFF_FFFF;
+        LogStr(
+            $"{indent}!!! CYCLE DETECTED: " +
+            $"0x{address:X} was already visited !!!");
+
+        return null;
     }
 
+    // Read all tree pointers explicitly.
+    ButtonMapNode* left =
+        *(ButtonMapNode**)((byte*)node + 0x00);
 
+    ButtonMapNode* parent =
+        *(ButtonMapNode**)((byte*)node + 0x08);
+
+    ButtonMapNode* right =
+        *(ButtonMapNode**)((byte*)node + 0x10);
+
+    // Read the color/metadata byte.
+    byte color =
+        *((byte*)node + 0x18);
+
+    // Value at +0x40.
+    Button* value =
+        *(Button**)((byte*)node + 0x40);
+
+    
+    string nodeName = HexToAscii(((nint)node->Key));
+
+    LogStr($"{indent}Address = 0x{address:X}");
+    LogStr($"{indent}Name    = '{nodeName}'");
+    LogStr($"{indent}Target  = '{targetName}'");
+
+    LogStr(
+        $"{indent}Left    = 0x{(nint)left:X}" +
+        (left == header ? " [HEADER]" : ""));
+
+    LogStr(
+        $"{indent}Parent  = 0x{(nint)parent:X}" +
+        (parent == header ? " [HEADER]" : ""));
+
+    LogStr(
+        $"{indent}Right   = 0x{(nint)right:X}" +
+        (right == header ? " [HEADER]" : ""));
+
+    LogStr($"{indent}Color   = 0x{color:X2}");
+
+    LogStr(
+        $"{indent}Value   = 0x{(nint)value:X}" +
+        (value == null ? " [NULL]" : ""));
+
+    LogStr(
+        $"{indent}Left==Node   : {left == node}");
+
+    LogStr(
+        $"{indent}Right==Node  : {right == node}");
+
+    LogStr(
+        $"{indent}Parent==Node : {parent == node}");
+
+    if (string.Equals(
+        nodeName,
+        targetName,
+        StringComparison.Ordinal))
+    {
+        LogStr(
+            $"{indent}!!! FOUND '{targetName}' !!!");
+
+        return value;
+    }
+
+    /*
+     * IMPORTANT:
+     *
+     * Do not use the BST comparison yet.
+     * Search both branches until we understand the
+     * exact native comparator.
+     */
+
+    if (left != null && left != header)
+    {
+        LogStr(
+            $"{indent}Descending LEFT -> " +
+            $"0x{(nint)left:X}");
+
+        Button* result = FindButtonInTree(
+            left,
+            header,
+            targetName,
+            visited,
+            depth + 1);
+
+        if (result != null)
+            return result;
+    }
+    else
+    {
+        LogStr(
+            $"{indent}LEFT is " +
+            (left == null ? "NULL" : "HEADER"));
+    }
+
+    if (right != null && right != header)
+    {
+        LogStr(
+            $"{indent}Descending RIGHT -> " +
+            $"0x{(nint)right:X}");
+
+        Button* result = FindButtonInTree(
+            right,
+            header,
+            targetName,
+            visited,
+            depth + 1);
+
+        if (result != null)
+            return result;
+    }
+    else
+    {
+        LogStr(
+            $"{indent}RIGHT is " +
+            (right == null ? "NULL" : "HEADER"));
+    }
+
+    LogStr($"{indent}No match in node 0x{address:X}");
+
+    return null;
+}
 };

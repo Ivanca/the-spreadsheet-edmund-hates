@@ -2,7 +2,6 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace TheSpredsheetEdmundHates;
 
 /// <summary>
 /// C# binding for the Mewjector chainloader API (version.dll).

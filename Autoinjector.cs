@@ -5,7 +5,6 @@ using System.Runtime.InteropServices;
 using System.IO;
 using System.Text;
 
-namespace TheSpredsheetEdmundHates;
 
 public partial class TheSpredsheetEdmundHates
 {

@@ -45,6 +45,25 @@ static volatile LONG g_AotState = 0;
 
 static HMODULE g_AotModule = nullptr;
 
+typedef int(__cdecl* MJ_InstallHook_t)(
+    UINT_PTR rva,
+    int stolenBytes,
+    void* hookFn,
+    void** outTrampoline,
+    int priority,
+    const char* owner
+);
+
+typedef int(__cdecl* MJ_InstallShortHook_t)(
+    UINT_PTR rva,
+    int stolenBytes,
+    void* hookFn,
+    void** outTrampoline,
+    int priority,
+    const char* owner
+);
+
+static MJ_InstallShortHook_t g_MJ_InstallShortHook = nullptr;
 
 // -----------------------------------------------------------------------------
 // Resolve Mewjector
@@ -66,8 +85,17 @@ static bool ResolveMewjector()
         reinterpret_cast<MJ_GetGameBase_t>(
             GetProcAddress(hMewjector, "MJ_GetGameBase"));
 
+    g_MJ_InstallShortHook = reinterpret_cast<MJ_InstallShortHook_t>(
+        GetProcAddress(
+            hMewjector,
+            "MJ_InstallShortHook"
+        )
+    );
+
+
     return g_MJ_InstallHook != nullptr &&
-           g_MJ_GetGameBase != nullptr;
+           g_MJ_GetGameBase != nullptr &&
+           g_MJ_InstallShortHook != nullptr;
 }
 
 

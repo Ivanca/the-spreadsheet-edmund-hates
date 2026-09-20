@@ -110,6 +110,10 @@
       
       public var topipe:MovieClip;
 	  
+	  public var room_number:MovieClip;
+	  
+	  public var room_btn:MovieClip;
+	  
 	  public var hover_area:MovieClip;
 	        
       public function RowCatStatus()

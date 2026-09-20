@@ -20,6 +20,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Reloaded.Hooks" Version="4.3.3" />
     
     <PackageReference Include="Vortice.Direct3D11" Version="3.*" />
     <PackageReference Include="Vortice.Direct2D1" Version="3.*" />

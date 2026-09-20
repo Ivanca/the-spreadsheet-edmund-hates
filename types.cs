@@ -1,8 +1,6 @@
 using System.Runtime.InteropServices;
 
 
-namespace TheSpredsheetEdmundHates;
-
 
 public unsafe readonly struct NativePtr<T> where T : unmanaged
 {
@@ -111,7 +109,7 @@ public unsafe struct Renderer
     [FieldOffset(0x78)] public nint unknown14;
 
     // Root MovieClip.
-    [FieldOffset(0x80)] public nint MovieClip;
+    [FieldOffset(0x80)] public MovieClip* MovieClip;
 
     [FieldOffset(0x88)] public nint unknown15;
     [FieldOffset(0x90)] public nint unknown16;
@@ -186,8 +184,8 @@ public unsafe struct CatStatsDrawer
     [FieldOffset(0x48)] public nint catsParts1;
     [FieldOffset(0x50)] public nint catsParts2;
     [FieldOffset(0x58)] public nint catsParts3;
-    [FieldOffset(0x60)] public nint unknown12;
-    [FieldOffset(0x68)] public nint unknown13;
+    [FieldOffset(0x60)] public nint MenuPanel;
+    [FieldOffset(0x68)] public nint MenuPanel2;
     [FieldOffset(0x70)] public byte unknown14;
 
     // Whether this drawer's icons panel is open.
@@ -199,7 +197,7 @@ public unsafe struct CatStatsDrawer
 
     // HouseCat reference. The mod explicitly clears this when
     // the panel closes.
-    [FieldOffset(0x78)] public nint HouseCat;
+    [FieldOffset(0x78)] public HouseCat* HouseCat;
 }
 
 /// <summary>
@@ -221,11 +219,34 @@ public unsafe struct Button
 {
     [FieldOffset(0x10)]
     public byte Enabled;
+    [FieldOffset(0x18)]
+    public Entity* Entity;
     [FieldOffset(0x48)]
     public MovieClip* MovieClip;
     [FieldOffset(0x50)]
     public int Flags;
 
+}
+
+[StructLayout(LayoutKind.Explicit)]
+public unsafe struct Entity
+{
+    [FieldOffset(0x24)]
+    public int ComponentsCount;
+    [FieldOffset(0x28)]
+    public Component** ComponentsList;
+}
+
+[StructLayout(LayoutKind.Explicit, Size = 8)]
+public unsafe struct Component
+{
+}
+
+[StructLayout(LayoutKind.Explicit)]
+public unsafe struct AudioSource
+{
+    [FieldOffset(0x10)]
+    public byte Enabled;
 }
     
 [StructLayout(LayoutKind.Explicit)]
@@ -234,6 +255,16 @@ public unsafe struct CatPart
     [FieldOffset(0x10)]
     public byte Enabled;
 }
+
+[StructLayout(LayoutKind.Explicit)]
+public unsafe struct HouseCat
+{
+    [FieldOffset(0x10)]
+    public byte Enabled;
+    [FieldOffset(0xE8)]
+    public ulong Room;
+}
+    
     
 [StructLayout(LayoutKind.Explicit)]
 public unsafe struct CatStatsDrawerLambda
@@ -250,5 +281,32 @@ public unsafe struct HousePanel
     [FieldOffset(0xC8)]
     public long Effects;
 }
+[StructLayout(LayoutKind.Explicit)]
+public unsafe struct MenuPanel
+{
+    [FieldOffset(0x40)]
+    public ButtonMapNode* ButtonMap;
+}
 
-    
+[StructLayout(LayoutKind.Explicit, Size = 0x48)]
+public unsafe struct ButtonMapNode
+{
+    [FieldOffset(0x00)]
+    public ButtonMapNode* Left;
+
+    [FieldOffset(0x08)]
+    public ButtonMapNode* Parent;
+
+    [FieldOffset(0x10)]
+    public ButtonMapNode* Right;
+
+    [FieldOffset(0x18)]
+    public byte Color;
+
+    [FieldOffset(0x20)]
+    public ulong Key;
+
+    [FieldOffset(0x40)]
+    public Button* Value;
+}
+

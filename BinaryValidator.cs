@@ -28,7 +28,7 @@ public static class BinaryValidator
             // Only allocate the 64-byte buffer once.
             byte[] actualBuffer = new byte[BytesPerEntry];
 
-            foreach (var entry in TheSpredsheetEdmundHates.BinaryLiterals.Data)
+            foreach (var entry in BinaryLiterals.Data)
             {
                 uint rva = unchecked((uint)entry.Key);
 
@@ -36,7 +36,7 @@ public static class BinaryValidator
                         rva,
                         out long fileOffset))
                 {
-                    TheSpredsheetEdmundHates.MewjectorApi.Log($"Failed to map RVA to file offset: {rva:X}");
+                    MewjectorApi.Log($"Failed to map RVA to file offset: {rva:X}");
                     return false;
                 }
 
@@ -54,7 +54,7 @@ public static class BinaryValidator
 
                     if (read <= 0)
                     {
-                        TheSpredsheetEdmundHates.MewjectorApi.Log($"Failed to read expected number of bytes at RVA: {rva:X}");
+                        MewjectorApi.Log($"Failed to read expected number of bytes at RVA: {rva:X}");
                         return false;
                     }
 
@@ -68,7 +68,7 @@ public static class BinaryValidator
                 {
                     if (actualBuffer[i] != expected[i])
                     {
-                        TheSpredsheetEdmundHates.MewjectorApi.Log($"Binary validation failed at RVA: {rva:X}");
+                        MewjectorApi.Log($"Binary validation failed at RVA: {rva:X}");
                         return false;
                     }
                 }
@@ -78,7 +78,7 @@ public static class BinaryValidator
         }
         catch
         {
-            TheSpredsheetEdmundHates.MewjectorApi.Log("Exception occurred during binary validation.");
+            MewjectorApi.Log("Exception occurred during binary validation.");
             return false;
         }
     }

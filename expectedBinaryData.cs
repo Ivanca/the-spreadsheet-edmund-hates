@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-namespace TheSpredsheetEdmundHates;
 public static class BinaryLiterals
 {
     // The dictionary stores the lightweight wrapper struct containing the data inline

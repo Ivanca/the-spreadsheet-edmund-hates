@@ -10,6 +10,8 @@ public class FloatAnimator
     public float t;
     private readonly float _durationSeconds;
     private readonly long _startTicks;
+    public bool justFinished = false;
+    public bool finished = false;
 
     public FloatAnimator(float startValue, float targetValue, float durationSeconds)
     {
@@ -26,18 +28,20 @@ public class FloatAnimator
     {
         float elapsedSeconds =
             (float)(_stopwatch.ElapsedTicks - _startTicks) / Stopwatch.Frequency;
-
+        var oldT = t;
         t = Math.Min(elapsedSeconds / _durationSeconds, 1.0f);
+        if (t > oldT && t >= 1.0f)
+        {
+            justFinished = true;
+            finished = true;
+        } else
+        {
+            justFinished = false;
+        }
 
         return MathF.Round(LerpWithEaseInAndOut(_startValue, this.targetValue, t), 2);
     }
 
-    /// <summary>
-    /// Returns true once the animation has finished.
-    /// </summary>
-    public bool IsFinished =>
-        (_stopwatch.ElapsedTicks - _startTicks) >=
-        _durationSeconds * Stopwatch.Frequency;
 
     static float Lerp(float a, float b, float t)
     {

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Linq;
 
-namespace TheSpredsheetEdmundHates;
 
 public partial class TheSpredsheetEdmundHates
 {
@@ -146,7 +145,7 @@ public partial class TheSpredsheetEdmundHates
     {
         if (renderersInsideRenderArea.Length == 0)
         {
-            LogStr($"[HOOK] updateRenderersInsideScreenArea: initializing renderersInsideRenderArea array");
+            // LogStr($"[HOOK] updateRenderersInsideScreenArea: initializing renderersInsideRenderArea array");
             renderersInsideRenderArea = new nint[rowRenderers.Length];
         }
         if (forceShowFirst13)
@@ -154,11 +153,11 @@ public partial class TheSpredsheetEdmundHates
             markFirst13AsInsideRenderArea();
         } else if (!ourPanelIsOpen)
         {
-            LogStr($"[HOOK] updateRenderersInsideScreenArea: panel is not open and no animation in progress, clearing renderersInsideRenderArea");
+            // LogStr($"[HOOK] updateRenderersInsideScreenArea: panel is not open and no animation in progress, clearing renderersInsideRenderArea");
             Array.Clear(renderersInsideRenderArea, 0, renderersInsideRenderArea.Length);
         } else if (hoveredAreasCache.Length > 0)
         {
-            LogStr($"[HOOK] updateRenderersInsideScreenArea: panel is open or animation in progress, updating renderersInsideRenderArea");
+            // LogStr($"[HOOK] updateRenderersInsideScreenArea: panel is open or animation in progress, updating renderersInsideRenderArea");
             Array.Clear(renderersInsideRenderArea, 0, renderersInsideRenderArea.Length);
             var lastVisibleOne = -1;
             var firstVisibleOne = -1;
@@ -167,9 +166,9 @@ public partial class TheSpredsheetEdmundHates
                 FindHoverAreaAndCacheIt(i);
                 if (!IsHoverAreaOutsideRenderArea(rowRenderers[i], hoveredAreasCache[i]))
                 {
-                    LogStr($"[HOOK] updateRenderersInsideScreenArea: renderer {i} is inside render area");
+                    // LogStr($"[HOOK] updateRenderersInsideScreenArea: renderer {i} is inside render area");
                     var renderer = rowRenderers[i];
-                    LogStr($"[HOOK] updateRenderersInsideScreenArea: renderer value = 0x{renderer:X} renderersInsideRenderArea size is {renderersInsideRenderArea.Length} and i = {i}");
+                    // LogStr($"[HOOK] updateRenderersInsideScreenArea: renderer value = 0x{renderer:X} renderersInsideRenderArea size is {renderersInsideRenderArea.Length} and i = {i}");
                     renderersInsideRenderArea[i] = renderer;
                     lastVisibleOne = i;
                     if (firstVisibleOne == -1)
@@ -210,7 +209,7 @@ public partial class TheSpredsheetEdmundHates
             LogStr($"[HOOK] updateRenderersInsideScreenArea: using fallback for renderersInsideRenderArea, Count = {renderersInsideRenderArea.Length}");
             markFirst13AsInsideRenderArea();
         }
-
+        var visibleCount = 0;
         foreach (var rendererPtr in rowRenderers)
         {
             var renderer = (Renderer*)rendererPtr;
@@ -221,7 +220,8 @@ public partial class TheSpredsheetEdmundHates
             var isVisible = activeRowsRenderers.Contains(rendererPtr) && renderersInsideRenderArea.Contains(rendererPtr);
             if (isVisible)
             {
-                LogStr($"[HOOK] updateRenderersInsideScreenArea: renderer {rendererPtr:X} is visible");
+                // LogStr($"[HOOK] updateRenderersInsideScreenArea: renderer {rendererPtr:X} is visible");
+                visibleCount++;
             } else
             {
                 // LogStr($"[HOOK] updateRenderersInsideScreenArea: renderer {renderer:X} is not activeRowsRenderers.Contains(renderer)={activeRowsRenderers.Contains(renderer)} && renderersInsideRenderArea.Contains(renderer)={renderersInsideRenderArea.Contains(renderer)}");
@@ -241,6 +241,7 @@ public partial class TheSpredsheetEdmundHates
                 catParts3->Enabled = isVisible ? (byte)1 : (byte)0;
             }
         }
+        LogStr($"[HOOK] updateRenderersInsideScreenArea: visibleCount = {visibleCount}");
 }
 
 private static unsafe bool IsHoverAreaOutsideRenderArea(

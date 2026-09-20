@@ -49,7 +49,7 @@ unsafe struct GameString
 
         fixed (char* p = text)
         {
-            TheSpredsheetEdmundHates.TheSpredsheetEdmundHates.assignString(str, p, (nuint)text.Length);
+            TheSpredsheetEdmundHates.assignString(str, p, (nuint)text.Length);
         }
 
 
