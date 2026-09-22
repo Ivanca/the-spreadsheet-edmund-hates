@@ -8,13 +8,24 @@ using System.Text;
 public static class Utils
 {
 
-    [StructLayout(LayoutKind.Sequential)]
-    public unsafe struct StdStringSso
+    public unsafe static T Read<T>(nint p) where T : unmanaged
+        => *(T*)p;
+
+    // make read version that defaults to nint
+    public unsafe static nint Read(nint p)
+        => Read<nint>(p);
+
+    public static unsafe bool TryReadPointer(nint address, out nint value)
     {
-        public fixed byte Buffer[16];
-        public ulong Size;
-        public ulong Capacity;
+        value = 0;
+
+        if (!IsMemReadable(address, IntPtr.Size))
+            return false;
+
+        value = Read<nint>(address);
+        return value != 0;
     }
+
     // Scans each argument as a struct pointer, chasing every pointer-sized field
     // within the first STRUCT_SCAN_BYTES bytes, looking for a C-string == TARGET.
     // Reads a MSVC x64 std::string object at strObjPtr.
@@ -101,16 +112,6 @@ public static class Utils
         string asciiString = Encoding.ASCII.GetString(bytes).TrimEnd('\0');
         return asciiString;
     }
-
-    static int _diagCallCount = 0;
-    // Key: dedup token — each unique string+path combination is logged at most once
-    static readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> _seenStrings = new();
-    static readonly System.Collections.Concurrent.ConcurrentDictionary<nint, bool> _seenGonObjects = new();
-
-    // Pointer range of the game's PE image (code, rdata, vtables — not heap objects).
-    static readonly nint IMAGE_RANGE_START = unchecked((nint)0x7FF70C3C0000L);
-    static readonly nint IMAGE_RANGE_END   = unchecked((nint)0x7FF70D900000L);
-
 
     [StructLayout(LayoutKind.Sequential)]
     public struct MEMORY_BASIC_INFORMATION

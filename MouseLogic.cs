@@ -7,26 +7,12 @@ using System.Linq;
 public partial class TheSpredsheetEdmundHates
 {
 
-    unsafe static delegate* unmanaged<nint, double*, double*> _getMousePosition;
-
-    unsafe static delegate* unmanaged<
-        nint, double*, double*, nint, double, void> _transformPoint;
-    
-    unsafe static delegate* unmanaged<
-        nint, float*, void> _getWorldTransform;
-
+    unsafe static delegate* unmanaged<nint, double*, double*> getMousePosition;
     internal unsafe void InitMouse()
     {
 
-        _getMousePosition =(delegate* unmanaged<nint, double*, double*>)(void*)MewjectorApi.InstallHook(
+        getMousePosition =(delegate* unmanaged<nint, double*, double*>)(void*)MewjectorApi.InstallHook(
             0x9796d0, (void*)(delegate* unmanaged<nint, double*, double*>)&GetMousePositionHook);
-
-
-        _transformPoint =
-            (delegate* unmanaged<nint, double*, double*, nint, double, void>)
-            (MewjectorApi.GameBase + (nuint)0x97b130);
-        _getWorldTransform = 
-            (delegate* unmanaged<nint, float*, void>)(MewjectorApi.GameBase + (nuint)0x9b1880);
 
     }
     static nint[] hoveredAreasCache = new nint[0];
@@ -57,7 +43,7 @@ public partial class TheSpredsheetEdmundHates
 
         fixed (double* mousePtr = mouse)
         {
-            _getMousePosition(MainCamera, mousePtr);
+            getMousePosition(MainCamera, mousePtr);
         }
         if (prevMouse[0] == mouse[0] && prevMouse[1] == mouse[1])
         {
@@ -69,6 +55,7 @@ public partial class TheSpredsheetEdmundHates
         {
             hoveredAreasCache = new nint[rowRenderers.Length];
         }
+        float* boundsRect = stackalloc float[4];
         for (int i = 0; i < rowRenderers.Length; i++)
         {
             var renderer = rowRenderers[i];
@@ -98,9 +85,10 @@ public partial class TheSpredsheetEdmundHates
 
             delegate* unmanaged<nint, float*, float*> getBounds =
                 (delegate* unmanaged<nint, float*, float*>)Marshal.ReadIntPtr(Marshal.ReadIntPtr(movieclip) + 0x78); // vtable slot 15
-            float* boundsRect = stackalloc float[4];
+            
 
             // call getBounds:
+            NativeMemory.Clear(boundsRect, 4 * sizeof(float));
             getBounds(movieclip, boundsRect);
             // LogStr($"[HOOK] ClickHandlerHook: getBounds=0x{getBounds:X}");
             // x = Read<nint>((nint)MewjectorApi.GameBase + 0x60);
@@ -251,7 +239,7 @@ private static unsafe bool IsHoverAreaOutsideRenderArea(
     // These are NOT screen pixels.
     //
     // They are the coordinate-space values returned by
-    // _getMousePosition(MainCamera, ...).
+    // getMousePosition(MainCamera, ...).
     //
     // Measured from the four screen corners on this machine.
 
@@ -352,7 +340,7 @@ delegate* unmanaged<nint, float*, float*> GetBounds =
     {
 
         MainCamera = mewControls;
-        return _getMousePosition(mewControls, point);
+        return getMousePosition(mewControls, point);
     }
 
 }

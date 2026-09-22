@@ -1,10 +1,5 @@
-﻿global using static Utils;
-
-// using MewgenicsModSdk;
-// using MewgenicsModSdk.Game;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System;
-using System.Threading;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Text;
@@ -13,18 +8,17 @@ using System.Linq;
 
 public partial class TheSpredsheetEdmundHates
 {
-    static bool _debugLogging = false;
+    static bool debugLogging = false;
 
-    public static DateTime? logging5MinutesStartTime;
 
-    static unsafe delegate* unmanaged<nint, nint> _updatePanelLayout;
+    static unsafe delegate* unmanaged<nint, nint> updatePanelLayout;
 
-    static unsafe delegate* unmanaged<nint, nint, nint, Renderer*> _createUiRenderer;
-    static unsafe delegate* unmanaged<nint, nint, nint, nint> _createCatsDrawerHousePanel;
-    public static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _registerButton;
-    static unsafe delegate* unmanaged<nint, nint> _statsCreator;
-    static unsafe delegate* unmanaged<nint, nint, nint> _getHouseCatByOffset;
-    static unsafe delegate* unmanaged<nint, nint> _gameTick;
+    static unsafe delegate* unmanaged<nint, nint, nint, Renderer*> createUiRenderer;
+    static unsafe delegate* unmanaged<nint, nint, nint, nint> createCatsDrawerHousePanel;
+    public static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> registerButton;
+    static unsafe delegate* unmanaged<nint, nint> statsCreator;
+    static unsafe delegate* unmanaged<nint, nint, nint> getHouseCatByOffset;
+    static unsafe delegate* unmanaged<nint, nint> gameTick;
     /*
         This function iterates all the following 
 class glaiel::GameBase <class glaiel::GameBase> 
@@ -58,98 +52,44 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
 
     */
 
-    static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _catIterator;
+    static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> catIterator;
 
-    static unsafe delegate* unmanaged<nint, nint, nint, nint> _findButton;
-    static unsafe delegate* unmanaged<CatStatsDrawerLambda*, nint> _initCatStatsClickCallback;
-    static unsafe delegate* unmanaged<nint, nint> _toggleHouseDrawer;
-    static unsafe delegate* unmanaged<nint, nint, nint> _clickHandler;
-    static unsafe delegate* unmanaged<nint, nint, nint> _mutationTooltip;
+    static unsafe delegate* unmanaged<nint, nint, nint, nint> findButton;
+    static unsafe delegate* unmanaged<CatStatsDrawerLambda*, nint> initCatStatsClickCallback;
+    static unsafe delegate* unmanaged<nint, nint> toggleHouseDrawer;
+    static unsafe delegate* unmanaged<nint, nint, nint> clickHandler;
+    static unsafe delegate* unmanaged<nint, nint, nint> mutationTooltip;
 
-    unsafe static delegate* unmanaged<nint, nint, nint> _mouseEventHandler;
+    unsafe static delegate* unmanaged<nint, nint, nint> mouseEventHandler;
 
-    public unsafe static delegate* unmanaged<nint, char*, nuint, nint> assignString;
 
     // static unsafe delegate* unmanaged<nint, nint, nint, nint, nint> _globalResourceManagerLookup;
-    
-    unsafe static delegate* unmanaged<nint, nint, nint> _setText;
-    unsafe static delegate* unmanaged<nint, nint> _endDay;
-    unsafe static delegate* unmanaged<nint, nint> _goToMainMenu;
-    unsafe static delegate* unmanaged<nint, nint, nint, nint, nint> _setCatData;
-    unsafe static delegate* unmanaged<nint, nint, nint, nint, nint> _fetchTranslation;
-    unsafe static delegate* unmanaged<nint, nint, nint, nint> _furnitureGridCreator;
-    unsafe static delegate* unmanaged<nint, nint, nint> _getChild;
-    unsafe static delegate* unmanaged<nint, nint, nint> _getChildByPath;
-    unsafe static delegate* unmanaged<nint, nint, nint, void> _trackMovieclipChildParentOffset;
 
-    unsafe static delegate* unmanaged<nint, nint, uint, void> _attachChild;
-    unsafe static delegate* unmanaged<nint, nint, nint> _createCatStatsDrawer;
-    unsafe static delegate* unmanaged<nint, nint, nint> _getSpellIdFromButton;
-    unsafe static delegate* unmanaged<nint, nint, nint, nint, nint> _keyPress;
-    unsafe static delegate* unmanaged<nint, nint> _catStatsDrawerUpdate;
-    
-    unsafe static T Read<T>(nint p) where T : unmanaged
-        => *(T*)p;
+    unsafe static delegate* unmanaged<nint, nint> endDay;
+    unsafe static delegate* unmanaged<nint, nint> goToMainMenu;
+    unsafe static delegate* unmanaged<nint, nint, nint, nint, nint> setCatData;
+    unsafe static delegate* unmanaged<nint, nint, nint, nint, nint> fetchTranslation;
+    unsafe static delegate* unmanaged<nint, nint, nint, nint> furnitureGridCreator;
 
-    // make read version that defaults to nint
-    unsafe static nint Read(nint p)
-        => Read<nint>(p);
+    unsafe static delegate* unmanaged<nint, nint, nint, nint, nint> keyPress;
+    unsafe static delegate* unmanaged<nint, nint> catStatsDrawerUpdate;
 
-    private static unsafe bool TryReadPointer(nint address, out nint value)
-    {
-        value = 0;
 
-        if (!IsMemReadable(address, IntPtr.Size))
-            return false;
 
-        value = Read<nint>(address);
-        return value != 0;
-    }
-
-    private static bool TryFollow(nint address, out nint result, params nuint[] offsets)
-    {
-        result = address;
-
-        foreach (var offset in offsets)
-        {
-            if (!TryReadPointer(result + (nint)offset, out result))
-                return false;
-        }
-
-        return true;
-    }
-    
     static Dictionary<string, int> executionCounts = new();
 
     private static void CountExecution(string methodName)
     {
-        if (_debugLogging)
+        if (debugLogging)
         {
             executionCounts[methodName] = executionCounts.GetValueOrDefault(methodName) + 1;
         }
     }
 
+    static DateTime? MjInitStartTime = null;
     internal unsafe void MjInit()
     {
-
-        // var tenSecondsAfterNow = DateTime.Now.AddSeconds(20);
-        // LogStr($"Waiting for 15 seconds to connect using x64dbg...");
-        // while (DateTime.Now < tenSecondsAfterNow)
-        // {
-        //     Thread.Sleep(1);
-        // }
-
-        if (!logging5MinutesStartTime.HasValue)
-        {
-            logging5MinutesStartTime = DateTime.Now;
-            // LogStr($"Initializing 5-minute logging at {logging5MinutesStartTime}");
-            // TestHook.address = (long)(MewjectorApi.GameBase + 0x96AE3F);
-            // LogStr($"[HOOK] Initializing 5-minute logging at {logging5MinutesStartTime} with target address {TestHook.address}");
-            // sleep(1000); // Sleep for 1 second before installing the hook
-            // Thread.Sleep(1000); // Sleep for 1 second before installing the hook
-            // TestHook.Install();
-        }
-
+        MjInitStartTime = DateTime.Now;
 
         var buffer = new StringBuilder(32768);
         uint length = GetModuleFileName(IntPtr.Zero, buffer, buffer.Capacity);
@@ -161,7 +101,8 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
         {
             LogStr("Binary validation failed.");
             return;
-        } else
+        }
+        else
         {
             LogStr("Binary validation succeeded.");
         }
@@ -170,103 +111,82 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
 
         InitMouse();
 
-        _updatePanelLayout = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
+        updatePanelLayout = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
             0x204320, (void*)(delegate* unmanaged<nint, nint>)&UpdatePanelLayoutHook);
-        
-        // _globalResourceManagerLookup = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
-        //     0x9adc50, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&GlobalResourceManagerLookupHook);
 
-        _createUiRenderer = (delegate* unmanaged<nint, nint, nint, Renderer*>)(void*)MewjectorApi.InstallHook(
+        createUiRenderer = (delegate* unmanaged<nint, nint, nint, Renderer*>)(void*)MewjectorApi.InstallHook(
             0x5A3D0, (void*)(delegate* unmanaged<nint, nint, nint, Renderer*>)&CreateUiRendererHook);
 
-        _createCatsDrawerHousePanel = (delegate* unmanaged<nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+        createCatsDrawerHousePanel = (delegate* unmanaged<nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0xef570, (void*)(delegate* unmanaged<nint, nint, nint, nint>)&CreatePanelHook);
 
-        _registerButton = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+        registerButton = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0x97c070, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&RegisterCallbackHook);
 
-        _statsCreator = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
+        statsCreator = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
             0xE9AC0, (void*)(delegate* unmanaged<nint, nint>)&CreateCatStatsDrawerHook);
 
-        _getHouseCatByOffset = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+        getHouseCatByOffset = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0xEAC70, (void*)(delegate* unmanaged<nint, nint, nint>)&GetHouseCatByOffsetHook);
 
-        _findButton = (delegate* unmanaged<nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+        findButton = (delegate* unmanaged<nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0x980E60, (void*)(delegate* unmanaged<nint, nint, nint, nint>)&FindButtonHook);
 
-        _initCatStatsClickCallback = (delegate* unmanaged<CatStatsDrawerLambda*, nint>)(void*)MewjectorApi.InstallHook(
+        initCatStatsClickCallback = (delegate* unmanaged<CatStatsDrawerLambda*, nint>)(void*)MewjectorApi.InstallHook(
             0xEF3D0, (void*)(delegate* unmanaged<CatStatsDrawerLambda*, nint>)&InitCatStatsCallbackHook);
 
-        _toggleHouseDrawer = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
+        toggleHouseDrawer = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
             0x203C80, (void*)(delegate* unmanaged<nint, nint>)&ToggleHouseDrawerHook);
 
-        _clickHandler = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+        clickHandler = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0x97E8E0, (void*)(delegate* unmanaged<nint, nint, nint>)&ClickHandlerHook);
-        
-        _gameTick = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
+
+        gameTick = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
             0x96AC50, (void*)(delegate* unmanaged<nint, nint>)&GameTickHook);
 
-        _catIterator = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+        catIterator = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0xED220, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&CatIteratorHook);
 
-        _mutationTooltip = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
-            0xE5500, (void*)(delegate* unmanaged<nint, nint, nint>)&MutationTooltipHook); 
+        mutationTooltip = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+            0xE5500, (void*)(delegate* unmanaged<nint, nint, nint>)&MutationTooltipHook);
 
-        
-
-
-        // // EndDayHook and GoToMainMenuHook are the only places where mod state is reset
-
-        _endDay = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
+        endDay = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
             0x1f8ea0, (void*)(delegate* unmanaged<nint, nint>)&EndDayHook);
 
-        _goToMainMenu = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
+        goToMainMenu = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
             0x29cef0, (void*)(delegate* unmanaged<nint, nint>)&GoToMainMenuHook);
-        
-        _setCatData = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+
+        setCatData = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0xe1a00, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&SetCatDataHook);
 
-        _mouseEventHandler = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+        mouseEventHandler = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0xc36110, (void*)(delegate* unmanaged<nint, nint, nint>)&MouseWheelHook);
-        
-        _catStatsDrawerUpdate = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
+
+        catStatsDrawerUpdate = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
             0xeb170, (void*)(delegate* unmanaged<nint, nint>)&CatStatsDrawerUpdateHook);
 
-        _fetchTranslation = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+        fetchTranslation = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0x4C340, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&FetchTranslationHook);
 
-        _furnitureGridCreator = (delegate* unmanaged<nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+        furnitureGridCreator = (delegate* unmanaged<nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0x1f6db0, (void*)(delegate* unmanaged<nint, nint, nint, nint>)&FurnitureGridCreatorHook);
 
-        _keyPress = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+        keyPress = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0xc083a0, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&KeyPressHook);
         // LogStr($"Gamebase at {MewjectorApi.GameBase:X}...");
-
-        assignString = (delegate* unmanaged<nint,char*,nuint,nint>)(MewjectorApi.GameBase + 0x5b150);
-        _getChild = (delegate* unmanaged<nint,nint,nint>)(MewjectorApi.GameBase + 0x99a0e0);
-        _getChildByPath = (delegate* unmanaged<nint, nint, nint>)(MewjectorApi.GameBase + 0x99a1b0);
-        // dont try to hook setText and add logic there, its just creates [img:x] glyphs race conditions
-        _setText = (delegate* unmanaged<nint,nint,nint>)(MewjectorApi.GameBase + 0x98E8A0);
-        // _getChild = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
-        //     0x99a0e0, (void*)(delegate* unmanaged<nint, nint, nint>)&GetChildHook); // useful for debugging
-        _trackMovieclipChildParentOffset = (delegate* unmanaged<nint, nint, nint, void>)(MewjectorApi.GameBase + (nuint)0x204a80);
-        _attachChild = (delegate* unmanaged<nint, nint, uint, void>)(MewjectorApi.GameBase + (nuint)0x999e40);
-        _createCatStatsDrawer =  (delegate* unmanaged<nint, nint, nint>)(MewjectorApi.GameBase + (nuint)0x1ace50);
-        _getSpellIdFromButton = (delegate* unmanaged<nint, nint, nint>)(MewjectorApi.GameBase + (nuint)0x60e30);
+        InitNativeFunctions();
 
     }
 
-    unsafe static List<nint> rooms = new List<nint>();
+    static List<nint> rooms = new List<nint>();
 
     [UnmanagedCallersOnly]
     static unsafe nint FurnitureGridCreatorHook(nint a1, nint a2, nint a3)
     {
-        var result = _furnitureGridCreator(a1, a2, a3);
+        var result = furnitureGridCreator(a1, a2, a3);
         rooms.Add(result);
         return result;
     }
-
-    static List<nint> cachedPointers = new();
 
     static string sortByStat = "";
     private enum SortDirection
@@ -277,8 +197,7 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
 
     static SortDirection sortByStatDirection = SortDirection.Descending;
     static Dictionary<nint, double> averages = new();
-    // static bool InsideSetCatData = false;
-    
+
     static nint ageTranslated = 0;
     static nint lvTranslated = 0;
     static bool IsOurPanelEnabled = true;
@@ -311,32 +230,33 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
             ctrlPressed = false;
         }
         // LogStr($"[HOOK] KeyPressHook: a1=0x{a1:X}, a2=0x{a2:X}, a3=0x{a3:X}, a4=0x{a4:X}");
-        return _keyPress(a1, a2, a3, a4);
+        return keyPress(a1, a2, a3, a4);
     }
 
     [UnmanagedCallersOnly]
     static unsafe nint FetchTranslationHook(nint a1, nint a2, nint a3, nint a4)
     {
-        // return _fetchTranslation(a1, a2, a3, a4);
+        // return fetchTranslation(a1, a2, a3, a4);
         // return result;
         if (!IsLikelyPointer(a3) || headersRenderer == null)
         {
-            return _fetchTranslation(a1, a2, a3, a4);
+            return fetchTranslation(a1, a2, a3, a4);
         }
         if (lvTranslated != 0 && ageTranslated != 0)
         {
-            return _fetchTranslation(a1, a2, a3, a4);
+            return fetchTranslation(a1, a2, a3, a4);
         }
         var key = TryReadCString(Read<nint>(a3));
         var target = key == "HOUSE_CAT_INFO_LEVEL" ? "level" : key == "HOUSE_CAT_INFO_AGE" ? "age" : "";
-        var result = _fetchTranslation(a1, a2, a3, a4);
+        var result = fetchTranslation(a1, a2, a3, a4);
         if (target != "")
-        {            
+        {
             var text = ReadUtf16CustomString(Read<nint>(result + 0x8) + 0x30);
             if (target == "level")
             {
                 lvTranslated = GameString.CreateUTF16GameString(text);
-            } else
+            }
+            else
             {
                 ageTranslated = GameString.CreateUTF16GameString(text.Replace("{age}", "").Replace(": ", ""));
             }
@@ -357,10 +277,10 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
     [UnmanagedCallersOnly]
     static unsafe nint SetCatDataHook(nint a1, nint a2, nint a3, nint a4)
     {
-        // return _setCatData(a1, a2, a3, a4);
+        // return setCatData(a1, a2, a3, a4);
         LogStr($"[HOOK] SetCatDataHook: a1=0x{a1:X}, a2=0x{a2:X}, a3=0x{a3:X}, a4=0x{a4:X}");
         // InsideSetCatData = true;
-        var result = _setCatData(a1, a2, a3, a4);
+        var result = setCatData(a1, a2, a3, a4);
         LogStr($"[HOOK] SetCatDataHook: result=0x{result:X}");
         // InsideSetCatData = false;
         return result;
@@ -369,20 +289,20 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
     [UnmanagedCallersOnly]
     static unsafe nint GoToMainMenuHook(nint a1)
     {
-        // return _goToMainMenu(a1);
+        // return goToMainMenu(a1);
         LogStr($"[HOOK] GoToMainMenuHook: a1=0x{a1:X}");
         ClearState();
-        return _goToMainMenu(a1);
+        return goToMainMenu(a1);
     }
 
     [UnmanagedCallersOnly]
     static unsafe nint EndDayHook(nint a1)
     {
-        // return _endDay(a1);
+        // return endDay(a1);
         CountExecution(nameof(EndDayHook));
         LogStr($"[HOOK] EndDayHook: a1=0x{a1:X}");
         ClearState();
-        return _endDay(a1);
+        return endDay(a1);
     }
 
     [UnmanagedCallersOnly]
@@ -411,7 +331,8 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
                     originalHousePanel->Effects = 0x0000000000000000;
                 }
                 ctrlPressed = false;
-            } else
+            }
+            else
             {
                 if (originalHousePanel != null)
                 {
@@ -420,7 +341,7 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
                 IsOurPanelEnabled = true;
             }
         }
-        return _clickHandler(a1, a2);
+        return clickHandler(a1, a2);
     }
 
     static void PutFirstInListByAbilityId(string abilityId)
@@ -433,22 +354,23 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
                 var abilities = catAbilities[cat];
                 LogStr($"[HOOK] PutFirstInListByAbilityId: cat={cat} abilities={string.Join(", ", abilities)}");
             }
-            
+
             sortedCats = sortedCats
                 .OrderByDescending(
-                    ren => {
-                     var found = catAbilities[ren].Contains(abilityId) ? 1 : 0;
-                     LogStr($"[HOOK] PutFirstInListByAbilityId: ren={ren} found={found} looking for abilityId={abilityId}");
-                     return found;
+                    ren =>
+                    {
+                        var found = catAbilities[ren].Contains(abilityId) ? 1 : 0;
+                        LogStr($"[HOOK] PutFirstInListByAbilityId: ren={ren} found={found} looking for abilityId={abilityId}");
+                        return found;
                     }
                 ).ToArray();
-            
+
             sortedPositions = new Dictionary<nint, int>(sortedCats.Length);
-            
+
             LogStr($"sortedPositions count = {sortedPositions.Count}");
             for (var i = 0; i < sortedCats.Length; i++)
                 sortedPositions[sortedCats[i]] = i;
-            
+
             LogStr($"Setting positionDirty=5 at PutFirstInListByAbilityId");
             positionDirty = 5;
         }
@@ -462,7 +384,8 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
             sortedCats = catStats.Select(e => e.Key).ToArray();
             // print the full SortedCats array
             LogStr($"[HOOK] SortRows: sortByStat is empty, sortedCats = {string.Join(", ", sortedCats.Select(e => e.ToString("X")))}");
-        } else
+        }
+        else
         {
             var sorted = sortByStat == "avg"
                 ? catStats.OrderBy(e => averages.ContainsKey(e.Key) ? averages[e.Key] : 0)
@@ -493,15 +416,17 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
     [UnmanagedCallersOnly]
     static unsafe nint CatStatsDrawerUpdateHook(nint a1)
     {
-        // return _catStatsDrawerUpdate(a1);
+        // return catStatsDrawerUpdate(a1);
         if (previouslyHoveredIndex != -1 && rowDrawers[previouslyHoveredIndex] == a1)
         {
             // continue with the rest of the function (once)
             previouslyHoveredIndex = -1;
-        } else if (forcedCatStatsUpdatePending > 0)
+        }
+        else if (forcedCatStatsUpdatePending > 0)
         {
             forcedCatStatsUpdatePending--;
-        } else
+        }
+        else
         {
             if (currentlyDrawerWithOpenIconsPanel == 0)
             {
@@ -522,12 +447,13 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
 
         CountExecution(nameof(CatStatsDrawerUpdateHook));
 
-        var result = _catStatsDrawerUpdate(a1);
+        var result = catStatsDrawerUpdate(a1);
         var iconsPanelIsOpen = Read<byte>(a1 + 0x71);
         if (iconsPanelIsOpen == 1)
         {
             currentlyDrawerWithOpenIconsPanel = a1;
-        } else
+        }
+        else
         {
             currentlyDrawerWithOpenIconsPanel = 0;
         }
@@ -538,21 +464,22 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
     static nint[] cachedVisibleCats = Array.Empty<nint>();
 
     [UnmanagedCallersOnly]
-    static unsafe nint CatIteratorHook (nint a1, nint a2, nint a3, nint a4)
+    static unsafe nint CatIteratorHook(nint a1, nint a2, nint a3, nint a4)
     {
         if (cachedVisibleCats.Length > 0)
         {
             // we already have cached visible cats, the first one is the important
-            return _catIterator(a1, a2, a3, a4);
+            return catIterator(a1, a2, a3, a4);
         }
-        // return _catIterator (a1, a2, a3, a4);
+        // return catIterator (a1, a2, a3, a4);
         CountExecution(nameof(CatIteratorHook));
 
         cachedVisibleCats = new nint[a3];
         LogStr($"[HOOK] CatIteratorHook: a1={a1:X} a2={a2:X} a3={a3} a4={a4:X}");
 
         var j = 0;
-        for (int i = 0; i < a3; i++) {
+        for (int i = 0; i < a3; i++)
+        {
             // if (a1 + j * 8 == a2)
             // {
             //     j = j - (int)a3 ;
@@ -561,8 +488,8 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
             LogStr($"[HOOK] CatIteratorHook: cachedVisibleCats[{j}] = {cachedVisibleCats[j]:X}");
             j++;
         }
-            
-        var result = _catIterator(a1, a2, a3, a4);
+
+        var result = catIterator(a1, a2, a3, a4);
         return result;
     }
 
@@ -592,14 +519,13 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
                     Component** slot = btn->Entity->ComponentsList + k;
                     Component* component = *slot;
                     nint vtable = Read<nint>((nint)component);
-                    nint audioSourceVtable = (nint)(MewjectorApi.GameBase + 0xED12A0);
                     LogStr("Looking for component at " + ((nint)component).ToString("X"));
-                    if (component != null && vtable == audioSourceVtable)
+                    if (component != null && vtable == _audioSourceVtable)
                     {
                         // is a AudioSource component
                         LogStr($"[HOOK] Found AudioSource component at {((nint)component):X}");
                         var audioSource = (AudioSource*)component;
-                        audioSource->Enabled = (byte)(active ? 1 : 0); 
+                        audioSource->Enabled = (byte)(active ? 1 : 0);
                     }
                     // Do something with the component if needed
                 }
@@ -609,14 +535,14 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
     }
 
 
-    static Dictionary<nint, byte> _visibilityBefore = new Dictionary<nint, byte>();
+    static Dictionary<nint, byte> visibilityBefore = new Dictionary<nint, byte>();
     [UnmanagedCallersOnly]
     static unsafe nint ToggleHouseDrawerHook(nint a1)
     {
-        // return _toggleHouseDrawer(a1);
+        // return toggleHouseDrawer(a1);
         if (originalHousePanel == null || !IsOurPanelEnabled)
         {
-            return _toggleHouseDrawer(a1);
+            return toggleHouseDrawer(a1);
         }
         CountExecution(nameof(ToggleHouseDrawerHook));
 
@@ -657,7 +583,6 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
             ourPanelIsOpen = true;
 
             updateRenderersInsideScreenArea(true);
-            cachedPointers.Clear();
             LogStr($"[HOOK] Before initializing buttons");
             forcedCatStatsUpdatePending = rowRenderers.Length;
             initializeButtons();
@@ -666,7 +591,8 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
             catPanelAnimationInProgress = true;
             waitingForPanelStatus = PanelStateOpen;
 
-        } else
+        }
+        else
         {
             // LogStr($"[HOOK] Panel state unchanged, panel={panel:X}, state={state:X} originalHousePanel={originalHousePanel:X} ourPanelIsOpen={ourPanelIsOpen}");
         }
@@ -680,17 +606,17 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
             positionDirty = 10;
             LogStr($"Setting positionDirty=10 at ToggleHouseDrawerHook");
         }
-        return _toggleHouseDrawer(a1);
+        return toggleHouseDrawer(a1);
     }
 
 
-    static nint _lastButtonCSD = 0;
-    static nint _lastButtonReturned = 0;
+    static nint lastButtonCSD = 0;
+    static nint lastButtonReturned = 0;
     [UnmanagedCallersOnly]
     static unsafe nint FindButtonHook(nint a1, nint a2, nint a3)
     {
-        // return _findButton(a1, a2, a3);
-        var result = _findButton(a1, a2, a3);
+        // return findButton(a1, a2, a3);
+        var result = findButton(a1, a2, a3);
         if (!ourPanelIsOpen)
         {
             return result;
@@ -698,17 +624,18 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
         CountExecution(nameof(FindButtonHook));
         if (result != 0)
         {
-            if (_lastButtonReturned != result)
+            if (lastButtonReturned != result)
             {
-                _lastButtonCSD = Read<nint>(Read<nint>(Read<nint>(Read<nint>(result + 0x38) + 0x18) + 0x28) + 0x10);
-                _lastButtonReturned = result;
+                lastButtonCSD = Read<nint>(Read<nint>(Read<nint>(Read<nint>(result + 0x38) + 0x18) + 0x28) + 0x10);
+                lastButtonReturned = result;
             }
             // LogStr($"[HOOK] result!=0 {result:X} x={x:X}");
-        } else
+        }
+        else
         {
-            // LogStr($"[HOOK] EMPTY! _lastButtonCSD = 0");
-            _lastButtonCSD = 0;
-            _lastButtonReturned = 0;
+            // LogStr($"[HOOK] EMPTY! lastButtonCSD = 0");
+            lastButtonCSD = 0;
+            lastButtonReturned = 0;
         }
         return result;
     }
@@ -716,7 +643,7 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
     [UnmanagedCallersOnly]
     static unsafe nint MutationTooltipHook(nint a1, nint a2)
     {
-        // return _mutationTooltip(a1, a2);
+        // return mutationTooltip(a1, a2);
         // MutationTooltip has an issue that it wasn't build with multiple catStatsDrawers instances in mind
         // We need to compare it with the CatStatDrawer instance we get from FindButtonHook to make it work
         CountExecution(nameof(MutationTooltipHook));
@@ -725,15 +652,15 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
         {
             return 0;
         }
-        if (_lastButtonCSD != 0)
+        if (lastButtonCSD != 0)
         {
             var opt1 = Read<nint>(Read<nint>(Read<nint>(a1 + 0x18) + 0x28) + 0x10);
             var opt2 = Read<nint>(Read<nint>(Read<nint>(a1 + 0x18) + 0x28));
-            // LogStr($"[HOOK] opt1={opt1:X} opt1={opt2:X} _lastButtonCSD={_lastButtonCSD:X}");
-            if (opt1 == _lastButtonCSD || opt2 == _lastButtonCSD)
+            // LogStr($"[HOOK] opt1={opt1:X} opt1={opt2:X} lastButtonCSD={lastButtonCSD:X}");
+            if (opt1 == lastButtonCSD || opt2 == lastButtonCSD)
             {
                 // LogStr($"[HOOK] MATCH!");
-                return _mutationTooltip(a1, a2);
+                return mutationTooltip(a1, a2);
             }
             else
             {
@@ -741,18 +668,18 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
                 return 0;
             }
         }
-        // LogStr($"[HOOK] _lastButtonCSD == 0");
-        return _mutationTooltip(a1, a2);
+        // LogStr($"[HOOK] lastButtonCSD == 0");
+        return mutationTooltip(a1, a2);
     }
 
-    
+
 
     static bool initializedButtons = false;
     // static List<nint> headerButtons = new();
     static Dictionary<string, nint> OurHeaderbuttons = new Dictionary<string, nint>();
     static unsafe Button* footerButton = null;
 
-    static unsafe void handleFooterClick(nint btn, ButtonData footerData)
+    static unsafe void handleFooterClick(nint btn, ButtonData? footerData)
     {
         LogStr($"[HOOK] ClickHandlerHook: a1=0x{btn:X} is our footer button, opening kofi link");
         Process.Start(new ProcessStartInfo
@@ -761,8 +688,8 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
             UseShellExecute = true
         });
     }
-    
-    static unsafe void handleHeaderClick(nint btn, ButtonData headerData)
+
+    static unsafe void handleHeaderClick(nint btn, ButtonData? headerData)
     {
         // if (catStats.Count > 0 && catStats.FirstOrDefault().Value.Count > 0)
         // {
@@ -781,17 +708,18 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
         // MovieClip* movieclip = (MovieClip*)Read(btn + 0x48);
         // LogStr($"[HOOK] ClickHandlerHook: movieclip=0x{(nint)movieclip:X} movieclip->Name=0x{movieclip->Name:X}");
         // get first 3 letters
-        var subname = headerData.id.Replace("_btn", "");
+        var subname = headerData?.id.Replace("_btn", "");
         if (subname == sortByStat)
         {
             sortByStatDirection = sortByStatDirection == SortDirection.Ascending
                 ? SortDirection.Descending
                 : SortDirection.Ascending;
-        } else
+        }
+        else
         {
             sortByStatDirection = SortDirection.Descending;
         }
-        sortByStat = subname;
+        sortByStat = subname!;
         SortRows();
         LogStr($"[HOOK] ClickHandlerHook: sorting by {sortByStat} {sortByStatDirection}");
 
@@ -807,7 +735,7 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
         }
     }
 
-    static unsafe void setHoveredCatRoom(int newIndex) 
+    static unsafe void setHoveredCatRoom(int newIndex)
     {
         if (newIndex >= rooms.Count || newIndex < 0)
         {
@@ -820,7 +748,6 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
             return;
         }
         var cat = ((CatStatsDrawer*)rowDrawers[currentlyHoveredIndex])->HouseCat;
-        var assingRoomFn = (delegate* unmanaged<nint, nint, void>)(MewjectorApi.GameBase + 0x2e88d0);
         LogStr($"[HOOK] New room index: newIndex={newIndex}");
         var room = rooms[newIndex];
         catRooms[currentlyHoveredIndex] = room;
@@ -829,11 +756,11 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
         var roomStr = room == -1 ? "-" : $"{rooms.IndexOf(room) + 1}";
         _setText(roomTextbox, GameString.CreateUTF16GameString(roomStr));
         LogStr($"[HOOK] Assigning room: room=0x{room:X} cat=0x{(nint)cat:X}");
-        assingRoomFn(room, (nint)cat);
+        _assingRoomFn(room, (nint)cat);
         // var cat = Read<nint>((nint)MewjectorApi.GameBase + 0x60);
         // var room = Read<nint>((nint)MewjectorApi.GameBase + 0x68);
         // LogStr($"[HOOK] Room button clicked: room=0x{room:X} cat=0x{cat:X}");
-                
+
     }
     static unsafe void initializeButtons()
     {
@@ -842,12 +769,12 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
 
         for (int i = 0; i < rowRenderers.Length; i++)
         {
-            
+
             var root = (nint)((Renderer*)rowRenderers[i])->MovieClip;
             var menupanel = (nint)((CatStatsDrawer*)rowDrawers[i])->MenuPanel;
 
             var roomMovieclip = _getChild(root, GameString.Create("room_btn"));
-            ButtonManager.createButton("room_btn", menupanel, (nint btn, ButtonData data)=>
+            ButtonManager.createButton("room_btn", menupanel, (nint btn, ButtonData? data) =>
             {
                 if (currentlyHoveredIndex == -1)
                 {
@@ -864,8 +791,8 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
                 // var cat = Read<nint>((nint)MewjectorApi.GameBase + 0x60);
                 // var room = Read<nint>((nint)MewjectorApi.GameBase + 0x68);
                 // LogStr($"[HOOK] Room button clicked: room=0x{room:X} cat=0x{cat:X}");
-                
-                LogStr($"[HOOK] Room button clicked: btn=0x{btn:X} data.id={data.id}");
+
+                LogStr($"[HOOK] Room button clicked: btn=0x{btn:X} data.id={data?.id}");
             }, new ButtonData("room_btn"));
         }
 
@@ -879,9 +806,6 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
         nint headersEntity = Marshal.ReadIntPtr((nint)headersRenderer + 0x18);
 
         LogStr("Creating headerMenuPanel...");
-        var _createMenuPanel =
-            (delegate* unmanaged<nint, nint, nint>)
-            (MewjectorApi.GameBase + 0xe9340);;
 
         LogStr("Calling _createMenuPanel for headerMenuPanel...");
         nint headerMenuPanel = _createMenuPanel(
@@ -898,7 +822,7 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
         {
             var btnName = buttonList[i] + "_btn";
             ButtonManager.createButton(btnName, headerMenuPanel, handleHeaderClick, new ButtonData(btnName));
-        }   
+        }
 
         if (footerRenderer != null)
         {
@@ -923,20 +847,20 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
         // we just intercept our buttons at ClickHandlerHook
         return 0;
     }
-    
-    private unsafe static float xOffset = -300f;
-    private unsafe static float xOffsetTarget = -300f;
+
+    private static float xOffset = -300f;
+    private static float xOffsetTarget = -300f;
     static FloatAnimator? xMoveAni;
 
-    private unsafe static float yOffset = 0;
-    private unsafe static float yOffsetTarget = 0;
+    private static float yOffset = 0;
+    private static float yOffsetTarget = 0;
     static FloatAnimator? yScrollAni;
     [UnmanagedCallersOnly]
     static unsafe nint MouseWheelHook(nint a1, nint a2)
     {
-        // return _mouseEventHandler(a1, a2);
-        if(ourPanelIsOpen && IsLikelyPointer(a2))
-        {   
+        // return mouseEventHandler(a1, a2);
+        if (ourPanelIsOpen && IsLikelyPointer(a2))
+        {
             var somethingCoveringOurPanel = Read<bool>(originalDrawerParent + 0x4DA);
 
             var a2Val = Marshal.ReadInt32(a2);
@@ -972,7 +896,7 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
             }
         }
         // return 0;
-        return _mouseEventHandler(a1, a2);
+        return mouseEventHandler(a1, a2);
     }
 
     // unsafe static bool _insideHouseCatByOffset = false;
@@ -981,27 +905,28 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
     [UnmanagedCallersOnly]
     static unsafe nint GetHouseCatByOffsetHook(nint a1, nint a2)
     {
-        // return _getHouseCatByOffset(a1, a2);
+        // return getHouseCatByOffset(a1, a2);
         CountExecution(nameof(GetHouseCatByOffsetHook));
 
         // _insideHouseCatByOffset = true;
         nint result;
         if (isIteratingOurDrawers)
         {
-            LogStr($"[HOOK] GetHouseCatByOffsetHook: returning cached cat at index {_catIndex}");
-            if ((uint)_catIndex >= (uint)cachedVisibleCats.Length)
+            LogStr($"[HOOK] GetHouseCatByOffsetHook: returning cached cat at index {catIndex}");
+            if ((uint)catIndex >= (uint)cachedVisibleCats.Length)
             {
-                LogStr($"[HOOK] GetHouseCatByOffsetHook: _catIndex {_catIndex} is out of range for cachedVisibleCats.Length {cachedVisibleCats.Length}");
+                LogStr($"[HOOK] GetHouseCatByOffsetHook: catIndex {catIndex} is out of range for cachedVisibleCats.Length {cachedVisibleCats.Length}");
                 // _insideHouseCatByOffset = false;
                 return 0;
             }
 
-            result = cachedVisibleCats[_catIndex];
+            result = cachedVisibleCats[catIndex];
             LogStr($"[HOOK] GetHouseCatByOffsetHook: cachedVisibleCats result={result:X}");
-        } else
+        }
+        else
         {
             LogStr($"Getting cat at {a1:X} {a2:X}");
-            result = _getHouseCatByOffset(a1, a2);
+            result = getHouseCatByOffset(a1, a2);
         }
         // _insideHouseCatByOffset = false;
         LogStr($"[HOOK] GetHouseCatByOffsetHook: result={result:X}");
@@ -1009,14 +934,14 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
     }
 
 
-    unsafe static int _catIndex = 0;
+    unsafe static int catIndex = 0;
     unsafe static bool isIteratingOurDrawers = false;
     unsafe static List<IntPtr> activeRowsRenderers = new();
     static int disableButtonsInTicks = -1;
     static List<nint> alreadyInitializedRenderers = new();
     [UnmanagedCallersOnly]
     static unsafe nint InitCatStatsCallbackHook(CatStatsDrawerLambda* a1)
-    {   
+    {
 
         // foreach (var btn in theirButtons)
         // {
@@ -1027,14 +952,14 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
         //     }
         //     Write(btn + 0x10, (byte)0); 
         // }
-        // return _initCatStatsClickCallback(a1);
+        // return initCatStatsClickCallback(a1);
         CountExecution(nameof(InitCatStatsCallbackHook));
 
         LogStr($"[HOOK] InitCatStatsCallbackHook called: a1=0x{(nint)a1:X}");
         a1->CatStatsDrawer = (CatStatsDrawer*)originalDrawer;
         var prevCachedVisibleCatsCount = cachedVisibleCats.Length;
         cachedVisibleCats = new nint[0];
-        var result = _initCatStatsClickCallback(a1);
+        var result = initCatStatsClickCallback(a1);
         // if (cachedVisibleCats.Length != prevCachedVisibleCatsCount || cachedVisibleCats.Length != totalCatsCount)
         // {
         if (IsOurPanelEnabled)
@@ -1059,7 +984,7 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
     [UnmanagedCallersOnly]
     static unsafe nint CreatePanelHook(nint a1, nint a2, nint a3)
     {
-        // return _createCatsDrawerHousePanel(a1, a2, a3);
+        // return createCatsDrawerHousePanel(a1, a2, a3);
         CountExecution(nameof(CreatePanelHook));
 
         if (originalHousePanel != null && insideOurCatInstantiation)
@@ -1067,7 +992,7 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
             LogStr($"CreatePanelHook returning originalPanel a1={a1:X} a2={a2:X} a3={a3:X}");
             return (nint)originalHousePanel;
         }
-        var result = _createCatsDrawerHousePanel(a1, a2, a3);
+        var result = createCatsDrawerHousePanel(a1, a2, a3);
         LogStr($"CreatePanelHook called a1={a1:X} a2={a2:X} a3={a3:X} result={result:X}");
         originalHousePanel = (HousePanel*)result;
         // This write is to set blur effect on click:
@@ -1079,7 +1004,7 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
 
     static unsafe HousePanel* originalHousePanel = null;
 
-    unsafe static delegate* unmanaged<nint, void>  _buttonCallbackResolverPtr = null;
+    unsafe static delegate* unmanaged<nint, void> buttonCallbackResolverPtr = null;
     static bool isInsideCreateCatStatsDrawerHook = false;
     static unsafe CatStatsDrawer* originalDrawer = null;
     static nint originalDrawerParent = 0;
@@ -1087,19 +1012,19 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
     [UnmanagedCallersOnly]
     static unsafe nint CreateCatStatsDrawerHook(nint a1)
     {
-        // return _statsCreator(a1);
+        // return statsCreator(a1);
         CountExecution(nameof(CreateCatStatsDrawerHook));
         LogStr($"[HOOK] CreateCatStatsDrawerHook called: a1=0x{a1:X}");
         isInsideCreateCatStatsDrawerHook = true;
-        nint result = _statsCreator(a1);
+        nint result = statsCreator(a1);
         isInsideCreateCatStatsDrawerHook = false;
-        
+
         if (originalDrawer == null)
         {
             framesSinceInitialCatStatsDrawer = 0;
             originalDrawer = (CatStatsDrawer*)a1;
             originalDrawerParent = Read<nint>(a1 + 0x20);
-        } 
+        }
 
         LogStr($"[HOOK] CreateCatStatsDrawerHookkkk: a1=0x{a1:X}, result=0x{result:X}");
         return result;
@@ -1113,8 +1038,8 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
     [UnmanagedCallersOnly]
     static unsafe nint RegisterCallbackHook(nint menuPanel, nint a2, nint a3, nint a4)
     {
-        // return _registerButton(menuPanel, a2, a3, a4);
-        var result = _registerButton(menuPanel, a2, a3, a4);
+        // return registerButton(menuPanel, a2, a3, a4);
+        var result = registerButton(menuPanel, a2, a3, a4);
         var entityAddr = menuPanel + 0x18;
         var rendererAddr = menuPanel + 0x38;
         if (!IsMemReadable(rendererAddr, 8) || !IsMemReadable(entityAddr, 8))
@@ -1129,11 +1054,13 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
             {
                 LogStr($"[HOOK] RegisterCallbackHook: isIteratingOurDrawers is {isIteratingOurDrawers}, index={index}, menuPanel=0x{menuPanel:X}, a2=0x{a2:X}, a3=0x{a3:X}, a4=0x{a4:X}, result=0x{result:X}");
                 buttonsInsideOurDrawers[index].Add(result);
-            } else
+            }
+            else
             {
                 LogStr($"[HOOK] RegisterCallbackHook: isIteratingOurDrawers is {isIteratingOurDrawers}, index not found, menuPanel=0x{menuPanel:X}, a2=0x{a2:X}, a3=0x{a3:X}, a4=0x{a4:X}, result=0x{result:X}");
             }
-        } else
+        }
+        else
         {
             theirButtons.Add(result);
         }
@@ -1148,7 +1075,7 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
         // LogStr($"[HOOK] RegisterCallbackHook inside CatStats: a1=0x{menuPanel:X}, a2=0x{a2:X}, a3=0x{a3:X}, a4=0x{a4:X}, result=0x{result:X}, btnName=\"{btnName}\", renderer=0x{renderer:X}, rendererName={rendererName}");
         if (rendererName != "CatMenu")
         {
-            
+
             LogStr($"[HOOK] RegisterCallbackHook: rendererName is not CatMenu, rendererName={rendererName} menuPanel=0x{menuPanel:X} a2=0x{a2:X} a3=0x{a3:X} a4=0x{a4:X} result=0x{result:X}");
             return result;
         }
@@ -1157,7 +1084,8 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
         var houseDrawerPanel = Marshal.ReadIntPtr(componentsList + 0x0);
         LogStr($"[HOOK] RegisterCallbackHook inside CatMenu: entity=0x{entity:X}, componentsList=0x{componentsList:X}, houseDrawerPanel=0x{houseDrawerPanel:X}");
         var movieclipPtr = result + 0x48;
-        if (!IsMemReadable(movieclipPtr, 8)) {
+        if (!IsMemReadable(movieclipPtr, 8))
+        {
             LogStr($"[HOOK] RegisterCallbackHook: movieclip is not readable at 0x{movieclipPtr:X}, returning result=0x{result:X}");
             return result;
         }
@@ -1176,20 +1104,20 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
         {
             // noop = Read<byte>((nint)MewjectorApi.GameBase + 0x60);
             originalHousePanel = (HousePanel*)houseDrawerPanel;
-        } 
+        }
         // LogStr($"[HOOK] RegisterCallbackHook: menuPanel=0x{a1:X}, a2=0x{a2:X}, a3=0x{a3:X}, a4=0x{a4:X}");
         return result;
     }
 
-    static string[] buttonList = ["spd", "cha", "int", "str", "lck", "con", "dex", "avg", "bdc", "muc", "lev", "age", "hou"];
-    
+    static readonly string[] buttonList = ["spd", "cha", "int", "str", "lck", "con", "dex", "avg", "bdc", "muc", "lev", "age", "hou"];
+
     static Dictionary<nint, Dictionary<string, int>> catStats = new();
     static Dictionary<nint, List<string>> catAbilities = new();
     static List<nint> catAbilitiesButtons = new();
     static Dictionary<nint, nint> catRooms = new();
     // static sortedCats:
     static nint[] sortedCats = Array.Empty<nint>();
-    
+
     static unsafe string getStat(nint dynamicTextBox)
     {
         if (!IsMemReadable(dynamicTextBox + 0x48, 8))
@@ -1243,10 +1171,10 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
     static unsafe void InitOurCatStats()
     {
         // Implementation of InitOurCatStats goes here
-        
+
         // nint result = 0;
         isIteratingOurDrawers = true;
-        _catIndex = 0;
+        catIndex = 0;
         activeRowsRenderers.Clear();
         catPartsInsideOurDrawers = new nint[rowDrawers.Length * 3];
         setActiveAllOurButtons(true);
@@ -1261,20 +1189,20 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
             activeRowsRenderers.Add(drawer->Renderer.Address);
             // if (!alreadyInitializedRenderers.Contains(renderer))
             // {
-            _initCatStatsClickCallback(btnInitCatStatsCallback);
+            initCatStatsClickCallback(btnInitCatStatsCallback);
             LogStr($"[HOOK] InitCatStatsCallbackHook: after read cat parts for drawer {i} at address {(nint)drawer:X}" +
                 $" catParts1={drawer->catsParts1:X} catParts2={drawer->catsParts2:X} catParts3={drawer->catsParts3:X}");
             catPartsInsideOurDrawers[i * 3] = drawer->catsParts1;
             catPartsInsideOurDrawers[i * 3 + 1] = drawer->catsParts2;
             catPartsInsideOurDrawers[i * 3 + 2] = drawer->catsParts3;
             // }
-            _catIndex++;
+            catIndex++;
 
-            if (_catIndex == cachedVisibleCats.Length)
+            if (catIndex == cachedVisibleCats.Length)
                 break;
         }
 
-        
+
         foreach (var ren in activeRowsRenderers)
         {
             LogStr($"[HOOK] Processing renderer {ren:X}");
@@ -1338,10 +1266,7 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
                 catAbilities[ren].Add(abilityName);
                 LogStr($"[HOOK] Ability id retrieved: {abilityName}");
             }
-            
         }
-                    
-
 
         SortRows();
         isIteratingOurDrawers = false;
@@ -1356,9 +1281,9 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
         // LogStr($"[HOOK] InitCatStatsCallbackHook: first drawer's attack child at address {(nint)attack:X}");
         // noop = Read<byte>((nint)MewjectorApi.GameBase + 0x60);
 
-        // var btn = _registerButton(menuPanel, GameString.Create("attack"), callbackStorage, callback);
+        // var btn = registerButton(menuPanel, GameString.Create("attack"), callbackStorage, callback);
         // LogStr($"[HOOK] InitCatStatsCallbackHook: registered attack button at address {(nint)btn:X}");
-        
+
 
         disableButtonsInTicks = 10;
         // Write(btnInitCatStatsCallback + 0x8, originalDrawer);
@@ -1366,19 +1291,21 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
         LogStr($"[HOOK] InitCatStatsCallbackHook: set original drawer to btnInitCatStatsCallback at address {(nint)btnInitCatStatsCallback:X} and points to {(nint)btnInitCatStatsCallback->CatStatsDrawer:X}");
 
     }
-   
+
     static int positionDirty = 0;
     static List<nint> panelsWithData = new();
     static DateTime ticksStartTime;
     [UnmanagedCallersOnly]
     static unsafe nint GameTickHook(nint a1)
     {
-        
+
         if (!IsOurPanelEnabled)
         {
-            return _gameTick(a1);
+            return gameTick(a1);
         }
-        // return _gameTick(a1);
+
+        handleDelayedPerfTime();
+        // return gameTick(a1);
         // call mewgenics.7FF647368A30
         // [[[rax+0x38]+18]+58] 
         if (pendinUpdateRenderersInsideScreen.HasValue && pendinUpdateRenderersInsideScreen <= DateTime.Now)
@@ -1400,7 +1327,10 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
             InitOurCatStats();
             pendingOurInitCatStats = false;
         }
-        var result = _gameTick(a1);
+        StartGlobalPerfLog("GameTick");
+        var result = gameTick(a1);
+        EndGlobalPerfLog("GameTick");
+        StartGlobalPerfLog("PostGameTick");
         if (disableButtonsInTicks != -1)
         {
             disableButtonsInTicks--;
@@ -1416,7 +1346,7 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
             if (ticksStartTime == default)
             {
                 ticksStartTime = DateTime.Now;
-            } 
+            }
             // else if (ticksStartTime.AddSeconds(15) <= DateTime.Now)
             // {
             //     LogStr($"[HOOK] In 15 seconds there were number of ticks: {framesSinceInitialCatStatsDrawer} so the ~fps: {framesSinceInitialCatStatsDrawer / 15.0}");
@@ -1436,12 +1366,13 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
 
         // 00007FF646AD4C40
         // [[[rcx+0x18]+0x28]] or [[[rcx+0x18]+0x28]+10]
-      
 
 
-        if (originalDrawer != null && totalCatsCount == -1) {
+
+        if (originalDrawer != null && totalCatsCount == -1)
+        {
             CountExecution(nameof(GameTickHook));
-            
+
             var pointer = Marshal.ReadIntPtr((nint)originalDrawer + 0x20);
             // LogStr($"pointer 0: {pointer:X}");
             pointer = Marshal.ReadIntPtr(pointer + 0x78);
@@ -1539,7 +1470,8 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
                 // LogStr($"catStatDrawer: {rowDrawers[index]}");
                 var catStatDrawer = rowDrawers[index];
                 currentlyHoveredIndex = index;
-            } else
+            }
+            else
             {
                 currentlyHoveredIndex = -1;
             }
@@ -1560,7 +1492,7 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
                         catStats[ren]["con"] = ReadNumberOrZero(_getChildByPath((nint)movieclip, GameString.Create("confancy.total")));
                         averages[ren] = (double)Math.Round(catStats[ren].Where(kv => kv.Key != "hou").Average(kv => kv.Value), 1);
                         var mutations = _getChild((nint)movieclip, GameString.Create("mutations"));
-                        
+
                         catStats[ren]["muc"] = ReadNumberOrZero(_getChild(mutations, GameString.Create("mutationcount")));
                         catStats[ren]["bdc"] = ReadNumberOrZero(_getChild(mutations, GameString.Create("birthdefectcount")));
                         catStats[ren]["age"] = ReadNumberOrZero(_getChildByPath((nint)movieclip, GameString.Create("age")));
@@ -1589,10 +1521,10 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
             }
 
         }
-
+        EndGlobalPerfLog("GameTick");
         return result;
     }
-    
+
     static Dictionary<nint, int> sortedPositions = new Dictionary<nint, int>();
     static DateTime? pendinUpdateTransformInTick = null;
     static DateTime? pendinUpdateRenderersInsideScreen = null;
@@ -1626,7 +1558,7 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
         //     LogStr($"Our animation just ended: xOffset={xOffset} yOffset={yOffset} newXOffset={newXOffset} newYOffset={newYOffset}");
         //     ourAnimationJustEnded = true;
         // }
-        
+
         if (xIsFinished && yIsFinished)
         {
             LogStr($"Both x and y animations just finished: xOffset={xOffset} yOffset={yOffset} newXOffset={newXOffset} newYOffset={newYOffset}");
@@ -1641,14 +1573,12 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
         double xPos = xOffset;
         double headerXpos = cachedVisibleCats.Length > 0 ? xPos - 10.0 : -300.0;
         LogStr($"headerXpos {headerXpos}");
-        var _findButton = (delegate* unmanaged<nint, nint, nint, nint>)(MewjectorApi.GameBase + (nuint)0x97c4f0);
-        LogStr($"_findButton = 0x{(nint)_findButton:X}");
 
         if (headersRenderer != null)
         {
             headersRenderer->Transform->X = headerXpos;
             LogStr($"headerTransform->X set to {headerXpos} headerTransform=0x{(nint)headersRenderer->Transform:X}");
-            if (xMoveAni.justFinished)
+            if (xMoveAni != null && xMoveAni.justFinished)
             {
                 LogStr($"Tracking movieclip child parent offset for originalHousePanel=0x{(nint)originalHousePanel:X} headerTransform=0x{(nint)headersRenderer->Transform:X}");
                 _trackMovieclipChildParentOffset((nint)originalHousePanel, (nint)headersRenderer->Transform, 1);
@@ -1668,7 +1598,7 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
                 _trackMovieclipChildParentOffset((nint)originalHousePanel, (nint)footerTransform, 1);
             }
         }
-        if (positionDirty > 0 || yChanged || xMoveAni.justFinished)
+        if (positionDirty > 0 || yChanged || (xMoveAni != null && xMoveAni.justFinished))
         {
             LogStr($"Updating renderers inside screen area with yOffset={yOffset} xOffset={xOffset}");
             pendinUpdateTransformInTick = DateTime.Now.AddMilliseconds(10);
@@ -1682,7 +1612,7 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
         if (headersRenderer != null)
         {
             headersRenderer->Transform->X = headerXpos;
-         
+
         }
         if (footerRenderer != null)
         {
@@ -1701,11 +1631,12 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
                 continue;
             }
             if (index != -1)
-            {    
+            {
                 transform->X = xPos;
                 double yPos = -1.0 + yOffset - (1.8 * index);
                 transform->Y = yPos;
-            } else
+            }
+            else
             {
                 transform->X = -300.0;
             }
@@ -1741,7 +1672,7 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
 
     unsafe static Renderer* headersRenderer = null;
     unsafe static Renderer* footerRenderer = null;
-    
+
     static bool insideOurCatInstantiation = false;
     static bool showingChimplantsPromo = false;
 
@@ -1751,9 +1682,8 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
     {
         LogStr($"Creating rows");
         CountExecution(nameof(CreateRows));
-        var _getRenderer = (delegate* unmanaged<nint, nint>)(MewjectorApi.GameBase + 0x224cd0);
-        var _createEntity = (delegate* unmanaged<nint, nint>)(MewjectorApi.GameBase + 0x96b3e0);
-        DateTime currentDateTime = DateTime.Now; 
+
+        DateTime currentDateTime = DateTime.Now;
 
         IntPtr headers = Marshal.StringToHGlobalAnsi("RowHeaders");
         // var _strBtn = _findMovieClipTrampoline(CreateUTF16GameString("x"));
@@ -1763,8 +1693,8 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
 
         try
         {
-            LogStr($"Creating headersRendere with arguments: scenePtr=0x{scenePtr:X}, headersEntity=0x{headersEntity:X}, headers=0x{headers:X}");            
-            headersRenderer = _createUiRenderer(scenePtr, headersEntity, headers);
+            LogStr($"Creating headersRendere with arguments: scenePtr=0x{scenePtr:X}, headersEntity=0x{headersEntity:X}, headers=0x{headers:X}");
+            headersRenderer = createUiRenderer(scenePtr, headersEntity, headers);
         }
         finally
         {
@@ -1780,7 +1710,7 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
             var footerEntity = _createEntity(scenePtr);
             try
             {
-                footerRenderer = _createUiRenderer(
+                footerRenderer = createUiRenderer(
                     scenePtr,
                     footerEntity,
                     footer);
@@ -1795,7 +1725,7 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
             // Write(footerTransform + 0x80, -300.0);
             footerTransform->X = -300.0;
         }
-        
+
         // Write((nint)headersRenderer + 0x50, 0x0000002400000101);
         headersRenderer->Flags = 0x0000002400000101;
         // Write(headerTransform + 0x80, -300.0);
@@ -1815,11 +1745,11 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
             int componentCount = *(int*)(rowEntity + 36);
             nint componentArray = *(nint*)(rowEntity + 40);
 
-            
+
             var rendererFound = _getRenderer(rowEntity);
             IntPtr name = Marshal.StringToHGlobalAnsi("RowCatStatus");
 
-            Renderer* rowRenderer = _createUiRenderer(
+            Renderer* rowRenderer = createUiRenderer(
                 scenePtr,
                 rowEntity,
                 name);
@@ -1840,7 +1770,7 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
                 scenePtr,
                 rowEntity);
             insideOurCatInstantiation = false;
-            
+
             // Write(rowDrawer + 0x38, originalHousePanel);
 
             // var iconsPanel = Marshal.ReadIntPtr(rowDrawer + 0x68);
@@ -1860,8 +1790,8 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
             // // debug only ahead:
             // nint callback = Marshal.AllocHGlobal(0x40);
             // NativeMemory.Clear((void*)callback, 0x40);
-            
-            // testbutton = _registerButton(
+
+            // testbutton = registerButton(
             //     menuPanel,
             //     GameString.Create("xxx"),
             //     callbackStorage,
@@ -1875,7 +1805,7 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
         // Write((nint)originalHousePanel + 0x118, originalDrawer);
         originalHousePanel->CatStatsDrawer = originalDrawer;
         setActiveAllOurButtons(false);
-        
+
     }
     // static nint testbutton = 0;
 
@@ -1883,9 +1813,6 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
     [UnmanagedCallersOnly]
     static unsafe Renderer* CreateUiRendererHook(nint a1, nint entity, nint namePtr)
     {
-        //  return _createUiRenderer(a1, entity, namePtr);
-        // if (scenePtr == 0)
-        // {    
         CountExecution(nameof(CreateUiRendererHook));
         var name = TryReadCString(namePtr);
         if (name == "HouseCatStatus")
@@ -1893,9 +1820,8 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
             LogStr($"[HOOK] CreateUiRendererHook: a1=0x{a1:X}, entity=0x{entity:X}, name=\"{name}\"");
             scenePtr = a1;
         }
-        // }
 
-        return _createUiRenderer(a1, entity, namePtr);
+        return createUiRenderer(a1, entity, namePtr);
     }
 
     static bool ourPanelIsOpen = false;
@@ -1908,14 +1834,14 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
     [UnmanagedCallersOnly]
     static unsafe nint UpdatePanelLayoutHook(nint a1)
     {
-        // return _updatePanelLayout(a1);
-        if (originalDrawer == null ||(catMenuPanel != 0 && catMenuPanel != a1))
+        // return updatePanelLayout(a1);
+        if (originalDrawer == null || (catMenuPanel != 0 && catMenuPanel != a1))
         {
-            return _updatePanelLayout(a1);
+            return updatePanelLayout(a1);
         }
         CountExecution(nameof(UpdatePanelLayoutHook));
 
-       
+
         var renderer = Marshal.ReadIntPtr(a1 + 0x58);
         if (catMenuPanel == 0)
         {
@@ -1923,13 +1849,13 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
             var rendererName = TryReadStdString(renderer + 0xA8, false);
             if (rendererName != "CatMenu")
             {
-                return _updatePanelLayout(a1);
+                return updatePanelLayout(a1);
             }
             LogStr($"[HOOK] UpdatePanelLayoutHook: CatMenu panel detected: a1=0x{a1:X}, renderer=0x{renderer:X}, rendererName=\"{rendererName}\"");
             catMenuPanel = a1;
         }
 
-        var result = _updatePanelLayout(a1);
+        var result = updatePanelLayout(a1);
 
         var rendererState = Marshal.ReadInt32(renderer + 0x54);
         if (rendererState == waitingForPanelStatus)
@@ -2014,291 +1940,18 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
         xOffset = -300;
         xOffsetTarget = -300;
         positionDirty = 0;
-        cachedPointers.Clear();
         catStats.Clear();
         yScrollAni = null;
         xMoveAni = null;
     }
 
+
     static public void LogStr(string message)
     {
-        if (!_debugLogging)
+        if (!debugLogging)
             return;
         MewjectorApi.Log(message);
     }
-    public static unsafe Button* FindButtonInPanel(
-        MenuPanel* menuPanel,
-        string name)
-    {
-        if (menuPanel == null)
-            return null;
-
-        ButtonMapNode* header = menuPanel->ButtonMap;
-
-        if (header == null)
-            return null;
-
-        // Native:
-        //
-        // mov r14, [r13+40h]
-        // mov rbx, [r14+8]
-        //
-        ButtonMapNode* node = header->Parent;
-
-        while (node != header)
-        {
-            string nodeName = HexToAscii((nint)node->Key);
-
-            LogStr(
-                $"FindButtonInPanel: node 0x{(nint)node:X} " +
-                $"'{nodeName}'");
-
-            int cmp = string.CompareOrdinal(nodeName, name);
-
-            if (cmp == 0)
-            {
-                LogStr(
-                    $"FindButtonInPanel: FOUND '{name}' " +
-                    $"-> 0x{(nint)node->Value:X}");
-
-                return node->Value;
-            }
-
-            if (cmp < 0)
-            {
-                LogStr(
-                    $"FindButtonInPanel: '{nodeName}' < '{name}' " +
-                    $"-> RIGHT 0x{(nint)node->Right:X}");
-
-                node = node->Right;
-            }
-            else
-            {
-                LogStr(
-                    $"FindButtonInPanel: '{nodeName}' > '{name}' " +
-                    $"-> LEFT 0x{(nint)node->Left:X}");
-
-                node = node->Left;
-            }
-        }
-
-        return null;
-    }
-private static unsafe Button* FindButtonBranch(
-    ButtonMapNode* node,
-    nint mapAddress,
-    nint sentinelAddress,
-    string name,
-    HashSet<nint> visited)
-{
-    if (node == null)
-        return null;
-
-    nint address = (nint)node;
-
-    // Don't enter the container/sentinel.
-    if (address == mapAddress || address == sentinelAddress)
-        return null;
-
-    // Prevent malformed/circular structures from hanging us.
-    if (!visited.Add(address))
-    {
-        LogStr($"FindButtonBranch: already visited 0x{address:X}");
-        return null;
-    }
-
-    string nodeName = HexToAscii((nint)node->Key);
-
-    LogStr(
-        $"FindButtonBranch: " +
-        $"node=0x{address:X}, " +
-        $"name='{nodeName}', " +
-        $"L=0x{(nint)node->Left:X}, " +
-        $"R=0x{(nint)node->Right:X}");
-
-    if (string.Equals(nodeName, name, StringComparison.Ordinal))
-    {
-        LogStr(
-            $"FindButtonBranch: FOUND '{name}' " +
-            $"-> 0x{(nint)node->Value:X}");
-
-        return node->Value;
-    }
-
-    Button* result = FindButtonBranch(
-        node->Left,
-        mapAddress,
-        sentinelAddress,
-        name,
-        visited);
-
-    if (result != null)
-        return result;
-
-    return FindButtonBranch(
-        node->Right,
-        mapAddress,
-        sentinelAddress,
-        name,
-        visited);
-}
-private static unsafe Button* FindButtonInTree(
-    ButtonMapNode* node,
-    ButtonMapNode* header,
-    string targetName,
-    HashSet<nint> visited,
-    int depth)
-{
-    if (node == null)
-    {
-        LogStr($"{new string(' ', depth * 2)}NULL NODE");
-        return null;
-    }
-
-    if (node == header)
-    {
-        LogStr(
-            $"{new string(' ', depth * 2)}" +
-            $"NODE == HEADER (sentinel), stopping branch");
-
-        return null;
-    }
-
-    nint address = (nint)node;
-
-    string indent = new string(' ', depth * 2);
-
-    LogStr($"{indent}--- NODE 0x{address:X} ---");
-
-    // Cycle detection BEFORE doing anything else.
-    if (!visited.Add(address))
-    {
-        LogStr(
-            $"{indent}!!! CYCLE DETECTED: " +
-            $"0x{address:X} was already visited !!!");
-
-        return null;
-    }
-
-    // Read all tree pointers explicitly.
-    ButtonMapNode* left =
-        *(ButtonMapNode**)((byte*)node + 0x00);
-
-    ButtonMapNode* parent =
-        *(ButtonMapNode**)((byte*)node + 0x08);
-
-    ButtonMapNode* right =
-        *(ButtonMapNode**)((byte*)node + 0x10);
-
-    // Read the color/metadata byte.
-    byte color =
-        *((byte*)node + 0x18);
-
-    // Value at +0x40.
-    Button* value =
-        *(Button**)((byte*)node + 0x40);
-
     
-    string nodeName = HexToAscii(((nint)node->Key));
 
-    LogStr($"{indent}Address = 0x{address:X}");
-    LogStr($"{indent}Name    = '{nodeName}'");
-    LogStr($"{indent}Target  = '{targetName}'");
-
-    LogStr(
-        $"{indent}Left    = 0x{(nint)left:X}" +
-        (left == header ? " [HEADER]" : ""));
-
-    LogStr(
-        $"{indent}Parent  = 0x{(nint)parent:X}" +
-        (parent == header ? " [HEADER]" : ""));
-
-    LogStr(
-        $"{indent}Right   = 0x{(nint)right:X}" +
-        (right == header ? " [HEADER]" : ""));
-
-    LogStr($"{indent}Color   = 0x{color:X2}");
-
-    LogStr(
-        $"{indent}Value   = 0x{(nint)value:X}" +
-        (value == null ? " [NULL]" : ""));
-
-    LogStr(
-        $"{indent}Left==Node   : {left == node}");
-
-    LogStr(
-        $"{indent}Right==Node  : {right == node}");
-
-    LogStr(
-        $"{indent}Parent==Node : {parent == node}");
-
-    if (string.Equals(
-        nodeName,
-        targetName,
-        StringComparison.Ordinal))
-    {
-        LogStr(
-            $"{indent}!!! FOUND '{targetName}' !!!");
-
-        return value;
-    }
-
-    /*
-     * IMPORTANT:
-     *
-     * Do not use the BST comparison yet.
-     * Search both branches until we understand the
-     * exact native comparator.
-     */
-
-    if (left != null && left != header)
-    {
-        LogStr(
-            $"{indent}Descending LEFT -> " +
-            $"0x{(nint)left:X}");
-
-        Button* result = FindButtonInTree(
-            left,
-            header,
-            targetName,
-            visited,
-            depth + 1);
-
-        if (result != null)
-            return result;
-    }
-    else
-    {
-        LogStr(
-            $"{indent}LEFT is " +
-            (left == null ? "NULL" : "HEADER"));
-    }
-
-    if (right != null && right != header)
-    {
-        LogStr(
-            $"{indent}Descending RIGHT -> " +
-            $"0x{(nint)right:X}");
-
-        Button* result = FindButtonInTree(
-            right,
-            header,
-            targetName,
-            visited,
-            depth + 1);
-
-        if (result != null)
-            return result;
-    }
-    else
-    {
-        LogStr(
-            $"{indent}RIGHT is " +
-            (right == null ? "NULL" : "HEADER"));
-    }
-
-    LogStr($"{indent}No match in node 0x{address:X}");
-
-    return null;
-}
 };

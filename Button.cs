@@ -29,15 +29,14 @@ public interface OurCallback
 }
 
 
-class ModButton<T>: OurCallback where T : class {
+class ModButton<T>: OurCallback where T : class? {
     
-    public string id;
     public nint MovieClipAddress;
 
-    public Action<nint, T> _callback;
-    public T _data;
+    public Action<nint, T?> _callback;
+    public T? _data;
 
-    public ModButton(T data, Action<nint, T> callback)
+    public ModButton(T? data, Action<nint, T?> callback)
     {
         _data = data;
         _callback = callback;
@@ -55,10 +54,10 @@ public static class ButtonManager
     // createButton overload that doesn't require initial data
     public static unsafe void createButton(string id, nint menupanel, Action<nint> ourCallback)
     {
-        createButton<object>(id, menupanel, (nint btn, object _) => ourCallback(btn), initialData: null);
+        createButton<object>(id, menupanel, (nint btn, object? _) => ourCallback(btn), initialData: null);
     }
     
-    public static unsafe void createButton<T>(string id, nint menupanel, Action<nint, T> ourCallback, T initialData = default(T)) where T : class?
+    public static unsafe void createButton<T>(string id, nint menupanel, Action<nint, T?> ourCallback, T? initialData) where T : class?
     {
         nint callbackVtable = Marshal.AllocHGlobal(0x30);
         // Empty callback storage for the experiment.
@@ -87,7 +86,7 @@ public static class ButtonManager
         Marshal.WriteIntPtr(fakeCallback + 0x38, fakeCallback);
         // ------------------------------------------------------------
         ModButton<T> button = new ModButton<T>(initialData, ourCallback);
-        var buttonAddress = (nint)TheSpredsheetEdmundHates._registerButton( // this is crashing!!!
+        var buttonAddress = (nint)TheSpredsheetEdmundHates.registerButton(
             menupanel,
             GameString.Create(id),
             callbackStorage,
