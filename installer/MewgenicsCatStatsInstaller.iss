@@ -25,7 +25,7 @@ CloseApplications=no
 ;   mod\the_spreadsheet_edmund_hates\the_spreadsheet_edmund_hates.dll
 ;   mod\the_spreadsheet_edmund_hates\MewjectorBridge.dll
 ;   mod\the_spreadsheet_edmund_hates\swfs\swflist.gon.append
-Source: "mod\the_spreadsheet_edmund_hates\*"; DestDir: "{app}\mods\the_spreadsheet_edmund_hates"; Flags: recursesubdirs createallsubdirs ignoreversion
+Source: "mod\the_spreadsheet_edmund_hates\*"; DestDir: "{code:GetModInstallDir}\the_spreadsheet_edmund_hates"; Flags: recursesubdirs createallsubdirs ignoreversion
 
 ; Vendor archives.
 ; Mewjector: Release-218-3-3-1778034265.zip\release\...
@@ -113,11 +113,95 @@ begin
   Result := 'C:\Program Files (x86)\Steam\steamapps\common\Mewgenics';
 end;
 
-function GetExistingModsDir(GameDir: String): String;
+function ReadModFolderFromConfig(ConfigPath: String): String;
+var
+  Lines: TArrayOfString;
+  I, P, StartPos, EndPos: Integer;
+  Line, Value: String;
 begin
-  { Always use the game's existing mods directory when present.
-    Never create or select a separate replacement directory. }
-  Result := PathCombine(GameDir, 'mods');
+  Result := '';
+
+  if not FileExists(ConfigPath) then
+    Exit;
+
+  if not LoadStringsFromFile(ConfigPath, Lines) then
+    Exit;
+
+  for I := 0 to GetArrayLength(Lines) - 1 do begin
+    Line := Trim(Lines[I]);
+    P := Pos('"mod_folder"', Line);
+
+    if P = 0 then
+      Continue;
+
+    P := Pos(':', Line);
+    if P = 0 then
+      Continue;
+
+    Value := Trim(Copy(Line, P + 1, Length(Line)));
+
+    if (Length(Value) >= 2) and
+       (Value[1] = '"') then begin
+      StartPos := 2;
+      EndPos := StartPos;
+      while (EndPos <= Length(Value)) and (Value[EndPos] <> '"') do
+        Inc(EndPos);
+
+      if EndPos > StartPos then
+        Result := Copy(Value, StartPos, EndPos - StartPos);
+    end;
+
+    if Result <> '' then
+      Exit;
+  end;
+end;
+
+function GetConfiguredModsDir: String;
+var
+  ConfigPath, ConfigModsDir: String;
+begin
+  Result := '';
+
+  { If the user selected an existing Mewtator installation, its config.json
+    is authoritative for where mods belong. }
+  if MewtatorPage <> nil then begin
+    ConfigPath := PathCombine(
+      RemoveBackslashUnlessRoot(MewtatorPage.Values[0]),
+      'config.json');
+
+    ConfigModsDir := ReadModFolderFromConfig(ConfigPath);
+    if ConfigModsDir <> '' then begin
+      Result := RemoveBackslashUnlessRoot(ConfigModsDir);
+      Exit;
+    end;
+  end;
+end;
+
+function GetModInstallDir(Param: String): String;
+var
+  ConfiguredModsDir: String;
+begin
+  ConfiguredModsDir := GetConfiguredModsDir;
+
+  if ConfiguredModsDir <> '' then begin
+    Result := ConfiguredModsDir;
+    Exit;
+  end;
+
+  { New Mewtator installation / no config yet: use the game's mods folder. }
+  Result := PathCombine(WizardDirValue, 'mods');
+end;
+
+function GetExistingModsDir(GameDir: String): String;
+var
+  ConfiguredModsDir: String;
+begin
+  { When Mewtator already exists, its config.json is authoritative. }
+  ConfiguredModsDir := GetConfiguredModsDir;
+  if ConfiguredModsDir <> '' then
+    Result := ConfiguredModsDir
+  else
+    Result := PathCombine(GameDir, 'mods');
 
   if not DirExists(Result) then
     ForceDirectories(Result);
@@ -289,6 +373,11 @@ begin
   MewtatorDir := RemoveBackslashUnlessRoot(MewtatorPage.Values[0]);
   ForceDirectories(MewtatorDir);
 
+  { If Mewtator is already installed, NEVER overwrite it.
+    Its existing config.json and executable must remain untouched. }
+  if FileExists(PathCombine(MewtatorDir, 'Mewtator.exe')) then
+    Exit;
+
   HadConfig := FileExists(PathCombine(MewtatorDir, 'config.json'));
   BackupConfig := PathCombine(
     ExpandConstant('{tmp}'), 'mewtator_config.json.bak');
@@ -316,10 +405,11 @@ begin
 
   if not CopyDirectoryContents(SourceDir, MewtatorDir) then
     RaiseException(
-      'Could not install/update the Mewtator files.'#13#10#13#10 +
+      'Could not install Mewtator files.'#13#10#13#10 +
       'Make sure Mewtator is not running.');
 
-  { Preserve the user's existing config; ConfigureMewtator updates it later. }
+  { Preserve the user's existing config if one somehow existed
+    even though Mewtator.exe did not. }
   if HadConfig then
     if not CopyFile(
         BackupConfig,
@@ -328,13 +418,45 @@ begin
       RaiseException('Could not restore Mewtator config.json.');
 end;
 
-procedure UpdateModList(GameDir: String);
+procedure InstallModFiles(ModDir: String);
 var
-  ModDir, ModList: String;
+  SourceDir, DestDir: String;
+begin
+  SourceDir := PathCombine(
+    ExpandConstant('{app}'),
+    'mods\the_spreadsheet_edmund_hates');
+
+  DestDir := PathCombine(ModDir, 'the_spreadsheet_edmund_hates');
+
+  if not DirExists(SourceDir) then
+    RaiseException(
+      'The mod files were not installed into the temporary mod directory.');
+
+  { When there is no existing Mewtator installation, the [Files] section
+    already installed the mod directly into GameDir\mods. In that case
+    ModDir is the same directory as app\mods, so there is nothing to copy. }
+  if SameText(
+      RemoveBackslashUnlessRoot(SourceDir),
+      RemoveBackslashUnlessRoot(DestDir)) then
+    Exit;
+
+  { An existing Mewtator may have a mod_folder outside the game directory.
+    Copy the mod from the installer's staging location to that folder. }
+  ForceDirectories(ModDir);
+
+  if not CopyDirectoryContents(SourceDir, DestDir) then
+    RaiseException(
+      'Could not install the mod files into:'#13#13 +
+      DestDir);
+end;
+
+
+procedure UpdateModList(ModDir: String);
+var
+  ModList: String;
   Lines: TArrayOfString;
   I, N: Integer;
 begin
-  ModDir := GetExistingModsDir(GameDir);
   ModList := PathCombine(ModDir, 'modlist.txt');
 
   if FileExists(ModList) then
@@ -374,13 +496,12 @@ begin
     RaiseException('Could not update ' + IniPath);
 end;
 
-procedure UpdateManifest(GameDir: String);
+procedure UpdateManifest(GameDir, ModDir: String);
 var
-  ModDir, Manifest, DllPath, Normalized: String;
+  Manifest, DllPath, Normalized: String;
   Lines: TArrayOfString;
   I, N: Integer;
 begin
-  ModDir := GetExistingModsDir(GameDir);
 
   Manifest := PathCombine(ModDir, 'mewtator_dll_manifest.txt');
   DllPath := PathCombine(
@@ -410,6 +531,55 @@ begin
     RaiseException('Could not update ' + Manifest);
 
   ConfigureChainloader(GameDir, Manifest);
+end;
+
+function GetMewtatorModFolder(MewtatorDir, GameDir: String): String;
+var
+  ConfigPath, ResultPath, Command, Params: String;
+  ResultCode: Integer;
+  Lines: TArrayOfString;
+begin
+  Result := '';
+
+  ConfigPath := PathCombine(MewtatorDir, 'config.json');
+  if not FileExists(ConfigPath) then begin
+    Result := PathCombine(GameDir, 'mods');
+    Exit;
+  end;
+
+  ResultPath := ExpandConstant('{tmp}\mewtator_mod_folder.result');
+  DeleteFile(ResultPath);
+
+  Command :=
+    '$c = Get-Content -LiteralPath ' + AddQuotes(ConfigPath) +
+    ' -Raw | ConvertFrom-Json; ' +
+    '$c.mod_folder | Set-Content -LiteralPath ' + AddQuotes(ResultPath) +
+    ' -Encoding UTF8';
+
+  Params :=
+    '-NoProfile -ExecutionPolicy Bypass -Command ' + AddQuotes(Command);
+
+  if not Exec(
+      ExpandConstant('{sysnative}\WindowsPowerShell\v1.0\powershell.exe'),
+      Params,
+      ExpandConstant('{tmp}'),
+      SW_HIDE,
+      ewWaitUntilTerminated,
+      ResultCode) then begin
+    Result := PathCombine(GameDir, 'mods');
+    Exit;
+  end;
+
+  if (ResultCode = 0) and FileExists(ResultPath) then begin
+    if LoadStringsFromFile(ResultPath, Lines) then
+      if GetArrayLength(Lines) > 0 then
+        Result := Trim(Lines[0]);
+  end;
+
+  DeleteFile(ResultPath);
+
+  if Result = '' then
+    Result := PathCombine(GameDir, 'mods');
 end;
 
 procedure ConfigureMewtator(GameDir, ModDir: String);
@@ -471,53 +641,30 @@ end;
 procedure CurStepChanged(CurStep: TSetupStep);
 var
   GameDir, ModDir: String;
-  ExistingModList, ExistingManifest: String;
-  ModListBackup, ManifestBackup: String;
-  HadModList, HadManifest: Boolean;
 begin
   if CurStep <> ssPostInstall then
     Exit;
 
   GameDir := WizardDirValue;
-  { Reuse the existing mods directory. If it does not exist, create it once.
-    Nothing in this installer removes, replaces, or clears other mods. }
-  ModDir := GetExistingModsDir(GameDir);
 
-  { Protect Mewtator's two files that contain the user's enabled-mod state.
-    Some Mewtator versions may rewrite these files while being updated.
-    We restore the originals and then append this mod's entries below. }
-  ExistingModList := PathCombine(ModDir, 'modlist.txt');
-  ExistingManifest := PathCombine(ModDir, 'mewtator_dll_manifest.txt');
-  ModListBackup := PathCombine(ExpandConstant('{tmp}'), 'modlist.txt.bak');
-  ManifestBackup := PathCombine(ExpandConstant('{tmp}'), 'mewtator_dll_manifest.txt.bak');
-
-  HadModList := FileExists(ExistingModList);
-  HadManifest := FileExists(ExistingManifest);
-
-  if HadModList then
-    if not CopyFile(ExistingModList, ModListBackup, False) then
-      RaiseException('Could not back up the existing mods\\modlist.txt.');
-
-  if HadManifest then
-    if not CopyFile(ExistingManifest, ManifestBackup, False) then
-      RaiseException('Could not back up the existing mods\\mewtator_dll_manifest.txt.');
-
+  { Install/update Mewjector as before. }
   InstallMewjector(GameDir);
+
+  { If Mewtator.exe already exists, InstallMewtator exits immediately and
+    leaves the existing Mewtator installation untouched. }
   InstallMewtator;
 
-  { Restore the user's existing mod state before adding our own entries.
-    This prevents an updater from disabling/removing existing mods. }
-  if HadModList then
-    if not CopyFile(ModListBackup, ExistingModList, False) then
-      RaiseException('Could not restore the existing mods\\modlist.txt.');
+  { Resolve the mod folder from the existing/new Mewtator config. }
+  ModDir := GetMewtatorModFolder(MewtatorDir, GameDir);
 
-  if HadManifest then
-    if not CopyFile(ManifestBackup, ExistingManifest, False) then
-      RaiseException('Could not restore the existing mods\\mewtator_dll_manifest.txt.');
+  { Install this mod into the Mewtator-configured mod folder. }
+  InstallModFiles(ModDir);
 
-  { The [Files] section has already installed/updated only this mod's folder. }
-  UpdateModList(GameDir);
-  UpdateManifest(GameDir);
+  { Update only the mod metadata in that same configured folder. }
+  UpdateModList(ModDir);
+  UpdateManifest(GameDir, ModDir);
+
+  { Configure only the Mewtator settings required by this mod. }
   ConfigureMewtator(GameDir, ModDir);
 
   MsgBox(
@@ -525,3 +672,4 @@ begin
     'Happy cat hoarding!',
     mbInformation, MB_OK);
 end;
+
