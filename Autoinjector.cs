@@ -46,24 +46,24 @@ public partial class TheSpredsheetEdmundHates
 
         string[] newArgs;
         var buffer = new StringBuilder(32768);
-        uint length = GetModuleFileName(
-            IntPtr.Zero,
-            buffer,
-            buffer.Capacity);
+        nint bridge = MewjectorApi.GetModuleHandleA("MewjectorBridge.dll");
+        nint fnGetBridgeDirectory = MewjectorApi.GetProcAddress(bridge, "GetBridgeDirectory");
+        
+        var fnGetBridgeDirectoryDelegate = (delegate* unmanaged[Cdecl]<nint>)(void*)fnGetBridgeDirectory;
 
-        if (length == 0)
+        string dllDirectory = Marshal.PtrToStringAnsi(fnGetBridgeDirectoryDelegate());
+
+        if (string.IsNullOrEmpty(dllDirectory))
         {
-            LogStr($"[HOOK] HookProcessCmds: GetModuleFileName failed with error {Marshal.GetLastWin32Error()}");
             return _hookProcessCmds(application, argc, argv);
         }
 
-        string ModPath = Path.GetDirectoryName(buffer.ToString())! + "/mods/the_spreadsheet_edmund_hates";
+        string ModPath = dllDirectory!;
 
         // get the dateCreated time of the dll file
         string dllPath = Path.Combine(ModPath, "the_spreadsheet_edmund_hates.dll");
         dateInstalled = File.GetCreationTime(dllPath);
         LogStr($"[HOOK] HookProcessCmds: ModPath={ModPath} hasModPaths={hasModPaths} args={string.Join(" ", args)} dateInstalled={dateInstalled:yyyy-MM-dd HH:mm:ss} ");
-
         // dateInstalled = DateTime.Now.AddDays(-94); // for testing purposes, set the dateInstalled
 
         if (hasModPaths)
