@@ -74,16 +74,17 @@ if "%INCLUDE_INSTALLER%"=="true" (
 )
 
 if "%SKIP_BRIDGE%"=="false" (
-    rem Find the latest Visual Studio installation containing the x64 C++ tools
+    setlocal
     set "VSWHERE=C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
+    rem Find the latest Visual Studio installation containing the x64 C++ tools
 
-    if not exist "%VSWHERE%" (
+    if not exist "!VSWHERE!" (
         echo ERROR: vswhere.exe was not found:
-        echo   "%VSWHERE%"
+        echo   "!VSWHERE!"
         exit /B 1
     )
 
-    for /F "usebackq delims=" %%I in (`"%VSWHERE%" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do (
+    for /F "usebackq delims=" %%I in (`"!VSWHERE!" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do (
         set "VS_PATH=%%I"
     )
 
@@ -92,16 +93,16 @@ if "%SKIP_BRIDGE%"=="false" (
         exit /B 1
     )
 
-    set "VCVARS=%VS_PATH%\VC\Auxiliary\Build\vcvars64.bat"
+    set "VCVARS=!VS_PATH!\VC\Auxiliary\Build\vcvars64.bat"
 
-    if not exist "%VCVARS%" (
+    if not exist "!VCVARS!" (
         echo ERROR: vcvars64.bat was not found:
-        echo   "%VCVARS%"
+        echo   "!VCVARS!"
         exit /B 1
     )
 
     rem Load the Visual Studio x64 build environment and compile the DLL
-    call "%VCVARS%" || exit /B 1
+    call "!VCVARS!" || exit /B 1
 
     cl /LD /O2 /EHsc "MewjectorBridge.cpp" /Fe:"MewjectorBridge.dll"
     if errorlevel 1 exit /B 1
@@ -117,11 +118,7 @@ if "%SKIP_BRIDGE%"=="false" (
     echo Copied MewjectorBridge.dll to installer\mod\the_spreadsheet_edmund_hates\MewjectorBridge.dll
     @REM wait 1 second or we get "The process cannot access the file because it is being used by another process"
     %windir%\System32\timeout.exe /T 1 /NOBREAK >NUL
-    if "%DEVMODE%"=="true" (
-        rem Copy MewjectorBridge.dll to the live Mewgenics installation
-        copy /Y "MewjectorBridge.dll" "E:\SteamLibrary\steamapps\common\Mewgenics\mods\the_spreadsheet_edmund_hates\MewjectorBridge.dll" >NUL
-        @REM if errorlevel 1 exit /B 1
-    )
+    endlocal
 ) else (
     echo Skipping MewjectorBridge build as per SKIP_BRIDGE flag.
 )
