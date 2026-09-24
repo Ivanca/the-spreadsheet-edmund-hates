@@ -975,9 +975,9 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
                     }
                     // cuando son 12 llega demasiado lejos (16)
                     // cuando son 23 llega a la distance correcta (27)
-                    if (_yOffsetTarget > scrollable * 1.8 + 4)
+                    if (_yOffsetTarget > scrollable * 1.8 + 4.5)
                     {
-                        _yOffsetTarget = (int)((double)scrollable * 1.8 + 4);
+                        _yOffsetTarget = (int)((double)scrollable * 1.8 + 4.5);
                         LogStr($"_yOffsetTarget clamped to max value: {_yOffsetTarget} when cachedVisibleCats.Length = {cachedVisibleCats.Length}");
                     }
                     if (_yOffsetTarget != yOffsetTarget)
@@ -1825,7 +1825,7 @@ private unsafe static delegate* unmanaged<nint, nint, byte, nint> _catStatsSetSe
         if (currentDateTime > dateInstalled.AddDays(3))
         {
             LogStr($"Creating footerRenderer because more than 3 days have passed since installation");
-            showingChimplantsPromo = currentDateTime > dateInstalled.AddDays(60) || currentDateTime > new DateTime(2027, 7, 1);
+            showingChimplantsPromo = currentDateTime > dateInstalled.AddDays(90) || currentDateTime > new DateTime(2027, 7, 1);
             IntPtr footer = Marshal.StringToHGlobalAnsi(showingChimplantsPromo ? "Chimplants" : "BuyMeACoffee");
             var footerEntity = _createEntity(scenePtr);
             try
@@ -2073,6 +2073,8 @@ private unsafe static delegate* unmanaged<nint, nint, byte, nint> _catStatsSetSe
         currentlyHoveredIndex = -1;
         previouslyHoveredIndex = -1;
         currentlyDrawerWithOpenIconsPanel = 0;
+        sortByStat = "";
+        sortByStatDirection = SortDirection.Descending;
     }
 
 

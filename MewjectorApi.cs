@@ -21,10 +21,10 @@ internal static unsafe class MewjectorApi
     // ── Win32 ────────────────────────────────────────────────────────────────
 
     [DllImport("kernel32.dll", CharSet = CharSet.Ansi)]
-    private static extern nint GetModuleHandleA(string? lpModuleName);
+    public static extern nint GetModuleHandleA(string? lpModuleName);
 
     [DllImport("kernel32.dll", CharSet = CharSet.Ansi)]
-    private static extern nint GetProcAddress(nint hModule, string lpProcName);
+    public static extern nint GetProcAddress(nint hModule, string lpProcName);
 
     // ── Function pointer fields (resolved at runtime from version.dll) ───────
     //

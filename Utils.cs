@@ -187,3 +187,25 @@ public static class Utils
         );
     }
 }
+
+public static class StringExtensions
+{
+    public static string PadExact(this string input, int totalLength, char paddingChar = ' ', bool padLeft = false)
+    {
+        // Handle null input safely
+        if (input == null) input = string.Empty;
+
+        // Truncate if the string is too long
+        if (input.Length > totalLength)
+        {
+            return padLeft 
+                ? input.Substring(input.Length - totalLength) // Keep the end
+                : input.Substring(0, totalLength);           // Keep the start
+        }
+
+        // Pad if the string is too short
+        return padLeft 
+            ? input.PadLeft(totalLength, paddingChar) 
+            : input.PadRight(totalLength, paddingChar);
+    }
+}
