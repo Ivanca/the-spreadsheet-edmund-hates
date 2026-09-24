@@ -1,10 +1,12 @@
 @echo off
-setlocal
+setlocal enabledelayedexpansion
+
+set "SKIP_BRIDGE=false"
+set "MEWGENICS_MODS_FOLDER=E:\SteamLibrary\steamapps\common\Mewgenics\Mewtator\mods"
+set "ISCC_EXE=C:\Program Files\Inno Setup 7\ISCC.exe"
 
 rem Run from the directory containing this .bat file
 cd /d "%~dp0"
-
-set "SKIP_BRIDGE=false"
 
 :parse_args
 :: If there are no more arguments, stop looping
@@ -125,10 +127,9 @@ if "%SKIP_BRIDGE%"=="false" (
 
 if "%INCLUDE_INSTALLER%"=="true" (
     echo Compiling installer...
-    "C:\Program Files\Inno Setup 7\ISCC.exe" "installer\MewgenicsCatStatsInstaller.iss"
+    "%ISCC_EXE%" "installer\MewgenicsCatStatsInstaller.iss"
     if errorlevel 1 exit /B 1
 )
-
 
 rem Publish the .NET mod
 dotnet publish -c Release -r win-x64 --self-contained
@@ -158,23 +159,30 @@ echo Copied swflist.gon.append to installer\mod\the_spreadsheet_edmund_hates\swf
 
 if "%DEVMODE%"=="true" (
     rem Copy the .NET mod to the live Mewgenics installation while live debugging
-    copy /Y "bin\Release\net8.0-windows\win-x64\publish\the_spreadsheet_edmund_hates.dll" "E:\SteamLibrary\steamapps\common\Mewgenics\mods\the_spreadsheet_edmund_hates\the_spreadsheet_edmund_hates.dll" >NUL
-    if errorlevel 1 exit /B 1
-    echo Copied the_spreadsheet_edmund_hates.dll to E:\SteamLibrary\steamapps\common\Mewgenics\mods\the_spreadsheet_edmund_hates\the_spreadsheet_edmund_hates.dll
+    copy /Y "bin\Release\net8.0-windows\win-x64\publish\the_spreadsheet_edmund_hates.dll" "!MEWGENICS_MODS_FOLDER!\the_spreadsheet_edmund_hates\the_spreadsheet_edmund_hates.dll" >NUL
+    if errorlevel 1 (
+        echo Error occurred during copy of the dll file to the live Mewgenics installation. Maybe the mod folder doesn't exist already?
+        exit /B 1
+    )
+    echo Copied the_spreadsheet_edmund_hates.dll to !MEWGENICS_MODS_FOLDER!\the_spreadsheet_edmund_hates\the_spreadsheet_edmund_hates.dll
 
     rem Copy SWF files to the live install
-    copy /Y "swf\house_table_stats.swf" "E:\SteamLibrary\steamapps\common\Mewgenics\mods\the_spreadsheet_edmund_hates\swfs\house_table_stats.swf" >NUL
+    copy /Y "swf\house_table_stats.swf" "!MEWGENICS_MODS_FOLDER!\the_spreadsheet_edmund_hates\swfs\house_table_stats.swf" >NUL
     if errorlevel 1 exit /B 1
-    echo Copied house_table_stats.swf to E:\SteamLibrary\steamapps\common\Mewgenics\mods\the_spreadsheet_edmund_hates\swfs\house_table_stats.swf
+    echo Copied house_table_stats.swf to !MEWGENICS_MODS_FOLDER!\the_spreadsheet_edmund_hates\swfs\house_table_stats.swf
 
-    copy /Y "swf\swflist.gon.append" "E:\SteamLibrary\steamapps\common\Mewgenics\mods\the_spreadsheet_edmund_hates\swfs\swflist.gon.append" >NUL
+    copy /Y "swf\swflist.gon.append" "!MEWGENICS_MODS_FOLDER!\the_spreadsheet_edmund_hates\swfs\swflist.gon.append" >NUL
     if errorlevel 1 exit /B 1
-    echo Copied swflist.gon.append to E:\SteamLibrary\steamapps\common\Mewgenics\mods\the_spreadsheet_edmund_hates\swfs\swflist.gon.append
+    echo Copied swflist.gon.append to !MEWGENICS_MODS_FOLDER!\the_spreadsheet_edmund_hates\swfs\swflist.gon.append
 
     rem Example save-file copies:
     copy /Y "%APPDATA%\Glaiel Games\Mewgenics\76561198041742179\saves\steamcampaign01 - Copy.sav" "%APPDATA%\Glaiel Games\Mewgenics\76561198041742179\saves\steamcampaign01.sav" >NUL
     if errorlevel 1 exit /B 1
     rem copy /Y "%APPDATA%\Glaiel Games\Mewgenics\76561198041742179\saves\steamcampaign02 - Copy.sav" "%APPDATA%\Glaiel Games\Mewgenics\76561198041742179\saves\steamcampaign02.sav"
+
+    rem Copy MewjectorBridge.dll to the live Mewgenics installation
+    copy /Y "MewjectorBridge.dll" "!MEWGENICS_MODS_FOLDER!\the_spreadsheet_edmund_hates\MewjectorBridge.dll" >NUL
+    @REM if errorlevel 1 exit /B 1
 
     @REM rem Wait one second to ensure memory is freed up
     @REM C:\Windows\System32\timeout.exe /T 1 /NOBREAK >NUL
