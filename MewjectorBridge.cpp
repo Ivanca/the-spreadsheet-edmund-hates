@@ -2,6 +2,7 @@
 
 #include <windows.h>
 #include <cstdint>
+#include <cstdio>
 
 using UINT_PTR = uintptr_t;
 
@@ -54,17 +55,6 @@ typedef int(__cdecl* MJ_InstallHook_t)(
     const char* owner
 );
 
-typedef int(__cdecl* MJ_InstallShortHook_t)(
-    UINT_PTR rva,
-    int stolenBytes,
-    void* hookFn,
-    void** outTrampoline,
-    int priority,
-    const char* owner
-);
-
-static MJ_InstallShortHook_t g_MJ_InstallShortHook = nullptr;
-
 // -----------------------------------------------------------------------------
 // Resolve Mewjector
 // -----------------------------------------------------------------------------
@@ -74,8 +64,9 @@ static bool ResolveMewjector()
     // Mewjector is loaded as version.dll in the current setup.
     HMODULE hMewjector = GetModuleHandleA("version.dll");
 
-    if (!hMewjector)
+    if (!hMewjector) {
         return false;
+    }
 
     g_MJ_InstallHook =
         reinterpret_cast<MJ_InstallHook_t>(
@@ -85,17 +76,15 @@ static bool ResolveMewjector()
         reinterpret_cast<MJ_GetGameBase_t>(
             GetProcAddress(hMewjector, "MJ_GetGameBase"));
 
-    g_MJ_InstallShortHook = reinterpret_cast<MJ_InstallShortHook_t>(
-        GetProcAddress(
-            hMewjector,
-            "MJ_InstallShortHook"
-        )
-    );
-
+    if (g_MJ_InstallHook == nullptr) {
+        return false;
+    }
+    if (g_MJ_GetGameBase == nullptr) {
+        return false;
+    }
 
     return g_MJ_InstallHook != nullptr &&
-           g_MJ_GetGameBase != nullptr &&
-           g_MJ_InstallShortHook != nullptr;
+           g_MJ_GetGameBase != nullptr;
 }
 
 
@@ -262,6 +251,8 @@ static bool InstallBootstrapHook()
 // Proxy API exposed to the_spreadsheet_edmund_hates.dll
 // -----------------------------------------------------------------------------
 
+
+
 extern "C"
 __declspec(dllexport)
 int __cdecl MJ_InstallHook(
@@ -302,7 +293,52 @@ UINT_PTR __cdecl MJ_GetGameBase()
     return g_MJ_GetGameBase();
 }
 
+extern "C" __declspec(dllexport)
+const char* __cdecl GetBridgeDirectory()
+{
+    static char directory[MAX_PATH];
 
+    HMODULE hModule = nullptr;
+
+    // Get the HMODULE of this DLL itself.
+    if (!GetModuleHandleExA(
+        GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
+        reinterpret_cast<LPCSTR>(&GetBridgeDirectory),
+        &hModule))
+    {
+        directory[0] = '\0';
+        return directory;
+    }
+
+    char path[MAX_PATH];
+
+    DWORD length = GetModuleFileNameA(
+        hModule,
+        path,
+        MAX_PATH
+    );
+
+    if (length == 0 || length >= MAX_PATH)
+    {
+        directory[0] = '\0';
+        return directory;
+    }
+
+    // Find the final '\'
+    char* lastSlash = strrchr(path, '\\');
+
+    if (!lastSlash)
+    {
+        directory[0] = '\0';
+        return directory;
+    }
+
+    *lastSlash = '\0';
+
+    strcpy_s(directory, path);
+
+    return directory;
+}
 // -----------------------------------------------------------------------------
 // DLL entry point
 // -----------------------------------------------------------------------------
