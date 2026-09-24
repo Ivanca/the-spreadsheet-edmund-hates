@@ -6,7 +6,10 @@ public partial class TheSpredsheetEdmundHates
 {
 
     static bool debugPerfTime = false;
+    static DateTime? debugPerfStartTime = null;
     const bool delayedDebugPerfTime = false;
+
+    static bool debugLoggingBeforePerf = false;
     
     class PerfData
     {
@@ -15,13 +18,16 @@ public partial class TheSpredsheetEdmundHates
         public float average;
         public float max;
         public float min;
+        public float uniqueCalls;
     }
 
     static long startPerfLogTime;
     static Dictionary<string, PerfData> perfData = new Dictionary<string, PerfData>();
 
+    static Dictionary<string, Dictionary<nint, int>> uniqueCallsByArg = new Dictionary<string, Dictionary<nint, int>>();
+
     static Dictionary<string, long> perfLogStartTimes = new Dictionary<string, long>();
-    static public void StartPerfLog(string? id = null)
+    static public void StartPerfLog(string? id = null, int? argument = null)
     {
         if (id == null)
             return;
@@ -32,9 +38,24 @@ public partial class TheSpredsheetEdmundHates
             perfData[id] = new PerfData();
         }
         perfData[id].calls++;
+        // debugLogging = false;
+        debugLoggingBeforePerf = debugLogging;
         debugLogging = false;
+        if (argument != null)
+        {
+            if (!uniqueCallsByArg.ContainsKey(id))
+            {
+                uniqueCallsByArg[id] = new Dictionary<nint, int>();
+            }
+            if (!uniqueCallsByArg[id].ContainsKey((nint)argument.Value))
+            {
+                uniqueCallsByArg[id][(nint)argument.Value] = 0;
+                perfData[id].uniqueCalls++;
+            }
+            uniqueCallsByArg[id][(nint)argument.Value]++;
+        }
         startPerfLogTime = Stopwatch.GetTimestamp();
-
+    
         // MewjectorApi.Log(id);
     }
 
@@ -44,7 +65,6 @@ public partial class TheSpredsheetEdmundHates
         if (!debugPerfTime)
             return;
         startGlobalPerfLogTime = Stopwatch.GetTimestamp();
-        debugLogging = false;
         if (id == null)
             return;
         if (!perfData.ContainsKey(id))
@@ -61,7 +81,7 @@ public partial class TheSpredsheetEdmundHates
             return;
         long endPerfLogTime = Stopwatch.GetTimestamp();
         double elapsedMilliseconds = (endPerfLogTime - startPerfLogTime) * 1000.0 / Stopwatch.Frequency;
-        debugLogging = true;
+        debugLogging = debugLoggingBeforePerf;
         HandlePerfLog(id, elapsedMilliseconds);
     }
 
@@ -84,42 +104,52 @@ public partial class TheSpredsheetEdmundHates
     {
         if (!debugPerfTime)
             return;
-        debugLogging = true;
+        // debugLogging = true;
         long endGlobalPerfLogTime = Stopwatch.GetTimestamp();
         double elapsedMilliseconds = (endGlobalPerfLogTime - startGlobalPerfLogTime) * 1000.0 / Stopwatch.Frequency;
         HandlePerfLog(id, elapsedMilliseconds);
     }
+
     internal static void handleDelayedPerfTime()
     {
+        if (debugPerfStartTime != null && debugPerfStartTime.Value.AddSeconds(5) <= DateTime.Now)
+        {
+            // disable 1 minute after
+            LogStr("[HOOK] GameTickHook: 1 minute has passed since performance measurement initialization, disabling it.");
+            debugPerfTime = false;
+            debugPerfStartTime = null;
+            MjInitStartTime = null;
+            // print all performance data
+            foreach (var kvp in perfData)
+            {
+                var id = kvp.Key;
+                var data = kvp.Value;
+                MewjectorApi.Log($"[PERF] {id.PadExact(28)}: total={data.total.ToString().PadExact(28)} ms, "
+                + $"average={data.average.ToString().PadExact(28)} ms, max={data.max.ToString().PadExact(28)} ms, "
+                + $"min={data.min.ToString().PadExact(28)} ms, calls={data.calls}");
+            }
+
+        }
         // allow unreachable code:
         #pragma warning disable CS0162
-        if (delayedDebugPerfTime)
+        if (delayedDebugPerfTime && debugPerfStartTime == null && MjInitStartTime != null && MjInitStartTime.Value.AddMinutes(10) <= DateTime.Now)
         {
-            if (MjInitStartTime != null && MjInitStartTime.Value.AddMinutes(31) <= DateTime.Now)
+            debugPerfStartTime = DateTime.Now;
+            if (!debugPerfTime)
             {
-                // disable 1 minute after
-                LogStr("[HOOK] GameTickHook: 1 minute has passed since performance measurement initialization, disabling it.");
-                debugPerfTime = false;
-                MjInitStartTime = null;
-                // print all performance data
-                foreach (var kvp in perfData)
-                {
-                    var id = kvp.Key;
-                    var data = kvp.Value;
-                    MewjectorApi.Log($"[PERF] {id}: total={data.total} ms, average={data.average} ms, max={data.max} ms, min={data.min} ms, calls={data.calls}");
-                }
-
-            }
-            else if (MjInitStartTime != null && MjInitStartTime.Value.AddMinutes(30) <= DateTime.Now)
-            {
-                if (!debugPerfTime)
-                {
-                    LogStr("[HOOK] GameTickHook: 30 minutes have passed since MjInitStartTime, initializing performance measurement.");
-                    PerfInit();
-                    debugPerfTime = true; // for perf measuring, remember to delete this line later
-                }
+                LogStr("[HOOK] GameTickHook: 2 minutes have passed since MjInitStartTime, initializing performance measurement.");
+                PerfInit();
+                debugPerfTime = true; // for perf measuring, remember to delete this line later
             }
         }
         #pragma warning restore CS0162
+    }
+
+    static public void ForceEnablePerfLog()
+    {
+        debugPerfStartTime = DateTime.Now;
+        debugPerfTime = true;
+        MewjectorApi.Log("Force enable start perf");
+        PerfInit();
     }
 }
