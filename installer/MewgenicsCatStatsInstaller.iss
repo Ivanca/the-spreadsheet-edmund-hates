@@ -29,9 +29,9 @@ Source: "mod\the_spreadsheet_edmund_hates\*"; DestDir: "{code:GetModInstallDir}\
 
 ; Vendor archives.
 ; Mewjector: Release-218-3-3-1778034265.zip\release\...
-; Mewtator: Mewtator-1-0-5-1-1775012446.zip\Mewtator\...
+; Mewtator: Mewtator_Windows0.6.0.zip\Mewtator\...
 Source: "vendor\Release-218-3-3-1778034265.zip"; Flags: dontcopy
-Source: "vendor\Mewtator-1-0-5-1-1775012446.zip"; Flags: dontcopy
+Source: "vendor\Mewtator_Windows0.6.0.zip"; Flags: dontcopy
 Source: "Find-Mewgenics.ps1"; Flags: dontcopy
 
 [Code]
@@ -389,10 +389,10 @@ begin
         False) then
       RaiseException('Could not back up Mewtator config.json.');
 
-  ExtractTemporaryFile('Mewtator-1-0-5-1-1775012446.zip');
+  ExtractTemporaryFile('Mewtator_Windows0.6.0.zip');
 
   ZipPath := ExpandConstant(
-    '{tmp}\Mewtator-1-0-5-1-1775012446.zip');
+    '{tmp}\Mewtator_Windows0.6.0.zip');
   TempDir := PathCombine(ExpandConstant('{tmp}'), 'MewtatorExtract');
   SourceDir := PathCombine(TempDir, 'Mewtator');
   ForceDirectories(TempDir);
@@ -400,7 +400,7 @@ begin
 
   if not FileExists(PathCombine(SourceDir, 'Mewtator.exe')) then
     RaiseException(
-      'Mewtator-1-0-5-1-1775012446.zip does not contain ' +
+      'Mewtator_Windows0.6.0.zip does not contain ' +
       'Mewtator\Mewtator.exe.');
 
   if not CopyDirectoryContents(SourceDir, MewtatorDir) then
@@ -417,39 +417,6 @@ begin
         False) then
       RaiseException('Could not restore Mewtator config.json.');
 end;
-
-procedure InstallModFiles(ModDir: String);
-var
-  SourceDir, DestDir: String;
-begin
-  SourceDir := PathCombine(
-    ExpandConstant('{app}'),
-    'mods\the_spreadsheet_edmund_hates');
-
-  DestDir := PathCombine(ModDir, 'the_spreadsheet_edmund_hates');
-
-  if not DirExists(SourceDir) then
-    RaiseException(
-      'The mod files were not installed into the temporary mod directory.');
-
-  { When there is no existing Mewtator installation, the [Files] section
-    already installed the mod directly into GameDir\mods. In that case
-    ModDir is the same directory as app\mods, so there is nothing to copy. }
-  if SameText(
-      RemoveBackslashUnlessRoot(SourceDir),
-      RemoveBackslashUnlessRoot(DestDir)) then
-    Exit;
-
-  { An existing Mewtator may have a mod_folder outside the game directory.
-    Copy the mod from the installer's staging location to that folder. }
-  ForceDirectories(ModDir);
-
-  if not CopyDirectoryContents(SourceDir, DestDir) then
-    RaiseException(
-      'Could not install the mod files into:'#13#13 +
-      DestDir);
-end;
-
 
 procedure UpdateModList(ModDir: String);
 var
@@ -658,8 +625,6 @@ begin
   ModDir := GetMewtatorModFolder(MewtatorDir, GameDir);
 
   { Install this mod into the Mewtator-configured mod folder. }
-  InstallModFiles(ModDir);
-
   { Update only the mod metadata in that same configured folder. }
   UpdateModList(ModDir);
   UpdateManifest(GameDir, ModDir);
