@@ -10,7 +10,6 @@ public partial class TheSpredsheetEdmundHates
 {
     static bool debugLogging = false;
 
-
     static unsafe delegate* unmanaged<nint, nint> updatePanelLayout;
 
     static unsafe delegate* unmanaged<nint, nint, nint, Renderer*> createUiRenderer;
@@ -109,6 +108,12 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
 
         Autoinjector();
 
+        // clickHandler = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+        //     0x97E8E0, (void*)(delegate* unmanaged<nint, nint, nint>)&ClickHandlerDebugHook);
+        
+        // gameTick = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
+        //     0x96AC50, (void*)(delegate* unmanaged<nint, nint>)&GameTickDebugHook);
+
         InitMouse();
 
         updatePanelLayout = (delegate* unmanaged<nint, nint>)(void*)MewjectorApi.InstallHook(
@@ -173,9 +178,66 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
 
         keyPress = (delegate* unmanaged<nint, nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
             0xc083a0, (void*)(delegate* unmanaged<nint, nint, nint, nint, nint>)&KeyPressHook);
+
+        unknown = (delegate* unmanaged<nint, nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+            0x22c5e0, (void*)(delegate* unmanaged<nint, nint, nint, nint>)&UnknownHook);
+
+        _catStatsSetSelectionOriginal = (delegate* unmanaged<nint, nint, byte, nint>)(void*)MewjectorApi.InstallHook(
+            0xec7b0, (void*)(delegate* unmanaged<nint, nint, byte, nint>)&CatStatsSetSelectionHook);
+
+        _catLookup = (delegate* unmanaged<nint, nint, nint>)(void*)MewjectorApi.InstallHook(
+            0xd7220, (void*)(delegate* unmanaged<nint, nint, nint>)&CatLookupHook);
+        
         // LogStr($"Gamebase at {MewjectorApi.GameBase:X}...");
         InitNativeFunctions();
 
+    }
+
+    static unsafe delegate* unmanaged<nint, nint, nint, nint> unknown;
+
+
+    static Dictionary<nint, nint> cachedInfoLookup = new Dictionary<nint, nint>();
+    [UnmanagedCallersOnly]
+    static unsafe nint UnknownHook(nint a1, nint a2, nint a3)
+    {
+        if (!insideCatStatsUpdate)
+        {
+            return unknown(a1, a2, a3);
+        }
+        if (cachedInfoLookup.TryGetValue(a1, out var cached))
+        {
+            LogStr($"[HOOK] Cache hit: a1=0x{a1:X}, a2=0x{a2:X}, a3=0x{a3:X}, cached=0x{cached:X}");
+            return cached;
+        }
+        StartPerfLog("UnknownHook");
+        nint x = unknown(a1, a2, a3);
+        EndPerfLog("UnknownHook");
+        cachedInfoLookup[a1] = x;
+        LogStr($"[HOOK] Cache miss: a1=0x{a1:X}, a2=0x{a2:X}, a3=0x{a3:X}, result=0x{x:X}");
+        return x;
+    }
+
+    static unsafe delegate* unmanaged<nint, nint, nint> _catLookup;
+    static nint cachedFirstCat = 0;
+
+    static unsafe delegate* unmanaged<nint, nint> debugHook;
+    static unsafe delegate* unmanaged<nint, nint, nint> debugHook2;
+    static unsafe delegate* unmanaged<nint, nint> debugHook3;
+    static unsafe delegate* unmanaged<nint, nint, nint> debugHook4;
+    static Dictionary<nint, nint> altCatsCache = new Dictionary<nint, nint>();
+
+    [UnmanagedCallersOnly]
+    static unsafe nint CatLookupHook(nint a1, nint offset)
+    {
+        if (isIteratingOurDrawers && altCatsCache.TryGetValue(offset, out var cached))
+        {
+            LogStr($"[HOOK] Returning cached cat: 0x{cached:X} a1=0x{a1:X}, offset=0x{offset:X}");
+            return cached;
+        }
+        
+        var result = _catLookup(a1, offset);
+        altCatsCache[offset] = result;
+        return result;
     }
 
     static List<nint> rooms = new List<nint>();
@@ -306,6 +368,30 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
     }
 
     [UnmanagedCallersOnly]
+    static unsafe nint ClickHandlerDebugHook(nint a1, nint a2)
+    {
+        var movieclipPtr = a1 + 0x48;
+        var mcPtr = (MovieClip*)Read(movieclipPtr);
+        var name = TryReadCString(mcPtr->Name);
+        if (name == "openclose")
+        {
+            ForceEnablePerfLog();
+        }
+        return clickHandler(a1, a2);
+    }
+
+    [UnmanagedCallersOnly]
+    static unsafe nint GameTickDebugHook(nint a1)
+    {
+        handleDelayedPerfTime();
+        // LogStr($"[HOOK] GameTickDebugHook: a1=0x{a1:X}");
+        StartGlobalPerfLog("GameTick");
+        var result = gameTick(a1);
+        EndGlobalPerfLog("GameTick");
+        return result;
+    }
+
+    [UnmanagedCallersOnly]
     static unsafe nint ClickHandlerHook(nint a1, nint a2)
     {
         var handledByUs = ButtonManager.handleNativeClick(a1);
@@ -323,6 +409,13 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
         }
         if (a1 == openCloseBtn && !ourPanelIsOpen)
         {
+            // if (MjInitStartTime != null)
+            // {    
+            //     // debugPerfStartTime = DateTime.Now;
+            //     // debugPerfTime = true;
+            //     // PerfInit();
+            //     ForceEnablePerfLog();
+            // }
             if (ctrlPressed)
             {
                 IsOurPanelEnabled = false;
@@ -412,6 +505,7 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
     static nint currentlyHoveredIndex = -1;
     static nint previouslyHoveredIndex = -1;
     static nint forcedCatStatsUpdatePending = 0;
+    static bool insideCatStatsUpdate = false;
 
     [UnmanagedCallersOnly]
     static unsafe nint CatStatsDrawerUpdateHook(nint a1)
@@ -430,7 +524,7 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
         {
             if (currentlyDrawerWithOpenIconsPanel == 0)
             {
-                if (currentlyHoveredIndex == -1 || rowDrawers[currentlyHoveredIndex] != a1)
+                if (currentlyHoveredIndex == -1 || rowDrawers[currentlyHoveredIndex] != a1 || (currentlyHoveredIndex == -1 && a1 != (nint)originalDrawer))
                 {
                     return 0;
                 }
@@ -446,8 +540,9 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
         }
 
         CountExecution(nameof(CatStatsDrawerUpdateHook));
-
+        insideCatStatsUpdate = true;
         var result = catStatsDrawerUpdate(a1);
+        insideCatStatsUpdate = false;
         var iconsPanelIsOpen = Read<byte>(a1 + 0x71);
         if (iconsPanelIsOpen == 1)
         {
@@ -519,11 +614,11 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
                     Component** slot = btn->Entity->ComponentsList + k;
                     Component* component = *slot;
                     nint vtable = Read<nint>((nint)component);
-                    LogStr("Looking for component at " + ((nint)component).ToString("X"));
+                    // LogStr("Looking for component at " + ((nint)component).ToString("X"));
                     if (component != null && vtable == _audioSourceVtable)
                     {
                         // is a AudioSource component
-                        LogStr($"[HOOK] Found AudioSource component at {((nint)component):X}");
+                        // LogStr($"[HOOK] Found AudioSource component at {((nint)component):X}");
                         var audioSource = (AudioSource*)component;
                         audioSource->Enabled = (byte)(active ? 1 : 0);
                     }
@@ -959,6 +1054,7 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
         a1->CatStatsDrawer = (CatStatsDrawer*)originalDrawer;
         var prevCachedVisibleCatsCount = cachedVisibleCats.Length;
         cachedVisibleCats = new nint[0];
+        // altCatsCache.Clear();
         var result = initCatStatsClickCallback(a1);
         // if (cachedVisibleCats.Length != prevCachedVisibleCatsCount || cachedVisibleCats.Length != totalCatsCount)
         // {
@@ -1211,7 +1307,9 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
             var movieclip = ((Renderer*)ren)->MovieClip;
             LogStr($"[HOOK] movieclip=0x{(nint)movieclip:X}");
             var houseCat = ((CatStatsDrawer*)drawer)->HouseCat;
+            LogStr($"[HOOK] houseCat=0x{(nint)houseCat:X}");
             var catRoomPtrLong = houseCat->Room;
+            LogStr($"[HOOK] catRoomPtrLong=0x{catRoomPtrLong:X}");
             var catRoomPtr = (nint)catRoomPtrLong;
             LogStr($"[HOOK] catRoomPtr=0x{catRoomPtr:X} houseCat=0x{(nint)houseCat:X}");
             if (!catStats[ren].ContainsKey("hou") || catStats[ren]["hou"] != rooms.IndexOf(catRoomPtr))
@@ -1288,6 +1386,7 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
         disableButtonsInTicks = 10;
         // Write(btnInitCatStatsCallback + 0x8, originalDrawer);
         btnInitCatStatsCallback->CatStatsDrawer = originalDrawer;
+        cachedFirstCat = 0;
         LogStr($"[HOOK] InitCatStatsCallbackHook: set original drawer to btnInitCatStatsCallback at address {(nint)btnInitCatStatsCallback:X} and points to {(nint)btnInitCatStatsCallback->CatStatsDrawer:X}");
 
     }
@@ -1656,7 +1755,7 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
                 continue;
             }
             var transform = renderer->Transform;
-            if (!catPanelAnimationInProgress || positionDirty > 0 || forceTrackUpdate)
+            if (!catPanelAnimationInProgress && (positionDirty > 0 || forceTrackUpdate))
             {
                 _trackMovieclipChildParentOffset((nint)originalHousePanel, (nint)transform, 1);
             }
@@ -1675,6 +1774,27 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
 
     static bool insideOurCatInstantiation = false;
     static bool showingChimplantsPromo = false;
+
+    [UnmanagedCallersOnly]
+private unsafe static nint CatStatsSetSelectionHook(
+    nint drawer,
+    nint selected,
+    byte flag)
+{
+    // if (rowDrawers.Contains(drawer))
+    //     return 0;
+
+    var result = (nint)_catStatsSetSelectionOriginal(drawer, selected, flag);
+    if (result != 0)
+    {
+        LogStr(
+            $"drawer={drawer:X} selected={result:X} " +
+            $"selected+128={( *(nint*)(result + 0x80) ):X}");
+    }
+    return result;
+}
+
+private unsafe static delegate* unmanaged<nint, nint, byte, nint> _catStatsSetSelectionOriginal;
 
     // static nint noop = 0;
 
@@ -1912,6 +2032,7 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
         LogStr($"ClearState called");
         // LogStr($"[HOOK] RemoveMovieClip called on mod container 0x{a1:X}");
         rooms.Clear();
+        altCatsCache.Clear();
         buttonsInsideOurDrawers.Clear();
         alreadyInitializedRenderers.Clear();
         catPartsInsideOurDrawers = Array.Empty<nint>();
@@ -1934,6 +2055,8 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
         sortedCats = Array.Empty<nint>();
         activeRowsRenderers.Clear();
         initializedButtons = false;
+        isIteratingOurDrawers = false;
+        insideOurCatInstantiation = false;
         yOffset = 0;
         yOffsetTarget = 0;
         averages.Clear();
@@ -1941,8 +2064,15 @@ class glaiel::SpawnDatabase <class glaiel::SpawnDatabase>
         xOffsetTarget = -300;
         positionDirty = 0;
         catStats.Clear();
+        panelsWithData.Clear();
         yScrollAni = null;
         xMoveAni = null;
+        pendinUpdateTransformInTick = null;
+        pendingOurInitCatStats = false;
+        forcedCatStatsUpdatePending = 0;
+        currentlyHoveredIndex = -1;
+        previouslyHoveredIndex = -1;
+        currentlyDrawerWithOpenIconsPanel = 0;
     }
 
 
