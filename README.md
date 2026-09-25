@@ -1,4 +1,4 @@
-# Video
+# The Spreadsheet Edmund Hates
 
 https://github.com/user-attachments/assets/cd38ca36-7286-4363-9438-40c537645a80
 
