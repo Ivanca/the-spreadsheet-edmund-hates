@@ -1,3 +1,7 @@
+# Video
+
+https://github.com/user-attachments/assets/cd38ca36-7286-4363-9438-40c537645a80
+
 # Installation
 
 Just go to [releases](https://github.com/Ivanca/the-spreadsheet-edmund-hates/releases/) and download the latest exe there, the wizard will guide you through.
